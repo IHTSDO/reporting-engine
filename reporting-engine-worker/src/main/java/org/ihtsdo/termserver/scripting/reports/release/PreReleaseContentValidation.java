@@ -65,7 +65,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
 
-		getArchiveManager().setLoadDependencyPlusExtensionArchives(false);
+		getSnapshotConfiguration().setLoadDependencyPlusExtensionArchive(false);
 
 		origProject = run.getProject();
 		if (!StringUtils.isEmpty(run.getParamValue(THIS_RELEASE))) {

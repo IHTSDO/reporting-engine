@@ -23,7 +23,8 @@ import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.domain.ConcreteValue;
 import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
-import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager;
+import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager2;
+import org.ihtsdo.termserver.scripting.snapshot.SnapshotConfiguration;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,10 @@ import com.google.gson.GsonBuilder;
 public abstract class TermServerScript extends Script implements ScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TermServerScript.class);
+	/* ======================================================
+	 * Public Constants
+	 * ====================================================== */
+
 	public static final String COMMAND_LINE_USAGE = "Usage: java <VM_ARGUMENTS> <TSScriptClass> " +
 			"[-a author] " +
 			"[-c <authenticatedCookie>] " +
@@ -54,65 +59,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			"[-headless <env_number>] " +
 			"[-task <taskKey>]" +
 			"[-s <secondary server Url>]";
-
-	protected boolean debug = true;
-	protected boolean dryRun = true;
-	protected Integer headlessEnvironment = null;
-	protected boolean reportAllDescriptions = false;
-	protected boolean validateConceptOnUpdate = true;
-	protected boolean offlineMode = false;
-	protected String env;
-	protected String url = environments[0];
-	protected int envIndex = NOT_SET;
-	protected boolean stateComponentType = true;
-	protected JobRun jobRun;
-	protected boolean localClientsRequired = true;
-	protected TermServerClient tsClient;
-	protected AuthoringServicesClient scaClient;
-	protected String authenticatedCookie;
-	protected boolean ignoreInputFileForReportName = false;
-	protected int maxFailures = 5;
-	protected int restartPosition = NOT_SET;
-	protected int processingLimit = NOT_SET;
-	protected boolean inputFileHasHeaderRow = false;
-	protected boolean runStandAlone = false; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
-	protected List<File> inputFiles = new ArrayList<>(Collections.nCopies(10, (File) null));
-	private List<String> dependencyArchives;
-	protected String projectName;
-	private String reportName;
-	protected int summaryTabIdx = NOT_SET;
-	protected boolean reportNullConcept = true;
-	protected boolean expectStatedRelationshipInactivations = false;
-	protected String subHierarchyStr;
-	protected String subsetECL;
-	protected String secondaryServerUrl;
-	protected String overrideEclBranch = null;
-	protected Concept subHierarchy;
-	protected List<Concept> excludeHierarchies = new ArrayList<>();
-	protected boolean ignoreWhiteList = false;
-	protected boolean allowMissingExpectedModules = false;
-	protected boolean allowDirectoryInputFile = false;
-	protected int tabForFinalWords = PRIMARY_REPORT;
-	private boolean loadingRelease = false;
-	protected List<String> moduleFilter;
-	protected boolean scriptRequiresSnomedData = true;
-	protected boolean reportChangesWithoutTask = true;
-
-	protected Set<String> whiteListedConceptIds = new HashSet<>();
-	protected Set<String> archiveEclWarningGiven = new HashSet<>();
-	private final List<String> finalWords = new ArrayList<>();
-
-	protected GraphLoader gl = GraphLoader.getGraphLoader();
-	protected String headers = "Concept SCTID,";
-	protected String additionalReportColumns = "ActionDetail, AdditionalDetail, ";
-	protected String secondaryReportColumns = "ActionDetail, ";
-	protected boolean expectNullConcepts = false; //Set to true to avoid warning about rows in input file that result in no concept to modify
-	public Scanner STDIN = new Scanner(System.in);
-
-	private static final String DUE_TO_STR = " due to ";
-	private static final String DELETING = "Deleting {}";
-	private static final String DRY_DELETING = "Dry run deleting {}";
-	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
 
 	public static final String AUTHOR = "Author";
 	public static final String CONCEPTS_IN_FILE = "Concepts in file";
@@ -139,12 +85,115 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted Changes Only";
 	public static final String WHITE_LISTED_COUNT = "White Listed Count";
 
+	/* ======================================================
+	 * Private Static Fields
+	 * ====================================================== */
+	private static final String DUE_TO_STR = " due to ";
+	private static final String DELETING = "Deleting {}";
+	private static final String DRY_DELETING = "Dry run deleting {}";
+
+	/* ======================================================
+	 * Public Static Fields
+	 * ====================================================== */
+	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
+
+	/* ======================================================
+	 * Private Instance Fields
+	 * ====================================================== */
+
+	private List<String> dependencyArchives;
+	private String reportName;
+	private boolean loadingRelease = false;
+	private boolean ignoreInputFileForReportName = false;
+	private final List<String> finalWords = new ArrayList<>();
+
+	/* ======================================================
+	 * Core Runtime Components
+	 * ====================================================== */
+	protected GraphLoader gl = GraphLoader.getGraphLoader();
+	protected TermServerClient tsClient;
+	protected AuthoringServicesClient scaClient;
 	protected ReportDataBroker reportDataBroker;
+	protected String secondaryServerUrl;
 
 	private Map<String, Map<String, Integer>> summaryCountsByCategory = new HashMap<>();
 	//Secondary counts might be whitelisted items for same items as the main count
 	private Map<String, Map<String, Integer>> secondaryCountsByCategory = new HashMap<>();
 	protected boolean includeSecondaryCounts = false;
+
+	/* ======================================================
+	 * Job / Execution Context
+	 * ====================================================== */
+	protected JobRun jobRun;
+	protected String url = environments[0];
+	protected int envIndex = NOT_SET;
+	protected String authenticatedCookie;
+	protected Integer headlessEnvironment = null;
+	protected boolean runStandAlone = false;
+	protected boolean offlineMode = false;
+	protected boolean localClientsRequired = true;
+
+	/* ======================================================
+	 * Processing Configuration
+	 * ====================================================== */
+	protected boolean debug = true;
+	protected boolean dryRun = true;
+	protected boolean validateConceptOnUpdate = true;
+	protected boolean reportAllDescriptions = false;
+	protected boolean reportNullConcept = true;
+	protected boolean expectNullConcepts = false;
+	protected boolean expectStatedRelationshipInactivations = false;
+	protected boolean reportChangesWithoutTask = true;
+	protected boolean ignoreWhiteList = false;
+
+	protected int maxFailures = 5;
+	protected int restartPosition = NOT_SET;
+	protected int processingLimit = NOT_SET;
+	protected int tabForFinalWords = PRIMARY_REPORT;
+	protected int summaryTabIdx = NOT_SET;
+
+	protected boolean inputFileHasHeaderRow = false;
+	protected boolean allowDirectoryInputFile = false;
+
+	/* ======================================================
+	 * Concept Selection / Filtering
+	 * ====================================================== */
+	protected boolean stateComponentType = true;
+	protected boolean scriptRequiresSnomedData = true;
+	protected boolean allowMissingExpectedModules = false;
+
+	protected String subHierarchyStr;
+	protected String subsetECL;
+	protected String overrideEclBranch = null;
+
+	protected Concept subHierarchy;
+	protected List<Concept> excludeHierarchies = new ArrayList<>();
+	protected List<String> moduleFilter;
+
+	/* ======================================================
+	 * Input / Batch Processing
+	 * ====================================================== */
+	protected List<File> inputFiles = new ArrayList<>(Collections.nCopies(10, (File) null));
+
+	/* ======================================================
+	 * Reporting
+	 * ====================================================== */
+	protected String headers = "Concept SCTID,";
+	protected String additionalReportColumns = "ActionDetail, AdditionalDetail, ";
+	protected String secondaryReportColumns = "ActionDetail, ";
+
+	/* ======================================================
+	 * Tracking / State Collections
+	 * ====================================================== */
+	protected Set<String> whiteListedConceptIds = new HashSet<>();
+	protected Set<String> archiveEclWarningGiven = new HashSet<>();
+
+	/* ======================================================
+	 * Misc
+	 * ====================================================== */
+	public Scanner STDIN = new Scanner(System.in);
+	protected String projectName;
+	protected SnapshotConfiguration snapshotConfiguration = new SnapshotConfiguration();
 
 	public static Gson gson;
 	static {
@@ -167,8 +216,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		reportAllDescriptions = b;
 	}
 
-	public String detectReleaseBranch() {
-		return getArchiveManager().detectReleaseBranch(project.getKey());
+	public String detectReleaseBranch(String projectKey) {
+		String releaseBranch = projectKey.replace("MAIN/", "").replace("-", "");
+		return StringUtils.isNumeric(releaseBranch) ? releaseBranch : null;
 	}
 
 	public String getScriptName() {
@@ -335,9 +385,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			String choice = STDIN.nextLine().trim();
 			envIndex = Integer.parseInt(choice);
 		}
+
 		url = environments[envIndex];
-		env = envKeys[envIndex];
-		
+		setEnv(envKeys[envIndex]);
+
 		if (jobRun != null) {
 			//Not sure historically why we have this in two places
 			jobRun.setTerminologyServerUrl(url);
@@ -377,7 +428,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected void init (JobRun jobRun) throws TermServerScriptException {
 		this.url = jobRun.getTerminologyServerUrl();
-		this.env = getEnv(url);
+		setEnv(getEnv(url));
 		this.jobRun = jobRun;
 		EclCache.reset();
 		authenticatedCookie = jobRun.getAuthToken();
@@ -557,10 +608,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				this.dependencyArchives = List.of(jobRun.getDependencyPackage());
 			}
 
-			//If we have a dependency archive, then set loadDependencyPlusExtensionArchive
-			if (dependencyArchives != null) {
-				getArchiveManager().setLoadDependencyPlusExtensionArchives(true);
-			}
 			//Job Runs generally self determine
 			preInit();
 			
@@ -571,7 +618,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			init(jobRun);
 
 			if (scriptRequiresSnomedData) {
-				loadProjectSnapshot(false);  //Load all descriptions
+				loadProjectSnapshot();
 			}
 
 			postInit();
@@ -718,20 +765,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return new TermServerClient(url + contextPath, authenticatedCookie, getUserAgent());
 	}
 
-	//Default implementation - load all descriptions
 	protected void loadProjectSnapshot() throws TermServerScriptException {
-		loadProjectSnapshot(false);
-	}
-	
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
-		ArchiveManager mgr = getArchiveManager();
-		//Run a quick check here that if the GraphLoader has been told to record previous state, then obviously
-		//it can only do that if we're forcing a fresh build of Snapshot + Delta, as it's the published snapshot
-		//that we use to obtain the previous state.
-		if (gl.isRecordPreviousState() && !mgr.isEnsureSnapshotPlusDeltaLoad()) {
-			throw new TermServerScriptException("GraphLoader has been configured to record previous state, but we've not specified a fresh build of Snapshot + Delta");
-		}
-		mgr.loadSnapshot(fsnOnly);
+		ArchiveManager2 mgr = getArchiveManager();
+		mgr.loadSnapshot(this);
 		//Reset the report name to null here as it will have been set by the Snapshot Generator
 		setReportName(null);
 	}
@@ -741,7 +777,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			//In a dry run situation, the task branch is not created so use the Project instead
 			//But we'll clone it, so the object isn't confused with any local changes
 
-			//That said, if we've specifed an _existing_ task then we do want to use that, so check for a taskKey
+			//That said, if we've specified an _existing_ task, then we do want to use that.  So check for a taskKey
 			
 			//If we're already working at project level, don't modify branchPath
 			//Note that for MS we expect two slashes eg MAIN/SNOMEDCT-SE/SE
@@ -831,31 +867,31 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 	}
 	
-	protected RefsetMember loadRefsetMember(String uuid) throws TermServerScriptException {
+	protected RefsetMember loadRefsetMember(String uuid) {
 		return loadRefsetMember(uuid, project.getBranchPath());
 	}
 	
-	protected RefsetMember loadRefsetMember(String uuid, String branch) throws TermServerScriptException {
-		LOGGER.debug("Loading refset member " + uuid + " from " + branch);
+	protected RefsetMember loadRefsetMember(String uuid, String branch) {
+		LOGGER.debug("Loading refset member {} from {}", uuid, branch);
 		return tsClient.getRefsetMember(uuid, branch);
 	}
 	
-	protected LangRefsetEntry loadLangRefsetMember(String uuid, String branch) throws TermServerScriptException {
-		LOGGER.debug("Loading refset member " + uuid + " from " + branch);
+	protected LangRefsetEntry loadLangRefsetMember(String uuid, String branch) {
+		LOGGER.debug("Loading langrefset member {} from {}", uuid, branch);
 		return tsClient.getLangRefsetMember(uuid, branch);
 	}
 	
-	protected RefsetMember loadPreviousRefsetMember(String uuid) throws TermServerScriptException {
+	protected RefsetMember loadPreviousRefsetMember(String uuid) {
 		if (project.getPreviousBranchPath() == null) {
-			String previousBranchPath = getArchiveManager().getPreviousBranch(project);
+			String previousBranchPath = getArchiveManager().getPreviousBranch();
 			project.setPreviousBranchPath(previousBranchPath);
 		}
-		LOGGER.debug("Loading refset member " + uuid + " from " + project.getPreviousBranchPath());
-		return tsClient.getRefsetMember(uuid, project.getPreviousBranchPath());
+		return loadRefsetMember(uuid, project.getPreviousBranchPath());
 	}
 	
 	protected RefsetMember updateRefsetMember(RefsetMember rm) throws TermServerScriptException {
-		LOGGER.debug((dryRun?"Dry run update of":"Updating") + " refset member " + rm.getId());
+		String debugTemplate = (dryRun?"Dry run update of":"Updating") + " refset member {}";
+		LOGGER.debug(debugTemplate, rm.getId());
 		if (dryRun) {
 			return rm;
 		} else {
@@ -967,7 +1003,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				String msg = "Failed to create " + c + " in TS due to " + getMessage(e);
 				if (attempt <= 2) {
 					incrementSummaryInformation("Concepts creation exceptions");
-					LOGGER.warn(msg + " retrying...");
+					LOGGER.warn("{} retrying...", msg);
 					try {
 						Thread.sleep(5 * 1000);
 					} catch(InterruptedException ie) {}
@@ -1771,14 +1807,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		this.quiet = quiet;
 	}
 
-	public String getEnv() {
-		return env;
-	}
-	
-	public void setEnv(String env) {
-		this.env = env;
-	}
-
 	public GraphLoader getGraphLoader() {
 		return gl;
 	}
@@ -1787,8 +1815,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return tsClient;
 	}
 
-	public ArchiveManager getArchiveManager() {
-		return ArchiveManager.getArchiveManager(this, appContext);
+	public ArchiveManager2 getArchiveManager() {
+		return ArchiveManager2.create();
 	}
 
 	public boolean hasInputFile() {
@@ -1852,14 +1880,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public void setReportName(String reportName) {
 		this.reportName = reportName;
 	}
-	
-	public void offlineMode(boolean offline) {
-		if (offline) {
-			getArchiveManager().setAllowStaleData(true);
-		}
-		this.offlineMode = offline;
-	}
-	
+
 	public boolean isOffline() {
 		return this.offlineMode;
 	}
@@ -1981,9 +2002,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	
 	protected void setDependencyArchives(List<String> dependencyArchives) {
 		this.dependencyArchives = dependencyArchives;
-		if (dependencyArchives != null) {
-			getArchiveManager().setLoadDependencyPlusExtensionArchives(true);
-		}
 	}
 
 	public ReportDataBroker getReportDataUploader() throws TermServerScriptException {
@@ -2493,6 +2511,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		secondaryCounts.merge(summaryItem, increment, Integer::sum);
 	}
 
+	protected void setIgnoreInputFileForReportName(boolean b) {
+		ignoreInputFileForReportName = b;
+	}
+
 	public enum SUMMARY_SORT_ORDER {
 		ALPHABETICAL,
 		COUNT
@@ -2591,4 +2613,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		this.summaryCountsByCategory = summaryCountsByCategory;
 	}
 
+	public SnapshotConfiguration getSnapshotConfiguration() {
+		return snapshotConfiguration;
+	}
 }

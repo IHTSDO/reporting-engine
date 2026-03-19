@@ -51,13 +51,13 @@ public class BrowserReleaseStatsGenerator extends SummaryComponentStats {
 	}
 
 	@Override
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
-		super.loadProjectSnapshotWithDependency(fsnOnly);
+	protected void loadProjectSnapshot() throws TermServerScriptException {
+		super.loadProjectSnapshotWithDependency();
 	}
 
 	@Override
-	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
-		super.loadCurrentPositionWithDependency(compareTwoSnapshots, fsnOnly);
+	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
+		super.loadCurrentPositionWithDependency(compareTwoSnapshots);
 	}
 
 }

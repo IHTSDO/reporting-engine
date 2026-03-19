@@ -1,9 +1,10 @@
 package org.ihtsdo.termserver.scripting.util;
 
+import org.ihtsdo.otf.exception.NotImplementedException;
 import org.ihtsdo.otf.exception.ScriptException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Metadata;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.BranchMetadata;
 import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.domain.CodeSystem;
 import org.ihtsdo.termserver.scripting.domain.CodeSystemVersion;
@@ -218,7 +219,7 @@ public class ArchiveCurator extends TermServerReport {
                 continue;
             }
 
-            Metadata metadata = branch.getMetadata();
+            BranchMetadata metadata = branch.getMetadata();
             if (metadata == null) {
                 report(0, shortName, "SKIPPED", "Cannot find corresponding metadata.");
                 continue;
@@ -254,18 +255,17 @@ public class ArchiveCurator extends TermServerReport {
         return codeSystemTuples;
     }
 
-    private ResourceManager resourceManagerSource() throws TermServerScriptException {
-        StandAloneResourceConfig versionedContentLoaderConfig = new StandAloneResourceConfig();
-        versionedContentLoaderConfig.init("versioned-content-source", false);
-        ResourceLoader resourceLoader = getArchiveManager().getS3Manager().getResourceLoader();
-        return new ResourceManager(versionedContentLoaderConfig, resourceLoader);
+    private ResourceManager resourceManagerSource() {
+        //You will now be able to refactor this class to MSC directly
+        throw new NotImplementedException();
     }
 
-    private ResourceManager resourceManagerTarget() throws TermServerScriptException {
-        StandAloneResourceConfig versionedContentLoaderConfig = new StandAloneResourceConfig();
+    private ResourceManager resourceManagerTarget() {
+       /* StandAloneResourceConfig versionedContentLoaderConfig = new StandAloneResourceConfig();
         versionedContentLoaderConfig.init("versioned-content", false);
         ResourceLoader resourceLoader = getArchiveManager().getS3Manager().getResourceLoader();
-        return new ResourceManager(versionedContentLoaderConfig, resourceLoader);
+        return new ResourceManager(versionedContentLoaderConfig, resourceLoader);*/
+        throw new NotImplementedException();
     }
 
     private ModuleStorageCoordinator moduleStorageCoordinator() {

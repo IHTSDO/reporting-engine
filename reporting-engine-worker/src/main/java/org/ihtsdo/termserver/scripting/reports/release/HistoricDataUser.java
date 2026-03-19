@@ -15,6 +15,7 @@ import org.ihtsdo.termserver.scripting.domain.HistoricData;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
 
+import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,11 +57,11 @@ public class HistoricDataUser extends TermServerReport {
 	protected boolean previousTransitiveClosureNeeded = true;
 
 	public void doDefaultProjectSnapshotLoad(boolean fsnOnly) throws TermServerScriptException {
-		super.loadProjectSnapshot(fsnOnly);
+		super.loadProjectSnapshot();
 	}
 
 	@Override
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
+	protected void loadProjectSnapshot() throws TermServerScriptException {
 
 		currentPositionProjectKey = getProject().getKey();
 		LOGGER.info("Historic data being imported, wiping Graph Loader for safety.");
@@ -71,9 +72,8 @@ public class HistoricDataUser extends TermServerReport {
 		String task = getJobRun().getTask();
 		getJobRun().setTask(null);
 		try {
-			ArchiveManager mgr = getArchiveManager();
-			mgr.setLoadEditionArchive(true);
-			mgr.loadSnapshot(fsnOnly);
+			ArchiveManager2 mgr = getArchiveManager();
+			mgr.loadSnapshot(this);
 
 			previousEffectiveTime = gl.getCurrentEffectiveTime();
 			LOGGER.info("EffectiveTime of previous release detected to be: {}", previousEffectiveTime);
@@ -81,12 +81,11 @@ public class HistoricDataUser extends TermServerReport {
 			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
 			statsGenerator.setModuleFilter(moduleFilter);
 			statsGenerator.runJob();
-			mgr.reset();
 			getJobRun().setTask(task);
 		} catch (Exception e) {
 			throw new TermServerScriptException("Historic Data Generation (from previous release) failed due to " + e.getMessage(), e);
 		}
-		loadCurrentPosition(compareTwoSnapshots, fsnOnly);
+		loadCurrentPosition(compareTwoSnapshots);
 	}
 
 	private boolean recoverReleaseConfiguration() throws TermServerScriptException {
@@ -150,27 +149,25 @@ public class HistoricDataUser extends TermServerReport {
 		}
 	}
 
-	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
+	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
 		LOGGER.info("Previous Data Generated, now loading 'current' position");
-		ArchiveManager mgr = getArchiveManager();
+		ArchiveManager2 mgr = getArchiveManager();
 		if (compareTwoSnapshots) {
-			mgr.setLoadEditionArchive(true);
 			if (!StringUtils.isEmpty(thisDependency)) {
 				ensurePrevIsEarlierThanThis(currentPositionProjectKey, thisDependency, RELEASE, DEPENDENCY);
 				ensurePrevIsEarlierThanThis(thisDependency, prevDependency, DEPENDENCY, DEPENDENCY);
-				mgr.setLoadDependencyPlusExtensionArchives(true);
 			}
 			setProject(new Project(currentPositionProjectKey));
-			mgr.loadSnapshot(false);
+			mgr.loadSnapshot(this);
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
 			LOGGER.info("Detected this effective time as {}", thisEffectiveTime);
 		} else {
 			//We cannot just add in the project delta because it might be that - for an extension
 			//the international edition has also been updated.   So recreate the whole snapshot
-			mgr.setPopulatePreviousTransitiveClosure(previousTransitiveClosureNeeded );
-			mgr.setLoadEditionArchive(false);
+			getSnapshotConfiguration().setPopulatePreviousTransitiveClosure(previousTransitiveClosureNeeded );
+			getSnapshotConfiguration().setLoadEditionArchive(false);
 			getProject().setKey(currentPositionProjectKey);
-			mgr.loadSnapshot(fsnOnly);
+			mgr.loadSnapshot(this);
 		}
 	}
 

@@ -64,7 +64,7 @@ public class PreReleaseContentValidationExtensions extends PreReleaseContentVali
 	}
 
 	@Override
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
+	protected void loadProjectSnapshot() throws TermServerScriptException {
 		if (getProject().getKey().equals("MAIN")) {
 			throw new TermServerScriptException ("This report cannot be run on MAIN. Use 'Pre-Release Content Validation' instead.");
 		}
@@ -96,15 +96,15 @@ public class PreReleaseContentValidationExtensions extends PreReleaseContentVali
 		LOGGER.info("Setting previous dependency archive: {}", prevDependency);
 		setDependencyArchives(List.of(prevDependency));
 
-		super.loadProjectSnapshot(fsnOnly);
+		super.loadProjectSnapshot();
 	}
 
 	@Override
-	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
+	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
 		LOGGER.info("Setting dependency archive: {}", thisDependency);
 		setDependencyArchives(List.of(thisDependency));
 
-		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
+		super.loadCurrentPosition(compareTwoSnapshots);
 	}
 
 	private boolean XOR(String... paramValues) {

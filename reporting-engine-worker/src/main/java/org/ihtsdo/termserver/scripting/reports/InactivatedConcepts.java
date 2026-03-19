@@ -115,16 +115,16 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 	}
 
 	@Override
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
+	protected void loadProjectSnapshot() throws TermServerScriptException {
 		prevRelease = getJobRun().getParamValue(RELEASE);
 		if (!StringUtils.isEmpty(prevRelease)) {
 			LOGGER.info("Loading previously published package: {}", prevRelease);
 			getProject().setKey(prevRelease);
-			super.loadProjectSnapshot(fsnOnly);
+			super.loadProjectSnapshot();
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
 			LOGGER.info("Detected this effective time as {}", thisEffectiveTime);
 		} else {
-			super.loadProjectSnapshot(fsnOnly);
+			super.loadProjectSnapshot();
 		}
 	};
 	

@@ -9,7 +9,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager;
+import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager2;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -49,12 +49,11 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release QA
 		super.init(run);
 		runStandAlone = false; //We need to load previous previous for real
-		ArchiveManager mgr = getArchiveManager();
-		mgr.setEnsureSnapshotPlusDeltaLoad(true);
+		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		if (!StringUtils.isNumeric(project.getKey())) {
-			mgr.setPopulatePreviousTransitiveClosure(true);
+			getSnapshotConfiguration().setPopulatePreviousTransitiveClosure(true);
 			try {
-				previousPreviousRelease = mgr.getPreviousPreviousBranch(project);
+				previousPreviousRelease = getArchiveManager().getPreviousPreviousBranch(this, project);
 			} catch (Exception e) {
 				throw new TermServerScriptException("Failed to recover previous previous branch", e);
 			}

@@ -44,7 +44,7 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		ReportSheetManager.setTargetFolderId("11i7XQyb46P2xXNBwlCOd3ssMNhLOx1m1"); //QI / Misc Analysis
 		super.init(run);
 	}

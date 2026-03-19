@@ -57,7 +57,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		super.init(run);
 		ReportSheetManager.setTargetFolderId(GFOLDER_RELEASE_QA);
 		recentChangesOnly = run.getParameters().getMandatoryBoolean(RECENT_CHANGES_ONLY);

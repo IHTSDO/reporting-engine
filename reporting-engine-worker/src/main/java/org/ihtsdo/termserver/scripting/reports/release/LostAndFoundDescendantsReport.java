@@ -8,7 +8,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
-import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -50,10 +49,9 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 		ReportSheetManager.setTargetFolderId(GFOLDER_RELEASE_QA);
 		super.init(run);
 		runStandAlone = false; //We need to load previous previous for real
-		ArchiveManager mgr = getArchiveManager();
-		mgr.setEnsureSnapshotPlusDeltaLoad(true);
+		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		if (!StringUtils.isNumeric(project.getKey())) {
-			mgr.setPopulatePreviousTransitiveClosure(true);
+			getSnapshotConfiguration().setPopulatePreviousTransitiveClosure(true);
 		}
 	}
 	

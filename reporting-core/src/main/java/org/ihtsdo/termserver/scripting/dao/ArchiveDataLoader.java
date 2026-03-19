@@ -40,7 +40,7 @@ public class ArchiveDataLoader implements DataLoader {
 		} else if (awsKey.isEmpty()) {
 			LOGGER.info("ArchiveDataLoader - AWS Key configured through EC2 instance");
 		} else {
-			LOGGER.info("ArchiveDataLoader using AWS Key: " + awsKey);
+			LOGGER.info("ArchiveDataLoader using AWS Key: {}", awsKey);
 		}
 	}
 

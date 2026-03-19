@@ -90,7 +90,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
-		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		subsetECL = run.getParamValue(ECL);
 		
 		if (!StringUtils.isEmpty(run.getParamValue(INCLUDE_DETAIL))) {
@@ -123,12 +123,12 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	
 	
 	@Override
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
+	protected void loadProjectSnapshot() throws TermServerScriptException {
 		//If we're working with zip packages, we'll use the HistoricDataGenerator
 		//Otherwise we'll use the default behaviour
 		prevRelease = getJobRun().getParamValue(PREV_RELEASE);
 		if (prevRelease == null) {
-			super.doDefaultProjectSnapshotLoad(fsnOnly);
+			super.doDefaultProjectSnapshotLoad(false);
 		} else {
 			loadHistoricallyGeneratedData = true;
 			prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
@@ -160,15 +160,15 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				moduleFilter = Collections.singletonList(defaultModule);
 			}
 			
-			super.loadProjectSnapshot(fsnOnly);
+			super.loadProjectSnapshot();
 		}
 	}
 
 	@Override
-	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
+	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
 		LOGGER.info("Setting dependency archive: {}", thisDependency);
 		setDependencyArchives(List.of(thisDependency));
-		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
+		super.loadCurrentPosition(compareTwoSnapshots);
 	}
 
 	@Override

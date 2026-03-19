@@ -8,6 +8,8 @@ import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.snomed.FileType;
+
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +35,10 @@ public class ArchiveImporter implements ScriptConstants {
 	ArchiveImporter(GraphLoader gl, SnapshotConfiguration config) {
 		this.gl = gl;
 		this.config = config;
+		if (!config.isRunIntegrityChecks()) {
+			LOGGER.warn("INTEGRITY CHECK DISABLED - ARE YOU SURE?");
+		}
+		gl.setRunIntegrityChecks(config.isRunIntegrityChecks());
 	}
 
 	public static void setRunAsynchronously(boolean runAsynchronously) {
@@ -47,27 +53,28 @@ public class ArchiveImporter implements ScriptConstants {
 		cacheSnapshotLocation = newLocation;
 		if (dependencySnapshot != null) {
 			LOGGER.info("Loading dependency snapshot {}", dependencySnapshot);
-			loadArchive(dependencySnapshot, false, "Snapshot", true);
+			loadArchive(dependencySnapshot, FileType.SNAPSHOT, true);
 		}
 
 		LOGGER.info("Loading previous snapshot {}", previousSnapshot);
-		loadArchive(previousSnapshot, false, "Snapshot", true);
+		loadArchive(previousSnapshot, FileType.SNAPSHOT, true);
 
 		double sizeMb = delta.length() / (1024d * 1024d);
 		String sizeMbStr = String.format("%.2f", sizeMb);
 		LOGGER.info("Loading delta {} of size {}Mb", delta, sizeMbStr);
-		loadArchive(delta, false, "Delta", false);
+		loadArchive(delta, FileType.DELTA, false);
+		gl.finalizeMRCM();
 	}
 
-	public void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException {
+	public void loadArchive(File archive, FileType fileType, Boolean isReleased) throws TermServerScriptException {
 		try {
 			boolean isDelta = (fileType.equals(DELTA));
 			//Are we loading an expanded or compressed archive?
 			if (archive.isDirectory()) {
-				loadArchiveDirectory(archive, fsnOnly, fileType, isReleased);
+				loadArchiveDirectory(archive, fileType, isReleased);
 			} else if (archive.getPath().endsWith(".zip")) {
 				LOGGER.debug("Loading archive file: {}", archive);
-				loadArchiveZip(archive, fsnOnly, fileType, isReleased);
+				loadArchiveZip(archive, fileType, isReleased);
 			} else {
 				throw new TermServerScriptException("Unrecognised archive : " + archive);
 			}
@@ -89,7 +96,7 @@ public class ArchiveImporter implements ScriptConstants {
 				LOGGER.error("Failed to extract project state from archive {} due to {}", archive.getName(), e.getMessage());
 				LOGGER.error("Second attempt to load archive with Windows zip encoding enabled");
 				useWindowsZipEncoding = true;
-				loadArchive(archive, fsnOnly, fileType, isReleased);
+				loadArchive(archive, fileType, isReleased);
 			} else {
 				throw e; //If we've already tried with Windows zip encoding, then we really can't load this archive
 			}
@@ -98,7 +105,7 @@ public class ArchiveImporter implements ScriptConstants {
 		}
 	}
 
-	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws IOException {
+	private void loadArchiveZip(File archive, FileType fileType, Boolean isReleased) throws IOException {
 		Charset encoding = useWindowsZipEncoding ? Charset.forName("windows-1252") : StandardCharsets.UTF_8;
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(archive), encoding);
 		ZipEntry ze = zis.getNextEntry();
@@ -106,7 +113,7 @@ public class ArchiveImporter implements ScriptConstants {
 			while (ze != null) {
 				if (!ze.isDirectory()) {
 					Path path = Paths.get(ze.getName());
-					loadFile(path, zis, fileType, fsnOnly, isReleased);
+					loadFile(path, zis, fileType, isReleased);
 				}
 				ze = zis.getNextEntry();
 			}
@@ -120,13 +127,13 @@ public class ArchiveImporter implements ScriptConstants {
 		}
 	}
 
-	private void loadArchiveDirectory(File dir, boolean fsnOnly, String fileType, Boolean isReleased) throws IOException {
+	private void loadArchiveDirectory(File dir, FileType fileType, Boolean isReleased) throws IOException {
 		try (Stream<Path> paths = Files.walk(dir.toPath())) {
 			paths.filter(Files::isRegularFile)
 					.forEach( path ->  {
 						try {
 							InputStream is = toInputStream(path);
-							loadFile(path, is , fileType, fsnOnly, isReleased);
+							loadFile(path, is , fileType, isReleased);
 							is.close();
 						} catch (Exception e) {
 							throw new IllegalStateException("Failed to load " + path + " due to " + e.getMessage(),e);
@@ -145,7 +152,7 @@ public class ArchiveImporter implements ScriptConstants {
 		return is;
 	}
 
-	private void loadFile(Path path, InputStream is, String fileType, boolean fsnOnly, Boolean isReleased)  {
+	private void loadFile(Path path, InputStream is, FileType fileType, Boolean isReleased)  {
 		try {
 			String fileName = path.getFileName().toString();
 			//Skip zip file artifacts
@@ -153,17 +160,16 @@ public class ArchiveImporter implements ScriptConstants {
 				return;
 			}
 
-			if (fileName.contains(fileType)
-					&& !loadContentFile(is, fileName, fileType, isReleased, fsnOnly)) {
-				loadReferenceSetFile(is, fileName, fileType, isReleased, fsnOnly);
+			if (fileName.contains(fileType.name())
+					&& !loadContentFile(is, fileName, fileType, isReleased)) {
+				loadReferenceSetFile(is, fileName, fileType, isReleased);
 			}
 		} catch (TermServerScriptException | IOException e) {
 			throw new IllegalStateException("Unable to load " + path + " due to " + e.getMessage(), e);
 		}
 	}
 
-	private void loadReferenceSetFile(InputStream is, String fileName, String fileType, Boolean isReleased,
-	                                  boolean fsnOnly) throws TermServerScriptException, IOException {
+	private void loadReferenceSetFile(InputStream is, String fileName, FileType fileType, Boolean isReleased) throws TermServerScriptException, IOException {
 		boolean loadTheReferenceSet = false;
 		if (loadMRCMFile(is, fileName, fileType, isReleased)) {
 			return;
@@ -184,7 +190,7 @@ public class ArchiveImporter implements ScriptConstants {
 		} else if (fileName.contains("ComponentAnnotationStringValue")) {
 			LOGGER.info("Loading ComponentAnnotationStringValue File: {} file: {}", fileType, fileName);
 			gl.loadComponentAnnotationFile(is, isReleased);
-		} else if (fileName.contains("ssRefset_ModuleDependency")) {
+		}  else if (fileName.contains("ssRefset_ModuleDependency")) {
 			LOGGER.info("Loading Module Dependency File: {} file: {}", fileType, fileName);
 			gl.loadModuleDependencyFile(is, isReleased);
 		} else if (fileName.contains("MRCM")) {
@@ -195,7 +201,7 @@ public class ArchiveImporter implements ScriptConstants {
 		}
 
 		//If we're loading all terms, load the language refset as well
-		if (!fsnOnly && (fileName.contains("English" ) || fileName.contains("Language"))) {
+		if ((fileName.contains("English" ) || fileName.contains("Language"))) {
 			LOGGER.info("Loading {} Language Reference Set File - {}", fileType, fileName);
 			gl.loadLanguageFile(is, isReleased);
 		} else if (loadTheReferenceSet) {
@@ -203,7 +209,7 @@ public class ArchiveImporter implements ScriptConstants {
 		}
 	}
 
-	private boolean loadMRCMFile(InputStream is, String fileName, String fileType, Boolean isReleased) throws TermServerScriptException, IOException {
+	private boolean loadMRCMFile(InputStream is, String fileName, FileType fileType, Boolean isReleased) throws TermServerScriptException, IOException {
 		if (fileName.contains("MRCMModuleScope")) {
 			LOGGER.info("Loading MRCM Module Scope File: {} file: {}", fileType, fileName);
 			gl.loadMRCMModuleScopeFile(is, isReleased);
@@ -222,7 +228,7 @@ public class ArchiveImporter implements ScriptConstants {
 		return true;
 	}
 
-	private boolean loadContentFile(InputStream is, String fileName, String fileType, Boolean isReleased, boolean fsnOnly) throws TermServerScriptException, IOException {
+	private boolean loadContentFile(InputStream is, String fileName, FileType fileType, Boolean isReleased) throws TermServerScriptException, IOException {
 		if (fileName.contains("sct2_Concept_" )) {
 			LOGGER.info("Loading Concept {} file: {}", fileType, fileName);
 			gl.loadConceptFile(is, isReleased);
@@ -247,11 +253,11 @@ public class ArchiveImporter implements ScriptConstants {
 			gl.loadAxioms(is, isReleased);
 		} else if (fileName.contains("sct2_Description_" )) {
 			LOGGER.info("Loading Description {} file: {}", fileType, fileName);
-			int count = gl.loadDescriptionFile(is, fsnOnly, isReleased);
+			int count = gl.loadDescriptionFile(is, isReleased);
 			LOGGER.info("Loaded {} descriptions.", count);
 		} else if (fileName.contains("sct2_TextDefinition_" )) {
 			LOGGER.info("Loading Text Definition {} file: {}", fileType, fileName);
-			gl.loadDescriptionFile(is, fsnOnly, isReleased);
+			gl.loadDescriptionFile(is, isReleased);
 		} else {
 			return false;
 		}

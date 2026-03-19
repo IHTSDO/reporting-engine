@@ -48,9 +48,9 @@ public abstract class TermServerReport extends TermServerScript {
 		try {
 			ReportSheetManager.setTargetFolderId(GFOLDER_ADHOC_REPORTS);
 			init(args);
-			getArchiveManager().setLoadOtherReferenceSets(options.isImportAllRefsets());
+			getSnapshotConfiguration().setLoadOtherReferenceSets(options.isImportAllRefsets());
 			if (options.isSnapshotImport()) {
-				loadProjectSnapshot(false);
+				loadProjectSnapshot();
 			}
 			postInit();
 			runJob();

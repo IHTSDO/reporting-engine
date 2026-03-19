@@ -31,7 +31,7 @@ public class LoincReport extends TermServerReport implements ReportClass {
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
+		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		ReportSheetManager.setTargetFolderId("1yF2g_YsNBepOukAu2vO0PICqJMAyURwh"); //LOINC
 		super.init(run);
 	}

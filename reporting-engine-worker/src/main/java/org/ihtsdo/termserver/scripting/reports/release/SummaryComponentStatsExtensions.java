@@ -58,7 +58,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 	}
 	
 	@Override
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
+	protected void loadProjectSnapshot() throws TermServerScriptException {
 		//Either specify all values or none of them.   Use the XOR indicator
 		if (xor(PREV_RELEASE,THIS_DEPENDENCY,THIS_RELEASE,PREV_DEPENDENCY)) {
 			throw new TermServerScriptException ("Either specify [PrevRelease,ThisDepedency,ThisRelease,PrevDependency], or NONE of them to run against the in-flight project.");
@@ -97,7 +97,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 			moduleFilter = Collections.singletonList(defaultModule);
 		}
 
-		super.loadProjectSnapshot(fsnOnly);
+		super.loadProjectSnapshot();
 	}
 
 	private boolean xor(String... paramValues) {
@@ -116,9 +116,9 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 	}
 
 	@Override
-	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
+	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
 		LOGGER.info("Setting dependency archive: {}", thisDependency);
 		setDependencyArchives(List.of(thisDependency));
-		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
+		super.loadCurrentPosition(compareTwoSnapshots);
 	}
 }

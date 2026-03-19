@@ -29,7 +29,7 @@ public class ListAllReports extends TermServerReport implements ReportClass {
 		additionalReportColumns="";
 	}
 
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
+	protected void loadProjectSnapshot() throws TermServerScriptException {
 		LOGGER.info("Skipping Snapshot load - not required for this report");
 	}
 

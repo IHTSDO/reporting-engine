@@ -44,7 +44,7 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 	}
 
 	@Override
-	public void loadProjectSnapshot(boolean includeFSNs) throws TermServerScriptException {
+	public void loadProjectSnapshot() throws TermServerScriptException {
 		//Nothing needed here.  The ECL return will have everything we need.
 		//In fact, we're going to wipe the graph loader so that we don't
 		//try to use our local copy when we recover ECL results from other extensions

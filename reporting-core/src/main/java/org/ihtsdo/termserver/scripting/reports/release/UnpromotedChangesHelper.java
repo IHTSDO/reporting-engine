@@ -14,6 +14,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
+import org.ihtsdo.termserver.scripting.snapshot.TBCHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 
@@ -35,9 +36,10 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 		//Re-query our current task/project to obtain just those components which haven't been promoted
 		LOGGER.info("Populating map of unpromoted change components");
 		Project project = ts.getProject();
-		boolean loadOtherRefsets = ts.getArchiveManager().isLoadOtherReferenceSets();
+		boolean loadOtherRefsets = ts.getArchiveManager().getCurrentConfiguration().isLoadOtherReferenceSets();
 		try {
-			File delta = ts.getArchiveManager().generateDelta(project, true);
+			TBCHelper fileHelper = new TBCHelper(ts);
+			File delta = fileHelper.getExportedDelta(project, true);
 			unpromotedChangesMap = new HashMap<>();
 			loadDeltaZip(delta, loadOtherRefsets);
 		} catch (IOException e) {

@@ -13,14 +13,13 @@ import org.apache.commons.io.FileUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.TermServerLocation;
 import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.snomed.FileType;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.UnrecoverableTermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClient.*;
 import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.dao.BuildArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.dao.DataLoader;
@@ -38,8 +37,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class ArchiveManager implements ScriptConstants {
 
-	private static final String SNAPSHOT = "Snapshot";
 	private static final String RELEASES_SLASH = "releases/";
+
+	private static final boolean USE_NEW_ARCHIVE_MANAGER = true;
 	
 	static ArchiveManager singleton;
 	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveManager.class);
@@ -62,11 +62,15 @@ public class ArchiveManager implements ScriptConstants {
 	);
 	
 	private Project currentlyHeldInMemory;
+	private TBCHelper fileHelper;
 
 	ZoneId utcZoneID= ZoneId.of("Etc/UTC");
 
-	public static ArchiveManager getArchiveManager(TermServerScript ts, ApplicationContext appContext) {
-		LOGGER.info("Calling ArchiveManager.getArchiveManager with ts: {}, singleton.ts: {}, brandNew: {}", ts, singleton == null ? null : singleton.ts, singleton == null);
+	public static ArchiveManager2 getArchiveManager(TermServerScript ts, ApplicationContext appContext) {
+
+		return ArchiveManager2.create();
+
+		/*LOGGER.info("Calling ArchiveManager.getArchiveManager with ts: {}, singleton.ts: {}, brandNew: {}", ts, singleton == null ? null : singleton.ts, singleton == null);
 
 		boolean isBrandNew = false;
 		boolean underChangedOwnership = false;
@@ -93,6 +97,7 @@ public class ArchiveManager implements ScriptConstants {
 
 		singleton.ts = ts;
 		singleton.gl = ts.getGraphLoader();
+		singleton.fileHelper = new TBCHelper(ts);
 
 		if (underChangedOwnership) {
 			singleton.reset();
@@ -100,7 +105,7 @@ public class ArchiveManager implements ScriptConstants {
 			LOGGER.info("Archive Manager load flags retained - reusing.");
 		}
 
-		return singleton;
+		return singleton;*/
 	}
 	
 	@EventListener(ApplicationReadyEvent.class)
@@ -246,14 +251,14 @@ public class ArchiveManager implements ScriptConstants {
 					for (String dependencyStr : ts.getDependencyArchives()) {
 						File dependency = new File("releases", dependencyStr);
 						if (dependency.exists()) {
-							archiveImporter.loadArchive(dependency, fsnOnly, SNAPSHOT, true);
+							archiveImporter.loadArchive(dependency, FileType.SNAPSHOT, true);
 						} else {
 							//Can we find it in S3?
 							String cwd = new File("").getAbsolutePath();
 							LOGGER.info("Dependency Archive {} not found locally in {}, attempting to download from S3.", ts.getDependencyArchives(), cwd);
 							getArchiveDataLoader().download(dependency);
 							if (dependency.exists()) {
-								archiveImporter.loadArchive(dependency, fsnOnly, SNAPSHOT, true);
+								archiveImporter.loadArchive(dependency, FileType.SNAPSHOT, true);
 							} else {
 								throw new TermServerScriptException("Dependency Package " + dependency.getAbsolutePath() + " does not exist and was not recovered from S3.");
 							}
@@ -396,7 +401,7 @@ public class ArchiveManager implements ScriptConstants {
 			config.setPopulateReleaseFlag(config.isLoadEditionArchive());
 			//We only know if the components are released when loading an edition archive
 			Boolean isReleased = config.isLoadEditionArchive() ? true : null;
-			archiveImporter.loadArchive(snapshot, fsnOnly, SNAPSHOT, isReleased);
+			archiveImporter.loadArchive(snapshot, FileType.SNAPSHOT, isReleased);
 		} catch (UnrecoverableTermServerScriptException unrecoverable) {
 			throw unrecoverable;
 		} catch (Exception e) {
@@ -621,7 +626,7 @@ public class ArchiveManager implements ScriptConstants {
 		File dependency = determineDependencyIfRequired(project);
 		
 		//Now we need a recent delta to add to it
-		File delta = generateDelta(project);
+		File delta = fileHelper.getExportedDelta(project);
 		archiveImporter.generateSnapshot(dependency, previous, delta, snapshot);
 	}
 
@@ -675,20 +680,6 @@ public class ArchiveManager implements ScriptConstants {
 		return buildArchiveDataLoader;
 	}
 	
-	public File generateDelta(TermServerLocation location) throws TermServerScriptException {
-		return generateDelta(location, false);
-	}
-
-	public File generateDelta(TermServerLocation location, boolean unpromotedChangesOnly) throws TermServerScriptException {
-		try {
-			File delta = File.createTempFile("delta_export-", ".zip");
-			delta.deleteOnExit();
-			ts.getTSClient().export(location.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.DELTA, delta, unpromotedChangesOnly);
-			return delta;
-		} catch (TermServerScriptException|IOException e) {
-			throw new TermServerScriptException("Failed to generate delta from " + location, e);
-		}
-	}
 
 	private void ensureProjectMetadataPopulated(Project project) throws TermServerScriptException {
 		if (project.getMetadata() == null || project.getMetadata().getPreviousPackage() == null) {
@@ -734,7 +725,7 @@ public class ArchiveManager implements ScriptConstants {
 			return new File (dataStoreRoot + RELEASES_SLASH + projectTaskKey + fileExt);
 		} else {
 			//Do we have a release effective time as a project?  Or a branch release
-			String releaseBranch = detectReleaseBranch(projectTaskKey);
+			String releaseBranch = ts.detectReleaseBranch(projectTaskKey);
 			if (releaseBranch != null) {
 				LOGGER.info("Release branch determined to be numeric: {}", releaseBranch);
 				return new File (dataStoreRoot + RELEASES_SLASH + releaseBranch + ".zip");
@@ -743,13 +734,6 @@ public class ArchiveManager implements ScriptConstants {
 			}
 		}
 	}
-
-	public String detectReleaseBranch(String projectKey) {
-		String releaseBranch = projectKey.replace("MAIN/", "").replace("-", "");
-		return StringUtils.isNumeric(releaseBranch) ? releaseBranch : null;
-	}
-
-
 
 	private void checkParentalIntegrity(Concept c, CharacteristicType charType, StringBuilder integrityFailureMessage) {
 		Set<Concept> parents = c.getParents(charType);

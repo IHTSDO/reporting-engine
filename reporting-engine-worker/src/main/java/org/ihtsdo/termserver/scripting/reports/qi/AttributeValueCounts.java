@@ -54,7 +54,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("11i7XQyb46P2xXNBwlCOd3ssMNhLOx1m1"); // QI / Misc Analysis
 		additionalReportColumns = "FSN, SemTag, Depth, Total Concept Count, Filtered Concept Count, Not-Including Descendants, Filtered Not-Including Descendants, Parents, GrandParents, Seen Together With, Recent Activity";
-		getArchiveManager().setPopulateHierarchyDepth(true);
+		getSnapshotConfiguration().setPopulateHierarchyDepth(true);
 		super.init(run);
 		
 		String attribStr = run.getMandatoryParamValue(ATTRIBUTE_TYPE);
