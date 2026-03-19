@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.dao.ReportDataBroker;
 
 import org.apache.commons.lang.time.DurationFormatUtils;
@@ -1844,26 +1845,48 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		if (project.getKey().equals("MAIN")) {
 			return true;
 		}
-		//Do we have a default module id ie for a managed service project?
-		if (project.getMetadata() != null && project.getMetadata().getDefaultModuleId() != null) {
-			//We really need to be sure that expectedExtensionModules has been populated, 
-			//because CH and NO will have content in multiple modules
-			if (project.getMetadata().getExpectedExtensionModules() == null) {
-				if (allowMissingExpectedModules) {
-					return c.getModuleId().equals(project.getMetadata().getDefaultModuleId());
-				} else {
-					throw new IllegalArgumentException("Extension does not have expectedExtensionModules metadata populated.  Cannot continue.");
-				}
-			}
-			if (includeExpectedExtensionModules) {
-				return project.getMetadata().getExpectedExtensionModules().contains(c.getModuleId());
-			} else {
-				return c.getModuleId().equals(project.getMetadata().getDefaultModuleId());
-			}
+
+		List<String> inScopeModules = getInScopeModules(includeExpectedExtensionModules);
+		if (!inScopeModules.isEmpty()) {
+			return inScopeModules.contains(c.getModuleId());
 		} else if (moduleFilter != null) {
 			return moduleFilter.contains(c.getModuleId());
 		}
 		return true;
+	}
+
+	protected List<String> getInScopeModules(boolean includeExpectedExtensionModules) {
+		if (project.getMetadata() == null) {
+			return List.of();
+		}
+
+		var metadata = project.getMetadata();
+		var defaultModuleId = metadata.getDefaultModuleId();
+
+		if (defaultModuleId == null) {
+			return List.of();
+		}
+
+		var expectedModules = metadata.getExpectedExtensionModules();
+		if (expectedModules == null) {
+			if (!allowMissingExpectedModules) {
+				throw new IllegalArgumentException(
+						"Extension does not have expectedExtensionModules metadata populated. Cannot continue."
+				);
+			}
+			return List.of(defaultModuleId);
+		}
+
+		return includeExpectedExtensionModules
+				? expectedModules
+				: List.of(defaultModuleId);
+	}
+
+	protected Set<String> getInScopeNamespaces() {
+		return getInScopeModules(true).stream()
+				.map(SnomedUtilsBase::getNamespace)
+				.filter(Objects::nonNull)
+				.collect(Collectors.toUnmodifiableSet());
 	}
 	
 	protected boolean isMS() {
