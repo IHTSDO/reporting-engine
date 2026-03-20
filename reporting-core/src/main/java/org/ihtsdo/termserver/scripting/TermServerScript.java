@@ -139,6 +139,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected ReportDataBroker reportDataBroker;
 
+	private  Map<String, Map<String, Integer>> summaryCountsByCategory = new HashMap<>();
+
 	public static Gson gson;
 	static {
 		GsonBuilder gsonBuilder = new GsonBuilder();
@@ -2421,6 +2423,30 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	public boolean isDryRun() {
 		return dryRun;
+	}
+
+	public void incrementSummaryCount(String category, String summaryItem) {
+		incrementSummaryCount(category, summaryItem, 1);
+	}
+
+	public void incrementSummaryCount(String category, String summaryItem, int increment) {
+		//Increment the count for this summary item, in the appropriate category
+		Map<String, Integer> summaryCounts = summaryCountsByCategory.computeIfAbsent(category, k -> new HashMap<>());
+		summaryCounts.merge(summaryItem, increment, Integer::sum);
+	}
+
+	protected void reportSummaryCounts(int summaryTabIdx) throws TermServerScriptException {
+		report(summaryTabIdx, "");
+		//Work through each category (sorted) and then output each summary Count for that category
+		summaryCountsByCategory.keySet().stream()
+				.sorted()
+				.forEach(cat -> {
+					reportSafely(summaryTabIdx, cat);
+					Map<String, Integer> summaryCounts = summaryCountsByCategory.get(cat);
+					summaryCounts.keySet().stream()
+							.sorted()
+							.forEach(summaryItem -> reportSafely(summaryTabIdx, "", summaryItem, summaryCounts.get(summaryItem)));
+				});
 	}
 
 }
