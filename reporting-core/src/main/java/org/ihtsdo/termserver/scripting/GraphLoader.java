@@ -116,20 +116,15 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	public Collection <Concept> getAllConcepts() {
 		return concepts.values();
 	}
-	
 
 	public void reset() {
-		LOGGER.info("Resetting Graph Loader - configuration reset");
-		setRecordPreviousState(false);
-
 		memoryWipe();
-
 		System.gc();
 		outputMemoryUsage();
 	}
 
 	public void memoryWipe() {
-		LOGGER.info("Resetting Graph Loader - memory wipe");
+		LOGGER.info("Resetting Graph Loader - memory wipe, retained configuration");
 		concepts = new HashMap<>();
 		mdrs = null;
 		descriptions = new HashMap<>();
@@ -717,7 +712,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 
 				//We might already have received some details about this concept
 				Concept c = getConcept(lineItems[IDX_ID]);
-				
+
 				//If moduleId is null, then this concept has no prior state
 				if (isRecordPreviousState()) {
 					if (isReleased == null) {

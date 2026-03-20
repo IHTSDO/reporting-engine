@@ -826,6 +826,7 @@ public class ArchiveManager implements ScriptConstants {
 		LOGGER.info("Temporary stack trace so we can see _why_ we're being reset: {}", stackTrace);
 		
 		gl.reset();
+		gl.setRecordPreviousState(false);
 		currentlyHeldInMemory = null;
 		config.reset();
 	}
