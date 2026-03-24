@@ -126,7 +126,7 @@ public class DrugTermGenerator extends TermGenerator {
 		if (!replacementTerm.equals(d.getTerm())) {
 			changesMade += replaceTerm(t, c, d, replacement, true);
 		} else {
-			//Are we seeing a difference in the case signficance?
+			//Are we seeing a difference in the case-significance?
 			if (!d.getCaseSignificance().equals(replacement.getCaseSignificance())) {
 				String before = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
 				String after = SnomedUtils.translateCaseSignificanceFromEnum(replacement.getCaseSignificance());
@@ -158,12 +158,14 @@ public class DrugTermGenerator extends TermGenerator {
 	private int checkCaseSensitivitySetting(Task t, Concept c, Description d, boolean isFSN,
 											CharacteristicType charType, String langRefset) throws TermServerScriptException {
 		int changesMade = 0;
-		//Firstly, are there any absolute rules that would force the case signficance like a capital after the first letter
+		//Firstly, are there any absolute rules that would force the case-significance like a capital after the first letter
 		//or starting with a lower case?
 		if (StringUtils.initialLetterLowerCase(d.getTerm())) {
 			return modifyIfRequired(d, CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
-			//For the other settings, we need to check further rules below as lower case letters might not look case sensitive.
-		} else if (StringUtils.isCaseSensitive(d.getTerm()) && !d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
+			//For the other settings, we need to check further rules below as lower case letters might not look case-sensitive.
+		} else if (DrugUtils.containsKnownCaseSensitiveDrugUnit(d) || (
+				StringUtils.isCaseSensitive(d.getTerm())
+						&& !d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE))) {
 			d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 		} else if (!StringUtils.isCaseSensitive(d.getTerm()) && !d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
 			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
@@ -214,8 +216,12 @@ public class DrugTermGenerator extends TermGenerator {
 			}
 			isFirstIngred = false;
 		}
-		//Watch that this doesn't allow for any case sensitivity in the dose form, units, or presentation.  Currently there is none...
-		if (!hasCaseSensitiveIngredient && !d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && !StringUtils.isCaseSensitive(d.getTerm())) {
+
+		//Watch that this doesn't allow for any case sensitivity in the dose form or presentation.  Currently, there is none...
+		if (!DrugUtils.containsKnownCaseSensitiveDrugUnit(d)
+				&& !hasCaseSensitiveIngredient
+				&& !d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE)
+				&& !StringUtils.isCaseSensitive(d.getTerm())) {
 			report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Set term to ci due to lack of case sensitivity in any ingredient");
 			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 			changesMade++;

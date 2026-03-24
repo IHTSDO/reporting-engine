@@ -54,7 +54,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 	Set<Concept> presAttributes = new HashSet<>();
 	Set<Concept> concAttributes = new HashSet<>();
 	
-	TermGenerator termGenerator = new DrugTermGenerator(this);
+	TermGenerator termGenerator;
 	
 	private static final String INJECTION = "injection";
 	private static final String INFUSION = "infusion";
@@ -70,6 +70,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		ReportSheetManager.setTargetFolderId("1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3");  //DRUGS/Validation
 		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";  //DRUGS-267
 		super.init(run);
+		getArchiveManager().setPopulateReleaseFlag(true);
 	}
 
 	@Override
@@ -83,6 +84,8 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		doseFormHelper.initialise(gl);
 		populateGrouperSubstances();
 		populateBaseMDFMap();
+
+		termGenerator = new DrugTermGenerator(this);
 		
 		super.postInit(tabNames, columnHeadings);
 		
@@ -139,9 +142,10 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_ONLY, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY, ConceptType.CLINICAL_DRUG };
 		ConceptType[] cds = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
 		double conceptsConsidered = 0;
-		//for (Concept c : Collections.singleton(gl.getConcept("776935006"))) {
+
 		for (Concept c : allDrugs) {
-			if (isRecentlyTouchedConceptsOnly && !recentlyTouchedConcepts.contains(c)) {
+			if (isRecentlyTouchedConceptsOnly
+					&& !recentlyTouchedConcepts.contains(c)) {
 				continue;
 			}
 			
@@ -715,7 +719,6 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 					if (isSelf || isSubType || isModificationOf) {
 						matchFound = true;
 						if (isSubType) {
-							incrementSummaryCount(PROCESSING_COUNTS, "Active ingredient is a subtype of BoSS");
 							report(concept, issueStr, ingred, boSS);
 						} else if (isModificationOf) {
 							incrementSummaryCount(PROCESSING_COUNTS, "Valid Ingredients as Modification of BoSS");
