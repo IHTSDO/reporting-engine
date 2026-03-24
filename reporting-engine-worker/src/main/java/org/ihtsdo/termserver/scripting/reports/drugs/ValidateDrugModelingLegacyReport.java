@@ -24,6 +24,9 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ValidateDrugModelingLegacyReport.class);
 
+	private static final String PROCESSING_COUNTS = "Processing Counts";
+	private static final String ISSUE_COUNTS = "Issue Counts";
+	
 	private List<Concept> allDrugs;
 	private static final String RECENT_CHANGES_ONLY = "Recent Changes Only";
 	
@@ -128,7 +131,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
 		valiadteTherapeuticRole();
-		populateSummaryTabAndTotal(SECONDARY_REPORT);
+		reportSummaryCounts(SECONDARY_REPORT);
 		LOGGER.info("Summary tab complete, all done.");
 	}
 
@@ -699,7 +702,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 		//Check BOSS attributes against active ingredients - must be in the same relationship group
 		Set<Relationship> ingredientRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE);
 		for (Relationship bRel : bossAttributes) {
-			incrementSummaryInformation("BoSS attributes checked");
+			incrementSummaryCount(PROCESSING_COUNTS, "BoSS attributes checked");
 			boolean matchFound = false;
 			Concept boSS = bRel.getTarget();
 			for (Relationship iRel : ingredientRels) {
@@ -712,12 +715,12 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 					if (isSelf || isSubType || isModificationOf) {
 						matchFound = true;
 						if (isSubType) {
-							incrementSummaryInformation("Active ingredient is a subtype of BoSS");
+							incrementSummaryCount(PROCESSING_COUNTS, "Active ingredient is a subtype of BoSS");
 							report(concept, issueStr, ingred, boSS);
 						} else if (isModificationOf) {
-							incrementSummaryInformation("Valid Ingredients as Modification of BoSS");
+							incrementSummaryCount(PROCESSING_COUNTS, "Valid Ingredients as Modification of BoSS");
 						} else if (isSelf) {
-							incrementSummaryInformation("BoSS matches ingredient");
+							incrementSummaryCount(PROCESSING_COUNTS, "BoSS matches ingredient");
 						}
 					}
 				}
@@ -816,9 +819,9 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 	private void validateTerming(Concept c, ConceptType[] drugTypes) throws TermServerScriptException {
 		//Only check FSN for certain drug types (to be expanded later)
 		if (!SnomedUtils.isConceptType(c, drugTypes)) {
-			incrementSummaryInformation("Concepts ignored - wrong type");
+			incrementSummaryCount(PROCESSING_COUNTS, "Concepts ignored - wrong type");
 		}
-		incrementSummaryInformation("Concepts validated to ensure ingredients correct in FSN");
+		incrementSummaryCount(PROCESSING_COUNTS, "Concepts validated to ensure ingredients correct in FSN");
 		Description currentFSN = c.getFSNDescription();
 		termGenerator.setQuiet(true);
 		
@@ -1224,7 +1227,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 				} else if (!unitOfPres.equals(presDenomUnits.iterator().next().getTarget())) {
 					report(c, issueStr3, unitOfPres, g);
 				}
-				incrementSummaryInformation("CD groups checked for presentation unit consistency");
+				incrementSummaryCount(PROCESSING_COUNTS, "CD groups checked for presentation unit consistency");
 			}
 		}
 	}
@@ -1328,7 +1331,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 	@Override
 	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
-		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+		incrementSummaryCount(ISSUE_COUNTS, details[0].toString());
 		countIssue(c);
 		return super.report(PRIMARY_REPORT, c, details);
 	}
