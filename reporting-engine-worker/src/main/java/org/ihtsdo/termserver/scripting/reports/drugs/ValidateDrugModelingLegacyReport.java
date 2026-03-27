@@ -61,7 +61,7 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(RECENT_CHANGES_ONLY, "false");
+		params.put(RECENT_CHANGES_ONLY, "true");
 		TermServerScript.run(ValidateDrugModelingLegacyReport.class, args, params);
 	}
 
@@ -168,9 +168,6 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 			if (isMP(c) || isMPF(c)) {
 				//DRUGS-585
 				validateNoModifiedSubstances(c);
-				
-				//RP-199
-				checkForRedundantConcept(c);
 			}
 			
 			//DRUGS-784
@@ -254,15 +251,6 @@ public class ValidateDrugModelingLegacyReport extends TermServerReport implement
 			}
 		}
 		LOGGER.info("Drugs validation complete");
-	}
-
-	private void checkForRedundantConcept(Concept c) throws TermServerScriptException {
-		//MP / MP with no inferred descendants are not required
-		String issueStr = "MP/MPF concept is redundant - no inferred descendants";
-		initialiseSummary(issueStr);
-		if (c.getDescendants(NOT_SET).isEmpty()) {
-			report(c, issueStr);
-		}
 	}
 
 	private void checkForPrimitives(Concept c) throws TermServerScriptException {
