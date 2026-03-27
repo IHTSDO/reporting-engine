@@ -206,6 +206,22 @@ public abstract class TermServerReport extends TermServerScript {
 		return c.isActiveSafely() ? "Y" : "N";
 	}
 
+	protected void reportAndIncrementCategoryCount(int tabIdx, String category, boolean isIssueToCount, Concept c, boolean isLegacy, Object... details) throws TermServerScriptException {
+		//Are we filtering this report to only concepts with unpromoted changes?
+		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
+			return;
+		}
+
+		if (includeLegacyIssues || !isLegacy) {
+			//The first detail is the issue text
+			incrementSummaryCount(category, details[0].toString());
+			if (report(tabIdx, c, details) && isIssueToCount) {
+				countIssue(c);
+				incrementSummaryCount("Issue Type Summary", (isLegacy?"Legacy Issues Reported": "Fresh Issues Reported"));
+			}
+		}
+	}
+
 	protected void reportAndIncrementSummary(Concept c, boolean isLegacy, Object... details) throws TermServerScriptException {
 		//Are we filtering this report to only concepts with unpromoted changes?
 		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {

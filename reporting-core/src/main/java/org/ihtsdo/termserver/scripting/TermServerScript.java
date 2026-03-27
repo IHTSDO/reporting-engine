@@ -2386,7 +2386,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		List<RelationshipGroup> newGroups = new ArrayList<>();
 		for (RelationshipGroup group : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
 			//Have we missed out the ungrouped group? fill in if so
-			if (group.isGrouped() && newGroups.size() == 0) {
+			if (group.isGrouped() && newGroups.isEmpty()) {
 				newGroups.add(new RelationshipGroup(UNGROUPED));
 			}
 			//Since we're working with the true concept relationships here, this will have
@@ -2400,7 +2400,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				for (Relationship moved : new ArrayList<>(group.getRelationships())) {
 					if (StringUtils.isEmpty(moved.getId())) {
 						Set<Relationship> existingInactives = c.getRelationships(moved, ActiveState.INACTIVE);
-						if (existingInactives.size() > 0) {
+						if (!existingInactives.isEmpty()) {
 							group.removeRelationship(moved);
 							c.removeRelationship(moved, true);  //It's OK to force removal, the axiom will still exist.
 							Relationship reuse = existingInactives.iterator().next();
@@ -2425,6 +2425,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return dryRun;
 	}
 
+	public void initialiseSummaryCount(String category, String item) {
+		summaryCountsByCategory
+				.computeIfAbsent(category, k -> new HashMap<>())
+				.putIfAbsent(item, 0);
+	}
+
 	public void incrementSummaryCount(String category, String summaryItem) {
 		incrementSummaryCount(category, summaryItem, 1);
 	}
@@ -2435,17 +2441,43 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		summaryCounts.merge(summaryItem, increment, Integer::sum);
 	}
 
+	public enum SUMMARY_SORT_ORDER {
+		ALPHABETICAL,
+		COUNT
+	}
+
 	protected void reportSummaryCounts(int summaryTabIdx) throws TermServerScriptException {
+		reportSummaryCounts(summaryTabIdx, SUMMARY_SORT_ORDER.ALPHABETICAL);
+	}
+
+	protected void reportSummaryCounts(int summaryTabIdx, SUMMARY_SORT_ORDER sortOrder) throws TermServerScriptException {
 		report(summaryTabIdx, "");
-		//Work through each category (sorted) and then output each summary Count for that category
+
+		// Work through each category (sorted alphabetically)
 		summaryCountsByCategory.keySet().stream()
 				.sorted()
 				.forEach(cat -> {
 					reportSafely(summaryTabIdx, cat);
+
 					Map<String, Integer> summaryCounts = summaryCountsByCategory.get(cat);
-					summaryCounts.keySet().stream()
-							.sorted()
-							.forEach(summaryItem -> reportSafely(summaryTabIdx, "", summaryItem, summaryCounts.get(summaryItem)));
+					Stream<Map.Entry<String, Integer>> stream = summaryCounts.entrySet().stream();
+					if (sortOrder == SUMMARY_SORT_ORDER.COUNT) {
+						// Sort by count descending, then alphabetically for stability
+						stream = stream.sorted(
+								Comparator.comparing(Map.Entry<String, Integer>::getValue)
+										.reversed()
+										.thenComparing(Map.Entry::getKey)
+						);
+					} else {
+						// Default alphabetical by key
+						stream = stream.sorted(
+								Comparator.comparing(Map.Entry::getKey)
+						);
+					}
+
+					stream.forEach(entry ->
+							reportSafely(summaryTabIdx, "", entry.getKey(), entry.getValue())
+					);
 				});
 	}
 
