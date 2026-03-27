@@ -71,13 +71,16 @@ import static org.ihtsdo.termserver.scripting.util.UnacceptableCharacters.*;
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 
-	record UnwantedChar(String ch, String label, String issueStr) {}
+	record UnwantedChar(String ch, String label, String issueStr) {
+	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseIssuesReport.class);
 
 	private static final String CANNOT_READ = "Cannot read ";
 	private static final String FAILURE_WHILE_READING = "Failure while reading: ";
 	private static final String LOADING = "Loading {} ...";
+	private static final String ISSUES = "Issues";
+	private static final String ITEMS_OF_INTEREST = "Items of Interest";
 
 	private static final String FULL_STOP = ".";
 	Set<String> stopWords = new HashSet<>();
@@ -85,7 +88,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	List<String> wordsOftenTypedTwice = new ArrayList<>();
 
 	private static final String URL_REGEX = "https?://\\S+\\b";
-	
+
 	//See https://regex101.com/r/CAlQjx/1/
 	public static final String SCTID_FSN_REGEX = "(\\d{7,})(\\s+)?\\|(.+?)\\|";
 	private Pattern sctidFsnPattern;
@@ -99,13 +102,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private List<String> repeatedWordExceptions;
 	Map<String, Concept> semTagHierarchyMap = new HashMap<>();
 	List<Concept> allConceptsSorted;
-	
+
 	public static final String SCTID_CF_MOD = "11000241103";   //Common French Module
 	public static final String SCTID_CH_MOD = "2011000195101"; //Swiss Module
 
 	private static final int MUT_IDX_ACTIVE = 0;
 	private static final int MUT_IDX_MODULEID = 1;
-	
+
 	private List<String> expectedExtensionModules = null;
 
 	private static final int MAX_DESC_LENGTH = 255;
@@ -118,7 +121,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	@Override
-	public void init (JobRun run) throws TermServerScriptException {
+	public void init(JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release Validation
 		this.ignoreInputFileForReportName = true;
 		super.init(run);
@@ -176,7 +179,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		wordsOftenTypedTwice.add("with");
 		wordsOftenTypedTwice.add("Be");
 		wordsOftenTypedTwice.add("be");
-		
+
 		sctidFsnPattern = Pattern.compile(SCTID_FSN_REGEX, Pattern.MULTILINE);
 	}
 
@@ -227,20 +230,22 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	@Override
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {
+		String[] columnHeadings = new String[]{
+				"Category, Item, Count",
 				"SCTID, FSN, Semtag, Issue, Legacy, C/D/R Active, Detail, Additional Detail, Further Detail",
-				"Issue, Count"
+				"SCTID, FSN, Semtag, Item of Interest, Legacy, C/D/R Active, Detail, Additional Detail, Further Detail",
 		};
 
-		String[] tabNames = new String[] {
+		String[] tabNames = new String[]{
+				"Summary",
 				"Issues",
-				"Summary"
+				"Items of Interest",
 		};
-		
+
 		super.postInit(tabNames, columnHeadings);
 		deprecatedHierarchies = new HashSet<>();
 		deprecatedHierarchies.add(gl.getConcept("116007004|Combined site (body structure)|"));
-	
+
 		if (isMS()) {
 			String defaultModule = project.getMetadata().getDefaultModuleId();
 			expectedExtensionModules = project.getMetadata().getExpectedExtensionModules();
@@ -249,7 +254,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				expectedExtensionModules = Collections.singletonList(defaultModule);
 			}
 		}
-		
+
 		semTagHierarchyMap.put("(regime/therapy)", gl.getConcept("243120004|Regimes and therapies (regime/therapy)|"));
 	}
 
@@ -257,17 +262,17 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(INCLUDE_ALL_LEGACY_ISSUES)
-					.withType(JobParameter.Type.BOOLEAN)
-					.withDefaultValue(false)
+				.withType(JobParameter.Type.BOOLEAN)
+				.withDefaultValue(false)
 				.add(UNPROMOTED_CHANGES_ONLY)
-					.withType(JobParameter.Type.BOOLEAN)
-					.withDefaultValue(true)
+				.withType(JobParameter.Type.BOOLEAN)
+				.withDefaultValue(true)
 				.build();
 
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("Release Issues Report")
-				.withDescription("This report lists a range of potential issues identified in INFRA-2723. " + 
+				.withDescription("This report lists a range of potential issues identified in INFRA-2723. " +
 						"\nThe options that can be selected are:" +
 						"\nUnpromoted: New changes on the branch that have not been promoted yet. Can be task or project." +
 						"\nLegacy: This will include all issues, including old legacy ones - should NOT be combined with Unpromoted." +
@@ -301,7 +306,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			unexpectedRelationshipModules();
 			unexpectedAxiomModules();
 		}
-		
+
 		LOGGER.info("...description rules");
 		maxLengthCheck();
 		fullStopInSynonym();
@@ -331,14 +336,14 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		duplicateSemanticTags();
 
 		getReportManager().flushFiles(false);
-		
+
 		LOGGER.info("...parent hierarchies (~20 seconds)");
 		parentsInSameTopLevelHierarchy();
-		
+
 		LOGGER.info("...axiom integrity");
 		axiomIntegrity();
 		noStatedRelationships();
-		
+
 		LOGGER.info("...Disease semantic tag rule");
 		diseaseIntegrity();
 
@@ -349,29 +354,28 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			LOGGER.info("...Text definition dialect checks");
 			textDefinitionDialectChecks();
 		}
-		
+
 		LOGGER.info("...Nested brackets check");
 		nestedBracketCheck();
-		
+
 		LOGGER.info("...Modelling rules check");
 		validateAttributeDomainModellingRules();
 		validateAttributeTypeValueModellingRules();
 		validateInterpretsHasInterpretation();
 		neverGroupTogether();
 		domainMustNotUseType();
-		
+
 		LOGGER.info("...Deprecation rules");
 		checkDeprecatedHierarchies();
-		
+
 		LOGGER.info("...MRCM validation");
 		checkMRCMDomain();
 		checkMRCMAttributeRanges();
 		checkMRCMAttributeDomains();
 		checkMRCMModuleScope();
 
-		LOGGER.info("Checks complete, creating summary tag");
-		populateSummaryTabAndTotal(SECONDARY_REPORT);
-		
+		LOGGER.info("Checks complete, populating summary tab");
+		reportSummaryCounts(PRIMARY_REPORT, SUMMARY_SORT_ORDER.COUNT);
 		LOGGER.info("Summary tab complete, all done.");
 	}
 
@@ -394,11 +398,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					continue;
 				}
 				if (!referencedModule.equals(moduleId) &&
-					!gl.getMdrs().getDependencies(moduleId).contains(referencedModule)) {
+						!gl.getMdrs().getDependencies(moduleId).contains(referencedModule)) {
 					Concept owningConcept = gl.getComponentOwner(c.getId());
 					String msg = "Component references component in module " + referencedModule +
 							" which is not visible from its own module " + moduleId;
-					reportAndIncrementSummary(owningConcept, isLegacySimple(c), issueStr, getLegacyIndicator(c), isActive(c, referencedComponent), msg, c.toString());
+					reportAndIncrementCategoryCount(ISSUES, owningConcept, isLegacySimple(c), issueStr, getLegacyIndicator(c), isActive(c, referencedComponent), msg, c.toString());
 				}
 			}
 		}
@@ -408,6 +412,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void inappropriateModuleJumping() throws TermServerScriptException {
 		String issueStr = "Component module jumped, otherwise unchanged.";
 		String issueStr2 = "Component module jumped without parent";
+		String issueStr3 = "Component moved to another module, matching concept module";
+		String issueStr4 = "Concept reactivated in another module";
 		initialiseSummary(issueStr);
 		initialiseSummary(issueStr2);
 		LOGGER.info("Started inappropriateModuleJumping check");
@@ -418,13 +424,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				if (!c.hasPreviousStateDataRecorded()) {
 					continue;
 				}
-				
+
 				//We'll give inferred relationships the benefit of the doubt
 				//They can be changed by extensions without changing the owning component
 				if (c instanceof Relationship) {
 					continue;
 				}
-				
+
 				String[] previousState = c.getPreviousState();
 				String[] currentState = c.getMutableFields();
 				if (previousState.length != currentState.length) {
@@ -439,10 +445,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				if (previousState[MUT_IDX_MODULEID].equals(currentState[MUT_IDX_MODULEID])) {
 					continue;
 				}
-				
+
 				//Check what fields are different.  It's a problem if ONLY the moduleId has changed
 				boolean differenceFound = false;
-				for (int idx=0; idx < previousState.length; idx++) {
+				for (int idx = 0; idx < previousState.length; idx++) {
 					if (idx == 1) {
 						//If the module hasn't changed, no need to check fields any further
 						if (previousState[idx].equals(currentState[idx])) {
@@ -456,33 +462,37 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						break;
 					}
 				}
-				
-				if (!differenceFound) {
-					String msg = c.getComponentType() + " previously: " + Arrays.toString(previousState) + " vs current " + Arrays.toString(c.getMutableFields());
-					reportAndIncrementSummary(concept, isLegacySimple(c), issueStr, getLegacyIndicator(c), isActive(concept,c), msg, c, c.getId());
+
+				//If the component module has jumped but the concept has also, then we could be looking
+				//at a reactivation in an extension, or still active descriptions might just be taken along
+				//as part of a transfer of ownership.  Log this in a new category
+				String msg = c.getComponentType() + " previously: " + Arrays.toString(previousState) + " vs current " + Arrays.toString(c.getMutableFields());
+				if (!(c instanceof Concept) && concept.getModuleId().equals(c.getModuleId())) {
+					//The owning concept or description has also jumped module, so we'll flag this up as interesting
+					reportAndIncrementCategoryCount(ITEMS_OF_INTEREST, concept, isLegacySimple(c), issueStr3, getLegacyIndicator(c), isActive(concept, c), msg, c, c.getId());
+				} else if (!differenceFound) {
+					reportAndIncrementCategoryCount(ISSUES, concept, isLegacySimple(c), issueStr, getLegacyIndicator(c), isActive(concept, c), msg, c, c.getId());
+				} else if (isConceptReactivation(c, previousState)) {
+					reportAndIncrementCategoryCount(ITEMS_OF_INTEREST, concept, isLegacySimple(c), issueStr4, getLegacyIndicator(c), isActive(concept, c), msg, c, c.getId());
 				} else {
 					//Now even if there IS a difference, then we don't expect components to change
 					//module without their parent object - concept or description
-					Component owningObject = SnomedUtils.getParentComponent(c, gl);
-					if (owningObject == null) {
-						LOGGER.warn("Could not determine owner of {}", c);
-					} else if (!hasChangedModule(owningObject)) {
-						if (owningObject.getModuleId().equals(SCTID_CF_MOD) && 
-								isExpectedModuleJumpException(c, previousState, currentState)) {
-							continue;
-						}
-
-						String msg = c.getComponentType() + " previously: " + Arrays.toString(previousState) + " vs current " + Arrays.toString(c.getMutableFields());
-						reportAndIncrementSummary(concept, isLegacySimple(c), issueStr2, getLegacyIndicator(c), isActive(concept,c), msg, c, c.getId());
-					}
+					reportAndIncrementCategoryCount(ISSUES, concept, isLegacySimple(c), issueStr2, getLegacyIndicator(c), isActive(concept, c), msg, c, c.getId());
 				}
 			}
 		}
 		LOGGER.info("Completed inappropriateModuleJumping check");
 	}
 
+	private boolean isConceptReactivation(Component c, String[] previousState) {
+		return (c instanceof Concept concept
+				&& concept.isActiveSafely()
+				&& previousState != null
+				&& previousState[0].equals("0"));
+	}
+
 	private boolean nullCheck(String view, String[] viewState, Component c) {
-		for (int i=0; i < viewState.length; i++) {
+		for (int i = 0; i < viewState.length; i++) {
 			if (viewState[i] == null) {
 				LOGGER.error("Null value at idx {} in {} state of {}", i, view, c);
 				return true;
@@ -495,7 +505,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String prevModule = previousState[MUT_IDX_MODULEID];
 		String currModule = currentState[MUT_IDX_MODULEID];
 		String prevActive = previousState[MUT_IDX_ACTIVE];
-		
+
 		//RP-675 Add allowance for CF LRS entries on CF descriptions being inactivated in CH Module
 		if (c instanceof LangRefsetEntry &&
 				prevModule.equals(SCTID_CF_MOD) &&
@@ -516,7 +526,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		if (previousState.length != currentState.length) {
 			throw new TermServerScriptException("Investigate: component's state has changed length! Previous state: '" + c.getIssues() + "' vs current: " + c);
 		}
-		
+
 		String prevModule = previousState[MUT_IDX_MODULEID];
 		String currModule = currentState[MUT_IDX_MODULEID];
 		return prevModule.equals(currModule);
@@ -528,7 +538,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		if (isMS()) {
 			return;
 		}
-		
+
 		String issueStr = "Mismatching parent moduleId";
 		initialiseSummary(issueStr);
 		for (Concept c : allActiveConceptsSorted) {
@@ -539,16 +549,16 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (!c.getModuleId().equals(SCTID_CORE_MODULE) && !c.getModuleId().equals(SCTID_MODEL_MODULE)) {
 				continue;
 			}
-			
+
 			//Also skip the top of the metadata hierarchy - it has a core parent
 			//900000000000441003 |SNOMED CT Model Component (metadata)|
 			if (!c.isActiveSafely() || c.getConceptId().equals("900000000000441003")) {
 				continue;
 			}
-			
+
 			for (Concept p : c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
 				if (!p.getModuleId().equals(c.getModuleId())) {
-					reportAndIncrementSummary(c, isLegacySimple(c), issueStr,getLegacyIndicator(c), isActive(c,null), p);
+					reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(c), issueStr, getLegacyIndicator(c), isActive(c, null), p);
 				}
 			}
 		}
@@ -557,35 +567,35 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	//ISRS-391 Descriptions whose module id does not match that of the component
 	//It's OK to add translations to core concepts, so does not apply to MS
 	private void unexpectedDescriptionModules() throws TermServerScriptException {
-		String issueStr ="Unexpected Description Module";
+		String issueStr = "Unexpected Description Module";
 		initialiseSummary(issueStr);
 		for (Concept c : allConceptsSorted) {
 			for (Description d : c.getDescriptions()) {
 				if (!d.getModuleId().equals(c.getModuleId())) {
 					String msg = "Concept module " + c.getModuleId() + " vs Desc module " + d.getModuleId();
-					reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c,d), msg, d);
+					reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), msg, d);
 				}
 			}
 		}
 	}
-	
+
 	/* Since and extension is based on a release, any modified description should
 	 * belong to the default module
 	 */
 	private void unexpectedComponentModulesMS() throws TermServerScriptException {
-		String issueStr ="Unexpected module for modified component";
+		String issueStr = "Unexpected module for modified component";
 		initialiseSummary(issueStr);
 		LOGGER.info("Checking {} for unexpected component modules in modified components", allConceptsSorted.size());
 		for (Concept c : allConceptsSorted) {
-			for (Component comp: SnomedUtils.getAllComponents(c)) {
+			for (Component comp : SnomedUtils.getAllComponents(c)) {
 				if (StringUtils.isEmpty(comp.getEffectiveTime()) && !expectedExtensionModules.contains(comp.getModuleId())) {
 					String msg = "Modified component module " + comp.getModuleId() + " is not expected in this extension";
-					reportAndIncrementSummary(c, isLegacySimple(comp), issueStr, getLegacyIndicator(comp), isActive(c,comp), msg, comp);
+					reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(comp), issueStr, getLegacyIndicator(comp), isActive(c, comp), msg, comp);
 				}
 			}
 		}
 	}
-	
+
 	//ISRS-392 Part II Stated Relationships whose module id does not match that of the component
 	private void unexpectedRelationshipModules() throws TermServerScriptException {
 		String issueStr = "Unexpected Inf Rel Module";
@@ -594,12 +604,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				if (!r.getModuleId().equals(c.getModuleId())) {
 					String msg = "Concept module " + c.getModuleId() + " vs Rel module " + r.getModuleId();
-					reportAndIncrementSummary(c, isLegacySimple(r), issueStr, getLegacyIndicator(r), isActive(c,r), msg, r);
+					reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(r), issueStr, getLegacyIndicator(r), isActive(c, r), msg, r);
 				}
 			}
 		}
 	}
-	
+
 	private void unexpectedAxiomModules() throws TermServerScriptException {
 		String issueStr = "Unexpected Axiom Module";
 		initialiseSummary(issueStr);
@@ -607,12 +617,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			for (AxiomEntry a : c.getAxiomEntries()) {
 				if (!a.getModuleId().equals(c.getModuleId())) {
 					String msg = "Concept module " + c.getModuleId() + " vs Axiom module " + a.getModuleId();
-					reportAndIncrementSummary(c, isLegacySimple(a),issueStr, getLegacyIndicator(a), isActive(c,a), msg, a);
+					reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(a), issueStr, getLegacyIndicator(a), isActive(c, a), msg, a);
 				}
 			}
 		}
 	}
-	
+
 	//MAINT-224 Synonyms created as TextDefinitions new content only
 	private void fullStopInSynonym() throws TermServerScriptException {
 		String issueStr = "Possible TextDefn as Synonym";
@@ -627,18 +637,16 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			//Unless we're interested in legacy issues
 			if (c.isActiveSafely() && (includeLegacyIssues || SnomedUtils.hasNewChanges(c))) {
 				for (Description d : c.getDescriptions(Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
-					if (inScope(d)) {
-						if (d.getTerm().endsWith(FULL_STOP) && d.getTerm().length() > MIN_TEXT_DEFN_LENGTH) {
-							reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c,d), d);
-						}
+					if (inScope(d) && d.getTerm().endsWith(FULL_STOP) && d.getTerm().length() > MIN_TEXT_DEFN_LENGTH) {
+						reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), d);
 					}
 				}
-				
+
 				if (inScope(c)) {
 					//Check we've only got max 1 Text Defn for each dialect
 					if (c.getDescriptions(US_ENG_LANG_REFSET, Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE).size() > 1 ||
-						c.getDescriptions(GB_ENG_LANG_REFSET, Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE).size() > 1 ) {
-						reportAndIncrementSummary(c, !recentlyTouched.contains(c), issue2Str, "N", "Y");
+							c.getDescriptions(GB_ENG_LANG_REFSET, Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE).size() > 1) {
+						reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issue2Str, "N", "Y");
 					}
 				}
 			}
@@ -667,7 +675,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 
 			if (inScope(d) && d.getTerm().length() > MAX_DESC_LENGTH) {
-				reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c,d), d);
+				reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), d);
 			}
 		}
 	}
@@ -684,35 +692,35 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept c : allConceptsSorted) {
 			if (inScope(c) && isInternational(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
 				if (c.getFSNDescription() == null || !c.getFSNDescription().isActiveSafely()) {
-					reportAndIncrementSummary(c, isLegacySimple(c), issueStr, getLegacyIndicator(c), isActive(c,null));
+					reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(c), issueStr, getLegacyIndicator(c), isActive(c, null));
 				}
-				
+
 				Description usPT = c.getPreferredSynonym(US_ENG_LANG_REFSET);
 				if (usPT == null || !usPT.isActiveSafely()) {
-					reportAndIncrementSummary(c, isLegacySimple(c), issue2Str, getLegacyIndicator(c), isActive(c,null));
+					reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(c), issue2Str, getLegacyIndicator(c), isActive(c, null));
 				}
-				
+
 				Description gbPT = c.getPreferredSynonym(GB_ENG_LANG_REFSET);
 				if (gbPT == null || !gbPT.isActiveSafely()) {
-					reportAndIncrementSummary(c, isLegacySimple(c), issue3Str, getLegacyIndicator(c), isActive(c,null));
+					reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(c), issue3Str, getLegacyIndicator(c), isActive(c, null));
 				}
 			}
 		}
 	}
-	
+
 	private void missingSemanticTag() throws TermServerScriptException {
-		String issueStr = "Concept (recently touched) with invalid FSN";
+		String issueStr = "Concept (recently touched or active) with invalid FSN";
 		initialiseSummary(issueStr);
 		for (Concept c : allConceptsSorted) {
 			if (inScope(c)
-				&& recentlyTouched.contains(c)
-				&& c.getFsn() != null
-				&& SnomedUtilsBase.deconstructFSN(c.getFsn(), includeLegacyIssues)[1] == null) {
-				reportAndIncrementSummary(c, false, issueStr, "N", isActive(c,c.getFSNDescription()), c.getFsn());
+					&& (c.isActiveSafely() || recentlyTouched.contains(c))
+					&& c.getFsn() != null
+					&& SnomedUtilsBase.deconstructFSN(c.getFsn(), includeLegacyIssues)[1] == null) {
+				reportAndIncrementCategoryCount(ISSUES, c, false, issueStr, "N", isActive(c, c.getFSNDescription()), c.getFsn());
 			}
 		}
 	}
-	
+
 	private void semTagInCorrectHierarchy() throws TermServerScriptException {
 		String issueStr = "SemTag used outside of expected hierarchy";
 		initialiseSummary(issueStr);
@@ -722,7 +730,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn(), true)[1];
 					//Are we in the appropriate Hierarchy?
 					if (semTag != null && semTag.equals(entry.getKey()) && !c.getAncestors(NOT_SET).contains(entry.getValue())) {
-						reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, "-", isActive(c,c.getFSNDescription()), entry.getValue());
+						reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, "-", isActive(c, c.getFSNDescription()), entry.getValue());
 					}
 				}
 			}
@@ -765,7 +773,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (int x = 0; x < words.length; x++) {
 			if (stopWords.contains(words[x]) ||
 					repeatedWordExceptions.contains(words[x]) ||
-					words[x].length() <= 2 ) {
+					words[x].length() <= 2) {
 				continue;
 			}
 
@@ -777,7 +785,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			//Word 1 will already have been tested against eg word 5, so no need to test word 5 against word 1.
 			//Therefore, start y wherever x is.  Plus we don't need to test the same word against itself, so plus 1.
 			for (int y = x + 1; y < words.length; y++) {
-				 if (checkForDuplicatedWordGroups(x, y, c, d, words, concern)) {
+				if (checkForDuplicatedWordGroups(x, y, c, d, words, concern)) {
 					return true;
 				}
 			}
@@ -795,7 +803,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			boolean wordsEqual = currentWord.equalsIgnoreCase(nextWord);
 			boolean wordOftenTypedTwice = wordsOftenTypedTwice.contains(currentWord);
 			if (wordsEqual && wordOftenTypedTwice) {
-				reportAndIncrementSummary(c, isLegacySimple(d), wordIssueStr, getLegacyIndicator(d), isActive(c, d), "Repeated word: " + currentWord, d);
+				reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), wordIssueStr, getLegacyIndicator(d), isActive(c, d), "Repeated word: " + currentWord, d);
 				return true;
 			}
 		}
@@ -822,7 +830,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 
 			if (concern.isConcerning(2)) {
-				reportAndIncrementSummary(c, isLegacySimple(d), wordGroupIssueStr, getLegacyIndicator(d), isActive(c, d), "Repeated word: " + words[x], d);
+				reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), wordGroupIssueStr, getLegacyIndicator(d), isActive(c, d), "Repeated word: " + words[x], d);
 				return true;
 			}
 		}
@@ -846,7 +854,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						if ((unpromotedChangesOnly && unpromotedChangesHelper.hasUnpromotedChange(c) && "cannot".equalsIgnoreCase(currentWord)) ||
 								"can't".equalsIgnoreCase(currentWord) ||
 								(x + 1 < wordsLength && "can".equalsIgnoreCase(currentWord) && "not".equalsIgnoreCase(words[x + 1]))) {
-							reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
+							reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
 							continue nextConcept;
 						}
 					}
@@ -883,7 +891,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						if (prepositionExceptions.contains(currentWord + " " + nextWord)) {
 							continue;
 						}
-						reportAndIncrementSummary(c, isLegacySimple(d), issueStr2, getLegacyIndicator(d), isActive(c, d), "Consecutive prepositions: " + currentWord + " " + nextWord, d);
+						reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr2, getLegacyIndicator(d), isActive(c, d), "Consecutive prepositions: " + currentWord + " " + nextWord, d);
 					}
 				}
 			}
@@ -896,11 +904,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			int indexOf = wordsOftenTypedInReverse.indexOf(currentWordInReverse);
 			if (indexOf != -1) {
 				String detailStr = String.format("The word '%s' looks to be '%s' in reverse.", currentWord, wordsOftenTypedInReverse.get(indexOf));
-				reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
+				reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
 			}
 		}
 	}
-	
+
 	private void multipleLangRef() throws TermServerScriptException {
 		String issueStr = "Multiple LangRef for a given refset";
 		initialiseSummary(issueStr);
@@ -912,7 +920,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
 						if (activeInRefsets.contains(l.getRefsetId())) {
 							String detailStr = "Description has multiple langrefset entries in same refset: " + l.getRefsetId();
-							reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
+							reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
 							continue nextDescription;
 						} else {
 							activeInRefsets.add(l.getRefsetId());
@@ -922,7 +930,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
-	
+
 	private void unexpectedLangCodeMS() throws TermServerScriptException {
 		//We need a branch to be able to run this query
 		if (getArchiveManager().isLoadDependencyPlusExtensionArchive()) {
@@ -949,7 +957,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					}
 					if (!d.getLang().equals(expectedLangCode)) {
 						String detailStr = "Expected '" + expectedLangCode + "'";
-						reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d, l);
+						reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d, l);
 					}
 				}
 			}
@@ -961,7 +969,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//First populate en-gb and en-us since we always know about those
 		refsetLangCodeMap.put(US_ENG_LANG_REFSET, "en");
 		refsetLangCodeMap.put(GB_ENG_LANG_REFSET, "en");
-		
+
 		//Now the optionalLanguageRefsets are laid out nicely
 		Metadata metadata = project.getMetadata();
 		refsetLangCodeMap.putAll(metadata.getLangRefsetLangMapping());
@@ -986,7 +994,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						if (ptMap.containsKey(l.getRefsetId())) {
 							if (inScopePTDetected) {
 								String detailStr = d + " + " + ptMap.get(l.getRefsetId());
-								reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
+								reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), detailStr, d);
 								continue nextDescription;
 							}
 						} else {
@@ -997,7 +1005,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
-	
+
 	private void multipleFSNs() throws TermServerScriptException {
 		String issueStr = "Multiple active FSNs in same language";
 		initialiseSummary(issueStr);
@@ -1013,7 +1021,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				if (fsnMap.containsKey(d.getLang())) {
 					if (inScopeFSNDetected) {
 						String detailStr = d + ",\n" + fsnMap.get(d.getLang());
-						reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), detailStr);
+						reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), detailStr);
 					}
 				} else {
 					fsnMap.put(d.getLang(), d);
@@ -1030,18 +1038,18 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				if (inScope(d)) {
 					for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
 						if (i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
-							reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), i);
+							reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), i);
 						}
 					}
 				}
 			}
 		}
 	}
-	
+
 	private void dueWithoutTo() throws TermServerScriptException {
 		String issueStr = "'Due' not followed by 'to'";
-		String[] acceptableAlternativesPost = new String[] { "date", "mostly to", "either to", "with", "next", "new"};
-		String[] acceptableAlternativesPre = new String[] { "claim" };
+		String[] acceptableAlternativesPost = new String[]{"date", "mostly to", "either to", "with", "next", "new"};
+		String[] acceptableAlternativesPre = new String[]{"claim"};
 		initialiseSummary(issueStr);
 		for (Concept c : allActiveConceptsSorted) {
 			nextDescription:
@@ -1066,15 +1074,15 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 								break;
 							}
 						}
-						
+
 						for (String acceptableAlt : acceptableAlternativesPre) {
 							if (term.contains(acceptableAlt + " due")) {
 								continue nextDescription;
 							}
 						}
-						
+
 						if (!acceptableAltFound && term.indexOf(" due to", idx) == NOT_FOUND) {
-							reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), d);
+							reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), d);
 							continue nextDescription;
 						}
 						idx = term.indexOf(" due ", idx + 1);
@@ -1083,26 +1091,26 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
-	
+
 	private boolean alsoHasSameWordToLeftOrRight(String[] words, int x, int y) {
 		//So we're looking to see if a word left of X is the same as a word to the left of Y
-		if (x > 0 && y > 0 && words[x-1].equalsIgnoreCase(words[y-1])) {
+		if (x > 0 && y > 0 && words[x - 1].equalsIgnoreCase(words[y - 1])) {
 			return true;
 		}
-		
-		if (x+1 < words.length && y+1 < words.length && words[x+1].equalsIgnoreCase(words[y+1])) {
+
+		if (x + 1 < words.length && y + 1 < words.length && words[x + 1].equalsIgnoreCase(words[y + 1])) {
 			return true;
 		}
-		
+
 		return false;
 	}
 
 	private boolean compoundToTheLeftOf(String[] words, int x) {
 		//Is there a 'and' or 'width' to the left of x?
-		for (int y=0; y < x ; y++) {
-			if (words[y].equalsIgnoreCase("and") || 
-					words[y].equalsIgnoreCase("with") || 
-					words[y].equalsIgnoreCase("of") || 
+		for (int y = 0; y < x; y++) {
+			if (words[y].equalsIgnoreCase("and") ||
+					words[y].equalsIgnoreCase("with") ||
+					words[y].equalsIgnoreCase("of") ||
 					words[y].equalsIgnoreCase("to")) {
 				return true;
 			}
@@ -1126,14 +1134,14 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String issue2Str = "Multiple semantic tags";
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
-		
+
 		Map<String, Concept> knownSemanticTags = new HashMap<>();
 		Set<String> whiteList = new HashSet<>();
 		whiteList.add("368847001");
 		whiteList.add("368812009");
 		whiteList.add("385238005");
 		whiteList.add("368808003");
-		
+
 		//First pass through all active concepts to find semantic tags
 		for (Concept c : allActiveConceptsSorted) {
 			if (c.getFSNDescription() == null) {
@@ -1147,15 +1155,15 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
 				if (StringUtils.isEmpty(semTag)) {
 					String legacy = getLegacyIndicator(c.getFSNDescription());
-					reportAndIncrementSummary(c, isLegacySimple(c.getFSNDescription()), issueStr, legacy, isActive(c,c.getFSNDescription()), c.getFsn());
+					reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(c.getFSNDescription()), issueStr, legacy, isActive(c, c.getFSNDescription()), c.getFsn());
 				} else {
 					knownSemanticTags.put(semTag, c);
 				}
 			}
 		}
-		
+
 		LOGGER.info("Collected {} distinct semantic tags", knownSemanticTags.size());
-		
+
 		//Second pass to see if we have any of these remaining once
 		//the real semantic tag (last set of brackets) has been removed
 		for (Concept c : allActiveConceptsSorted) {
@@ -1172,24 +1180,24 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				continue;
 			}
 			String legacy = getLegacyIndicator(c.getFSNDescription());
-			
+
 			//Don't log lack of semantic tag for inactive concepts
 			String termWithoutTag = SnomedUtilsBase.deconstructFSN(c.getFsn(), !c.isActiveSafely())[0];
-			
+
 			//We can shortcut this if we don't have any brackets here.
 			if (!termWithoutTag.contains("(")) {
 				continue;
 			}
 			for (Map.Entry<String, Concept> entry : knownSemanticTags.entrySet()) {
 				if (termWithoutTag.contains(entry.getKey())) {
-					reportAndIncrementSummary(c, "Y".equals(legacy), issue2Str, legacy, isActive(c,c.getFSNDescription()), c.getFsn(), "Contains semtag: " + entry.getKey() + " identified by " + entry.getValue());
+					reportAndIncrementCategoryCount(ISSUES, c, "Y".equals(legacy), issue2Str, legacy, isActive(c, c.getFSNDescription()), c.getFsn(), "Contains semtag: " + entry.getKey() + " identified by " + entry.getValue());
 				}
 			}
 		}
 	}
 
 	//ISRS-414 Descriptions which contain a non-breaking space
-	private void unexpectedCharacters () throws TermServerScriptException {
+	private void unexpectedCharacters() throws TermServerScriptException {
 		AcceptableCharacterValidator acv = AcceptableCharacterValidator.getInstance();
 		String validatorIssueStr = "Acceptable character violation";
 		initialiseSummary(validatorIssueStr);
@@ -1210,7 +1218,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					int pos = term.indexOf(uc.ch());
 					if (pos != NOT_SET && !allowableException(c, uc.ch(), term)) {
 						String msg = "At position: " + pos;
-						reportAndIncrementSummary(
+						reportAndIncrementCategoryCount(ISSUES,
 								c,
 								"Y".equals(legacy),
 								uc.issueStr(),
@@ -1225,7 +1233,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 				// 2) Acceptable character validation (exactly once per description)
 				for (AcceptableCharacterValidator.ValidationIssue issue : acv.validateString(term)) {
-					reportAndIncrementSummary(
+					reportAndIncrementCategoryCount(ISSUES,
 							c,
 							"Y".equals(legacy),
 							validatorIssueStr,
@@ -1240,20 +1248,20 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	private List<UnwantedChar> initialiseUnwantedCharChecks() {
-		String [][] unwantedChars = new String[][] {
-				{ ZEROSP , "Zero-sized space" },
-				{ NBSPSTR , "Non-breaking space" },
-				{ LONG_DASH , "MsWord style dash" },
-				{ EN_DASH , "EN dash" },
-				{ EM_DASH , "EM dash" },
-				{ "--" , "Double dash" },
-				{ RIGHT_APOS , "Right apostrophe" },
-				{ LEFT_APOS , "Left apostrophe" },
-				{ RIGHT_QUOTE , "Right quote" },
-				{ LEFT_QUOTE , "Left quote" },
-				{ GRAVE_ACCENT , "Grave accent" },
-				{ ACUTE_ACCENT , "Acute accent" },
-				{ SOFT_HYPHEN , "Soft hyphen" }
+		String[][] unwantedChars = new String[][]{
+				{ZEROSP, "Zero-sized space"},
+				{NBSPSTR, "Non-breaking space"},
+				{LONG_DASH, "MsWord style dash"},
+				{EN_DASH, "EN dash"},
+				{EM_DASH, "EM dash"},
+				{"--", "Double dash"},
+				{RIGHT_APOS, "Right apostrophe"},
+				{LEFT_APOS, "Left apostrophe"},
+				{RIGHT_QUOTE, "Right quote"},
+				{LEFT_QUOTE, "Left quote"},
+				{GRAVE_ACCENT, "Grave accent"},
+				{ACUTE_ACCENT, "Acute accent"},
+				{SOFT_HYPHEN, "Soft hyphen"}
 		};
 
 		List<UnwantedChar> unwantedCharChecks = Arrays.stream(unwantedChars)
@@ -1299,7 +1307,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (inScope(d)) {
 						if (d.getTerm().contains("( ") || d.getTerm().contains(" )")) {
-							reportAndIncrementSummary(c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c,d), d);
+							reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), d);
 							continue nextConcept;
 						}
 					}
@@ -1307,17 +1315,17 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
-	
+
 	//Active concept parents should not belong to more than one top-level hierarchy – please check NEW and LEGACY content for issues
 	private void parentsInSameTopLevelHierarchy() throws TermServerScriptException {
 		String issueStr = "Parent has multiple top level ancestors";
 		String issue2Str = "Mixed TopLevel Parents";
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
-		
+
 		Set<Concept> whiteList = new HashSet<>();
-		whiteList.add(gl.getConcept("411115002 |Drug-device combination product (product)|")); 
-				
+		whiteList.add(gl.getConcept("411115002 |Drug-device combination product (product)|"));
+
 		nextConcept:
 		for (Concept c : allActiveConceptsSorted) {
 			if (!inScope(c)) {
@@ -1329,19 +1337,19 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 			if (c.isActiveSafely()) {
 				String legacy = getLegacyIndicator(c);
-				
+
 				//Skip root concept - has no highest ancestor
 				if (c.equals(ROOT_CONCEPT)) {
 					continue;
 				}
-				
+
 				//If this concept - or any of its ancestors - are whitelisted, then skip
-				for (Concept a : gl.getAncestorsCache().getAncestorsOrSelf(c)){
+				for (Concept a : gl.getAncestorsCache().getAncestorsOrSelf(c)) {
 					if (whiteList.contains(a)) {
 						continue nextConcept;
 					}
 				}
-				
+
 				Concept lastTopLevel = null;
 				for (Concept p : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 					//If we are a top level, skip also
@@ -1350,27 +1358,27 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					}
 					//What top level hierarchy is this parent in?
 					Set<Concept> topLevels = SnomedUtils.getHighestAncestorsBefore(p, ROOT_CONCEPT);
-					
+
 					if (topLevels.size() > 1) {
 						String topLevelStr = topLevels.stream().map(Object::toString).collect(Collectors.joining(",\n"));
-						reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c,null), topLevelStr);
+						reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c, null), topLevelStr);
 						continue nextConcept;
 					} else if (topLevels.isEmpty()) {
-						reportAndIncrementSummary(c, false, "Failed to find top level of parent ", legacy, isActive(c,null), p);
+						reportAndIncrementCategoryCount(ISSUES, c, false, "Failed to find top level of parent ", legacy, isActive(c, null), p);
 						continue nextConcept;
 					}
-					
+
 					Concept thisTopLevel = topLevels.iterator().next();
 					if (lastTopLevel == null) {
 						lastTopLevel = thisTopLevel;
-					} else if ( !lastTopLevel.equals(thisTopLevel)) {
-						reportAndIncrementSummary(c, "Y".equals(legacy), issue2Str, legacy, isActive(c,null), thisTopLevel, lastTopLevel);
+					} else if (!lastTopLevel.equals(thisTopLevel)) {
+						reportAndIncrementCategoryCount(ISSUES, c, "Y".equals(legacy), issue2Str, legacy, isActive(c, null), thisTopLevel, lastTopLevel);
 					}
 				}
 			}
 		}
 	}
-	
+
 	//RP-128
 	private void axiomIntegrity() throws TermServerScriptException {
 		String issueStr = "Axiom contains inactive type";
@@ -1381,7 +1389,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issue2Str);
 		initialiseSummary(issue3Str);
 		initialiseSummary(issue4Str);
-		
+
 		//Check all concepts referenced in relationships are valid
 		for (Concept c : allActiveConceptsSorted) {
 			if (c.isActiveSafely() && inScope(c)) {
@@ -1389,13 +1397,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					String legacy = getLegacyIndicator(r);
 					if (!r.getType().isActiveSafely()) {
-						reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c,r), r);
+						reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c, r), r);
 					}
 					if (r.isNotConcrete() && !r.getTarget().isActiveSafely()) {
-						reportAndIncrementSummary(c, !recentlyTouched.contains(c), issue2Str, legacy, isActive(c,r), r);
+						reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issue2Str, legacy, isActive(c, r), r);
 					}
 				}
-				
+
 				//Check all LHS relationships are active
 				for (AxiomEntry a : c.getAxiomEntries(ActiveState.ACTIVE, true)) {
 					try {
@@ -1405,52 +1413,53 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						if (axiom == null) {
 							continue;
 						}
-						
+
 						for (Relationship r : AxiomUtils.getLHSRelationships(c, axiom)) {
 							if (!r.getType().isActiveSafely()) {
-								reportAndIncrementSummary(c, !recentlyTouched.contains(c), issue3Str, legacy, isActive(c,r), r);
+								reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issue3Str, legacy, isActive(c, r), r);
 							}
 							if (r.isNotConcrete() && !r.getTarget().isActiveSafely()) {
-								reportAndIncrementSummary(c, !recentlyTouched.contains(c), issue4Str, legacy, isActive(c,r), r);
+								reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issue4Str, legacy, isActive(c, r), r);
 							}
 						}
 					} catch (ConversionException e) {
-						LOGGER.error ("Failed to convert: " + a, e);
+						LOGGER.error("Failed to convert: {}", a, e);
 					}
 				}
 			}
 		}
 	}
-	
+
 	/**
 	 * This will not spot many stated relationships because the axiom equivalents
 	 * will override these rows.
+	 *
 	 * @throws TermServerScriptException
 	 */
 	private void noStatedRelationships() throws TermServerScriptException {
 		String issueStr = "Active stated relationship";
 		initialiseSummary(issueStr);
-		
+
 		//Check no active relationship is non-axiom
 		for (Concept c : allActiveConceptsSorted) {
 			if (c.isActiveSafely() && inScope(c)) {
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					String legacy = getLegacyIndicator(r);
 					if (!r.fromAxiom()) {
-						reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c,r), r);
+						reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c, r), r);
 					}
 				}
 			}
 		}
 	}
-	
+
 	//RP-127
 	private void diseaseIntegrity() throws TermServerScriptException {
 		String issueStr = "Clinical finding has disorder as ancestor ";
 		String issue2Str = "Disorder is not descendant of 64572001|Disease (disorder)| ";
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
-		
+
 		//Rule 1 (clinical finding) concepts cannot have a (disorder) concept as a parent
 		//Rule 2 All (disorder) concepts must be a descendant of 64572001|Disease (disorder)| 
 		Set<Concept> diseases = DISEASE.getDescendants(NOT_SET);
@@ -1462,19 +1471,20 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (semTag.equals("(finding)")) {
 				checkForAncestorSemTag(c, issueStr);
 			} else if (semTag.equals("(disorder)") && !diseases.contains(c)) {
-				String legacy = getLegacyIndicator(c);
-				reportAndIncrementSummary(c, !recentlyTouched.contains(c), issue2Str, legacy, isActive(c,null));
+				boolean isLegacy = !recentlyTouched.contains(c);
+				String legacyIndicator = isLegacy ? "Y" : "N";
+				reportAndIncrementCategoryCount(ISSUES, c, isLegacy, issue2Str, legacyIndicator, isActive(c, null));
 			}
 		}
 	}
-	
+
 	private void checkForAncestorSemTag(Concept c, String issueStr) throws TermServerScriptException {
 		Set<Concept> ancestors = c.getAncestors(NOT_SET);
 		for (Concept ancestor : ancestors) {
 			String semTag = SnomedUtilsBase.deconstructFSN(ancestor.getFsn())[1];
 			if (semTag.equals("(disorder)")) {
 				String legacy = getLegacyIndicator(c);
-				reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c,null), ancestor);
+				reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c, null), ancestor);
 				return;
 			}
 		}
@@ -1491,22 +1501,22 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			Description fsn = c.getFSNDescription(LANG_EN);
 			if (dialectChecker.containsGBSpecificTerm(fsn.getTerm())) {
 				String legacy = getLegacyIndicator(c);
-				reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c, null), fsn);
+				reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c, null), fsn);
 			}
 		}
 	}
-	
+
 	//RP-165
 	private void textDefinitionDialectChecks() throws TermServerScriptException {
 		String issueStr = "Text Definition exists in one dialect and not the other";
 		initialiseSummary(issueStr);
-		
+
 		List<Description> bothDialectTextDefns = new ArrayList<>();
 		for (Concept c : allActiveConceptsSorted) {
 			if (c.isActiveSafely()) {
 				List<Description> textDefns = c.getDescriptions(Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE);
 				if (textDefns.size() > 2) {
-					LOGGER.warn ("{} has {} active text definitions - check for compatibility", c, textDefns.size());
+					LOGGER.warn("{} has {} active text definitions - check for compatibility", c, textDefns.size());
 				}
 				boolean hasUS = false;
 				boolean hasGB = false;
@@ -1530,7 +1540,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 				if ((hasUS && !hasGB) || (hasGB && !hasUS)) {
 					String legacy = getLegacyIndicator(c);
-					reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c,null));
+					reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c, null));
 				}
 			}
 		}
@@ -1544,7 +1554,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issue2Str);
 		DialectChecker dialectChecker = DialectChecker.create();
 		LOGGER.debug("Checking {} both-dialect text definitions against {} dialect pairs", bothDialectTextDefns.size(), dialectChecker.size());
-		
+
 		nextDescription:
 		for (Description textDefn : bothDialectTextDefns) {
 			String term = " " + textDefn.getTerm().toLowerCase().replaceAll("[^A-Za-z0-9]", " ");
@@ -1552,7 +1562,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			String legacy = getLegacyIndicator(c);
 			for (DialectChecker.DialectPair dialectPair : dialectChecker.getDialectPairs()) {
 				if (checkDialectPair(c, dialectPair.usTermPadded, term, textDefn, issueStr, legacy) ||
-					checkDialectPair(c, dialectPair.gbTermPadded, term, textDefn, issue2Str, legacy)) {
+						checkDialectPair(c, dialectPair.gbTermPadded, term, textDefn, issue2Str, legacy)) {
 					continue nextDescription;
 				}
 			}
@@ -1567,7 +1577,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					.replaceAll(URL_REGEX, "")
 					.replaceAll("[^A-Za-z0-9]", " ");
 			if (termFiltered.contains(dialectSpecificTerm)) {
-				reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c, null), dialectSpecificTerm, textDefn);
+				reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c, null), dialectSpecificTerm, textDefn);
 				reported = true;
 			}
 		}
@@ -1577,9 +1587,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void nestedBracketCheck() throws TermServerScriptException {
 		String issueStr = "Active description on inactive concept contains nested brackets";
 		initialiseSummary(issueStr);
-		Character[][] bracketPairs = new Character[][] {{'(', ')'},
-			{'[',']'}};
-			
+		Character[][] bracketPairs = new Character[][]{{'(', ')'},
+				{'[', ']'}};
+
 		nextConcept:
 		for (Concept c : allActiveConceptsSorted) {
 			if (!c.isActiveSafely()) {
@@ -1587,7 +1597,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					if (inScope(d)) {
 						for (Character[] bracketPair : bracketPairs) {
 							if (containsNestedBracket(c, d, bracketPair)) {
-								reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(c), isActive(c,d), d);
+								reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(c), isActive(c, d), d);
 								continue nextConcept;
 							}
 						}
@@ -1596,10 +1606,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
-	
+
 	private boolean containsNestedBracket(Concept c, Description d, Character[] bracketPair) throws TermServerScriptException {
 		Stack<Character> brackets = new Stack<>();
-		for (Character ch: d.getTerm().toCharArray()) {
+		for (Character ch : d.getTerm().toCharArray()) {
 			if (ch.equals(bracketPair[0])) {  //Opening bracket
 				brackets.push(ch);
 				if (brackets.size() > 1) {
@@ -1607,7 +1617,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 			} else if (ch.equals(bracketPair[1])) {  //Closing bracket
 				if (brackets.isEmpty()) {
-					reportAndIncrementSummary(c, !recentlyTouched.contains(c), "Closing bracket found without matching opening", getLegacyIndicator(c), isActive(c,d), d);
+					reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), "Closing bracket found without matching opening", getLegacyIndicator(c), isActive(c, d), d);
 				} else {
 					brackets.pop();
 				}
@@ -1615,7 +1625,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 		return false;
 	}
-	
+
 
 	private void validateAttributeDomainModellingRules() throws TermServerScriptException {
 		//RP-179 concepts using surgical approach must be surgical procedures
@@ -1632,27 +1642,28 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	/**
-	 * Where a concept uses the specified attribute type in its modelling, 
+	 * Where a concept uses the specified attribute type in its modelling,
 	 * ensure that it is a descendant of the specified subhierarchy
-	 * @throws TermServerScriptException 
+	 *
+	 * @throws TermServerScriptException
 	 */
 	private void validateTypeUsedInDomain(Concept c, Concept type, Set<Concept> subHierarchyList, String issueStr) throws TermServerScriptException {
 		if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, type) && !subHierarchyList.contains(c)) {
-			reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(c), isActive(c, null));
+			reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(c), isActive(c, null));
 		}
 	}
 
 	private void validateAttributeTypeValueModellingRules() throws TermServerScriptException {
 		String issueStr = "Finding/Procedure site cannot take a combined site value";
 		initialiseSummary(issueStr);
-		
+
 		//RP-181 No finding or procedure site attribute should take a combined bodysite as the value
 		List<Concept> typesOfInterest = new ArrayList<>();
 		typesOfInterest.add(FINDING_SITE);
 		Set<Concept> procSiteTypes = cache.getDescendantsOrSelf(gl.getConcept("363704007 |Procedure site (attribute)|"));
 		typesOfInterest.addAll(procSiteTypes);
 		Set<Concept> invalidValues = cache.getDescendantsOrSelf(gl.getConcept("116007004 |Combined site (body structure)|"));
-		
+
 		for (Concept c : allActiveConceptsSorted) {
 			if (c.isActiveSafely() && inScope(c)) {
 				for (Concept type : typesOfInterest) {
@@ -1693,7 +1704,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					breaksCardinalityRules = true;
 				}
 				hasInterprets = true;
-			} else if ( r.getType().equals(HAS_INTERPRETATION)) {
+			} else if (r.getType().equals(HAS_INTERPRETATION)) {
 				if (hasHasInterpretation) {
 					breaksCardinalityRules = true;
 				}
@@ -1703,11 +1714,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 		if ((hasInterprets || hasHasInterpretation) && hasOtherAttribute) {
-			reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(c), isActive(c, null), g);
+			reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(c), isActive(c, null), g);
 			reported = true;
 		}
 		if (breaksCardinalityRules) {
-			reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr2, getLegacyIndicator(c), isActive(c, null), g);
+			reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr2, getLegacyIndicator(c), isActive(c, null), g);
 			reported = true;
 		}
 		return reported;
@@ -1716,12 +1727,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void checkDeprecatedHierarchies() throws TermServerScriptException {
 		String issueStr = "New concept created in deprecated hierarchy";
 		initialiseSummary(issueStr);
-		
+
 		//RP-181 No new combined bodysite concepts should be created
 		for (Concept deprecatedHierarchy : deprecatedHierarchies) {
 			for (Concept c : deprecatedHierarchy.getDescendants(NOT_SET)) {
 				if (!c.isReleasedSafely() && inScope(c)) {
-					reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(c), isActive(c, null), deprecatedHierarchy);
+					reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(c), isActive(c, null), deprecatedHierarchy);
 				}
 			}
 		}
@@ -1753,7 +1764,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			checkMRCMTerms("MRCM Module Scope", gl.getMRCMModuleScopeManager().getMrcmModuleScopeMap().get(module));
 		}
 	}
-	
+
 	private void checkMRCMTerms(String partName, Collection<? extends RefsetMember> refsetMembers) throws TermServerScriptException {
 		for (RefsetMember rm : refsetMembers) {
 			if (rm.isActiveSafely()) {
@@ -1770,40 +1781,40 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String issueStr2 = partName + " refset field " + fieldName + " contains out of date FSN";
 		String issueStr3 = partName + " refset field " + fieldName + " is malformed";
 		String issueStr4 = partName + " refset field " + fieldName + " concept missing preferred term";
-		
+
 		initialiseSummary(issueStr);
 		initialiseSummary(issueStr2);
 		initialiseSummary(issueStr3);
 		initialiseSummary(issueStr4);
-		
+
 		//Is this field all numeric?  Check concept exists if so
 		String field = rm.getField(fieldName);
 		if (org.ihtsdo.otf.utils.StringUtils.isNumeric(field) && field.length() > 7) {
 			Concept refConcept = gl.getConcept(field, false, false);
 			if (refConcept == null || !refConcept.isActiveSafely()) {
-				reportAndIncrementSummary(c, isLegacySimple(rm), issueStr, getLegacyIndicator(c), isActive(c, null), field, rm.getId(), field);
+				reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(rm), issueStr, getLegacyIndicator(c), isActive(c, null), field, rm.getId(), field);
 			}
 			return;
 		}
-		
+
 		Matcher matcher = sctidFsnPattern.matcher(field);
 		while (matcher.find()) {
 			//Group 1 is the SCTID, group 3 is the FSN. Group 2 is optional whitespace
 			if (matcher.groupCount() == 3) {
 				Concept refConcept = gl.getConcept(matcher.group(1), false, false);
 				if (refConcept == null || !refConcept.isActiveSafely()) {
-					reportAndIncrementSummary(c, isLegacySimple(rm), issueStr, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
+					reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(rm), issueStr, getLegacyIndicator(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
 				} else {
 					if (refConcept.getPreferredSynonym(US_ENG_LANG_REFSET) == null) {
-						reportAndIncrementSummary(c, isLegacySimple(rm), issueStr4, getLegacyIndicator(c), isActive(c, null), refConcept, rm.getId(), field);
+						reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(rm), issueStr4, getLegacyIndicator(c), isActive(c, null), refConcept, rm.getId(), field);
 					} else {
 						String fsn = matcher.group(3);
 						if (fsn == null) {
-							reportAndIncrementSummary(c, isLegacySimple(rm), issueStr3, getLegacyIndicator(c), isActive(c, null), refConcept, rm.getId(), field);
+							reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(rm), issueStr3, getLegacyIndicator(c), isActive(c, null), refConcept, rm.getId(), field);
 						} else if (!refConcept.getFsn().equals(fsn)) {
 							//Sometimes we use the PT.  Check on the rules for when we use each one.
 							if (!fsn.equals(refConcept.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm())) {
-								reportAndIncrementSummary(c, isLegacySimple(rm), issueStr2, getLegacyIndicator(c), isActive(c, null), refConcept, "Text in refset field: " + fsn, rm.getId(), field);
+								reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(rm), issueStr2, getLegacyIndicator(c), isActive(c, null), refConcept, "Text in refset field: " + fsn, rm.getId(), field);
 							}
 						}
 					}
@@ -1815,36 +1826,37 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	/**
 	 * If the given concept uses the particular type, checks if that type is in (or must not be in)
 	 * the list of specified values
-	 * @throws TermServerScriptException 
+	 *
+	 * @throws TermServerScriptException
 	 */
 	private void validateTypeValueCombo(Concept c, Concept type, Set<Concept> values, String issueStr,
-			boolean mustBeIn) throws TermServerScriptException {
+	                                    boolean mustBeIn) throws TermServerScriptException {
 		Set<Relationship> relsWithType = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, type, ActiveState.ACTIVE);
 		for (Relationship relWithType : relsWithType) {
 			//Must the value be in, or must the value be NOT in our list of values?
 			boolean isIn = values.contains(relWithType.getTarget());
 			if (!isIn == mustBeIn) {
-				reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(relWithType), isActive(c, relWithType), relWithType);
+				reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(relWithType), isActive(c, relWithType), relWithType);
 			}
 		}
 	}
-	
-	
+
+
 	//RP-180
 	private void neverGroupTogether() throws TermServerScriptException {
-		Concept[][] neverTogetherList = new Concept[][] 
+		Concept[][] neverTogetherList = new Concept[][]
 				{
-					{ gl.getConcept("363589002 |Associated procedure|"), gl.getConcept("408729009 |Finding context|")},
-					{ gl.getConcept("408730004 |Procedure context|"), gl.getConcept("246090004 |Associated finding|")}
+						{gl.getConcept("363589002 |Associated procedure|"), gl.getConcept("408729009 |Finding context|")},
+						{gl.getConcept("408730004 |Procedure context|"), gl.getConcept("246090004 |Associated finding|")}
 				};
-			
+
 		for (Concept[] neverTogether : neverTogetherList) {
 			String issueStr = "Attributes " + neverTogether[0].toStringPref() + " and " + neverTogether[1].toStringPref() + " must not appear in same group";
 			initialiseSummary(issueStr);
 			for (Concept c : allActiveConceptsSorted) {
 				if (c.isActiveSafely() && inScope(c)) {
 					if (appearInSameGroup(c, neverTogether[0], neverTogether[1])) {
-						reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(c), isActive(c, null));
+						reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(c), isActive(c, null));
 					}
 				}
 			}
@@ -1854,10 +1866,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	//RP-180
 	private void domainMustNotUseType() throws TermServerScriptException {
 		//FORMAT 0 - Domain 1 - Disallowed Attribute 2 - Unless also a member of domain
-		Concept[][] domainTypeIncompatibilities = new Concept[][] 
+		Concept[][] domainTypeIncompatibilities = new Concept[][]
 				{
-					{ gl.getConcept("413350009 |Finding with explicit context|"), gl.getConcept("363589002 |Associated procedure|"), gl.getConcept("129125009 |Procedure with explicit context|")},
-					{ gl.getConcept("129125009 |Procedure with explicit context|"), gl.getConcept("408729009 |Finding context|"),  gl.getConcept("413350009 |Finding with explicit context|")}
+						{gl.getConcept("413350009 |Finding with explicit context|"), gl.getConcept("363589002 |Associated procedure|"), gl.getConcept("129125009 |Procedure with explicit context|")},
+						{gl.getConcept("129125009 |Procedure with explicit context|"), gl.getConcept("408729009 |Finding context|"), gl.getConcept("413350009 |Finding with explicit context|")}
 				};
 		for (Concept[] domainType : domainTypeIncompatibilities) {
 			String issueStr = "Domain " + domainType[0] + " should not use attribute type: " + domainType[1];
@@ -1868,13 +1880,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						//RP-574 But is this concept also a type of a domain that would allow this attribute?
 						Set<Concept> ancestors = c.getAncestors(NOT_SET);
 						if (!ancestors.contains(domainType[2])) {
-							reportAndIncrementSummary(c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(c), isActive(c, null));
+							reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(c), isActive(c, null));
 						}
 					}
 				}
 			}
 		}
-		
+
 	}
 
 	private boolean appearInSameGroup(Concept c, Concept c1, Concept c2) {
@@ -1895,7 +1907,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 		return false;
 	}
-
 
 
 	class ConcernLevel {
@@ -1927,4 +1938,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 
+	protected void initialiseSummary(String issue) {
+		initialiseSummaryCount(ISSUES, issue);
+	}
+
+	protected void reportAndIncrementCategoryCount(String category, Concept c, boolean isLegacy, Object... details) throws TermServerScriptException {
+		boolean isIssueToCount = category.equals(ISSUES);
+		int tabIdx = isIssueToCount ? SECONDARY_REPORT : TERTIARY_REPORT;
+		super.reportAndIncrementCategoryCount(tabIdx, category, isIssueToCount, c, isLegacy, details);
+	}
 }
