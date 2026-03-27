@@ -34,6 +34,8 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SnomedUtils.class);
 
+	private static final Set<String> KNOWN_WRONG_PARTITION_IDS = Set.of("10751000009126");
+
 	private static final SimpleDateFormat EFFECTIVE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 	private static VerhoeffCheckDigit verhoeffCheck = new VerhoeffCheckDigit();
 	
@@ -77,7 +79,11 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			boolean errorIfInvalid) throws TermServerScriptException {
 		String errMsg = isValid(sctId,partitionIdentifier);
 		if (errorIfInvalid && errMsg != null) {
-			throw new TermServerScriptException(errMsg);
+			if (KNOWN_WRONG_PARTITION_IDS.contains(sctId)) {
+				LOGGER.warn("Allowing known wrong partition for {}", errMsg);
+			} else {
+				throw new TermServerScriptException(errMsg);
+			}
 		}
 		return errMsg == null;
 	}
