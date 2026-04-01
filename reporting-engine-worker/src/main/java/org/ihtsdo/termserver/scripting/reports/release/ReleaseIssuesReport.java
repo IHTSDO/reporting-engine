@@ -105,8 +105,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	public static final String SCTID_CF_MOD = "11000241103";   //Common French Module
 	public static final String SCTID_CH_MOD = "2011000195101"; //Swiss Module
-
-	private static final int MUT_IDX_ACTIVE = 0;
+	
 	private static final int MUT_IDX_MODULEID = 1;
 
 	private List<String> expectedExtensionModules = null;
@@ -238,8 +237,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 		String[] tabNames = new String[]{
 				"Summary",
-				"Issues",
-				"Items of Interest",
+				ISSUES,
+				ITEMS_OF_INTEREST
 		};
 
 		super.postInit(tabNames, columnHeadings);
@@ -499,37 +498,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 		return false;
-	}
-
-	private boolean isExpectedModuleJumpException(Component c, String[] previousState, String[] currentState) {
-		String prevModule = previousState[MUT_IDX_MODULEID];
-		String currModule = currentState[MUT_IDX_MODULEID];
-		String prevActive = previousState[MUT_IDX_ACTIVE];
-
-		//RP-675 Add allowance for CF LRS entries on CF descriptions being inactivated in CH Module
-		if (c instanceof LangRefsetEntry &&
-				prevModule.equals(SCTID_CF_MOD) &&
-				currModule.equals(SCTID_CH_MOD) &&
-				!c.isActiveSafely() && prevActive.equals("1")) {
-			return true;
-		}
-		return false;
-	}
-
-	private boolean hasChangedModule(Component c) throws TermServerScriptException {
-		//If the component has an effective time, then it hasn't changed in this release
-		if (!StringUtils.isEmpty(c.getEffectiveTime())) {
-			return false;
-		}
-		String[] previousState = c.getPreviousState();
-		String[] currentState = c.getMutableFields();
-		if (previousState.length != currentState.length) {
-			throw new TermServerScriptException("Investigate: component's state has changed length! Previous state: '" + c.getIssues() + "' vs current: " + c);
-		}
-
-		String prevModule = previousState[MUT_IDX_MODULEID];
-		String currModule = currentState[MUT_IDX_MODULEID];
-		return prevModule.equals(currModule);
 	}
 
 	//ISRS-286 Ensure Parents in same module.
@@ -1938,6 +1906,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 
+	@Override
 	protected void initialiseSummary(String issue) {
 		initialiseSummaryCount(ISSUES, issue);
 	}
