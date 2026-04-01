@@ -14,8 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
-import org.snomed.otf.script.dao.ReportConfiguration.ReportFormatType;
-import org.snomed.otf.script.dao.ReportConfiguration.ReportOutputType;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
 import java.io.File;
@@ -36,20 +34,42 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	static final int MAX_REPORT_TABS = 16;
 	static final int MAX_REPORT_TABS_WITH_HIERARCHY = MAX_REPORT_TABS - 3;
-	static final int DATA_WIDTH = 29;
+	static final int DATA_WIDTH = 17;
 
-	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_RELS = 2, TAB_CD = 3, TAB_AXIOMS = 4,
-			TAB_LANG = 5, TAB_INACT_IND = 6, TAB_HIST = 7, TAB_TEXT_DEFN = 8, TAB_QI = 9,
-			TAB_DESC_HIST = 10, TAB_DESC_CNC = 11, TAB_DESC_INACT = 12, TAB_REFSET = 13,
-			TAB_DESC_BY_LANG = 14, TAB_INACT_REASON = 15;
+	static final int TAB_CONCEPTS = 0;
+	static final int TAB_DESCS = 1;
+	static final int TAB_RELS = 2;
+	static final int TAB_CD = 3;
+	static final int TAB_AXIOMS = 4;
+	static final int TAB_LANG = 5;
+	static final int TAB_INACT_IND = 6;
+	static final int TAB_HIST = 7;
+	static final int TAB_TEXT_DEFN = 8;
+	static final int TAB_QI = 9;
+	static final int TAB_DESC_HIST = 10;
+	static final int TAB_DESC_CNC = 11;
+	static final int TAB_DESC_INACT = 12;
+	static final int TAB_REFSET = 13;
+	static final int TAB_DESC_BY_LANG = 14;
+	static final int TAB_INACT_REASON = 15;
 
-	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACTIVATED = 2, IDX_REACTIVATED = 3, IDX_NEW_INACTIVE = 4, IDX_NEW_NEW = 5,
-			IDX_MOVED_MODULE = 6, IDX_CHANGED_INACTIVE = 7, IDX_NEW_P = 8, IDX_NEW_SD = 9,
-			IDX_TOTAL = 10, IDX_INACT_AMBIGUOUS = 11,  IDX_INACT_MOVED_ELSEWHERE = 12, IDX_INACT_CONCEPT_NON_CURRENT = 13,
-			IDX_INACT_DUPLICATE = 14, IDX_INACT_ERRONEOUS = 15, IDX_INACT_INAPPROPRIATE = 16, IDX_INACT_LIMITED = 17,
-			IDX_INACT_OUTDATED = 18, IDX_INACT_PENDING_MOVE = 19, IDX_INACT_NON_CONFORMANCE = 20,
-			IDX_INACT_NOT_EQUIVALENT = 21, IDX_CONCEPTS_AFFECTED = 22, IDX_TOTAL_ACTIVE = 23, IDX_PROMOTED=24,
-			IDX_NEW_IN_QI_SCOPE = 25, IDX_GAINED_ATTRIBUTES = 26, IDX_LOST_ATTRIBUTES = 27, IDX_INACT_OTHER = 28;
+	static final int IDX_NEW = 0;
+	static final int IDX_CHANGED = 1;
+	static final int IDX_INACTIVATED = 2;
+	static final int IDX_REACTIVATED = 3;
+	static final int IDX_NEW_INACTIVE = 4;
+	static final int IDX_NEW_NEW = 5;
+	static final int IDX_MOVED_MODULE = 6;
+	static final int IDX_CHANGED_INACTIVE = 7;
+	static final int IDX_NEW_P = 8;
+	static final int IDX_NEW_SD = 9;
+	static final int IDX_TOTAL = 10;
+	static final int IDX_CONCEPTS_AFFECTED = 11;
+	static final int IDX_TOTAL_ACTIVE = 12;
+	static final int IDX_PROMOTED = 13;
+	static final int IDX_NEW_IN_QI_SCOPE = 14;
+	static final int IDX_GAINED_ATTRIBUTES = 15;
+	static final int IDX_LOST_ATTRIBUTES = 16;
 	
 	static Map<Integer, List<Integer>> sheetFieldsByIndex = getSheetFieldsMap();
 
@@ -111,11 +131,11 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 			// * Desc Inact
 			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
 			// * Refsets
-			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
+			"Sctid, Reference Set, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
 			// * Desc By Lang
 			", Description Type, Language, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total",
 			// * Inact Reason
-			"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total"
+			"Sctid, Inactivation Reason, SemTag, New, Changed, Inactivated, Reactivated, New Inactive, New with New Concept, Changed Inactive, Total Active, Total"
 	};
 	private final String[] tabNames = new String[] {
 			"Concepts",
@@ -150,8 +170,6 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		Map<String, String> params = new HashMap<>();
 		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20250101T120000Z.zip");
 		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20241201T120000Z.zip");
-		params.put(REPORT_OUTPUT_TYPES, "S3");
-		params.put(REPORT_FORMAT_TYPE, "JSON");
 		TermServerScript.run(SummaryComponentStats.class, args, params);
 	}
 
@@ -161,8 +179,6 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 				.add(THIS_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE)
 				.add(PREV_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE)
 				.add(MODULES).withType(JobParameter.Type.STRING)
-				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportOutputType.GOOGLE.name())
-				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportFormatType.CSV.name())
 				.build();
 		
 		return new Job()
@@ -685,8 +701,10 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		languageSubTotals = outputRefsetData(TAB_REFSET, "language", totals);
 		indicatorSubTotals = outputRefsetData(TAB_REFSET, "indicator", totals);
 
+		//Inactivation reason data is not broken down by major hierarchy
 		outputInactivationReasonData(TAB_INACT_REASON, totals);
-		
+
+		//Description by language data is not broken down by major hierarchy
 		outputDescriptionByLanguage(TAB_DESC_BY_LANG, totals);
 		
 		for (int idxTab = 0; idxTab < MAX_REPORT_TABS; idxTab++) {
