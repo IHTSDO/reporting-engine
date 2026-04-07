@@ -350,12 +350,35 @@ public class RelationshipGroup implements ScriptConstants {
 		for (IRelationship r : getIRelationships()) {
 			int groupId = r.getGroupId();
 			long type = Long.parseLong(r.getType().getConceptId());
-			long target = Long.parseLong(r.getTarget().getConceptId());
-			org.snomed.otf.owltoolkit.domain.Relationship toolKitRel = 
-					new org.snomed.otf.owltoolkit.domain.Relationship(groupId, type, target);
-			toolkitRels.add(toolKitRel);
+			if (r.getTarget() == null) {
+				org.snomed.otf.owltoolkit.domain.Relationship.ConcreteValue cv = getToolKitConcreteValue(r);
+				org.snomed.otf.owltoolkit.domain.Relationship toolKitRel =
+						new org.snomed.otf.owltoolkit.domain.Relationship(groupId, type, cv);
+				toolkitRels.add(toolKitRel);
+			} else {
+				long target = Long.parseLong(r.getTarget().getConceptId());
+				org.snomed.otf.owltoolkit.domain.Relationship toolKitRel =
+						new org.snomed.otf.owltoolkit.domain.Relationship(groupId, type, target);
+				toolkitRels.add(toolKitRel);
+			}
 		}
 		return toolkitRels;
+	}
+
+	private org.snomed.otf.owltoolkit.domain.Relationship.ConcreteValue getToolKitConcreteValue(IRelationship r) {
+		ConcreteValue cv = r.getConcreteValue();
+		if (cv == null) {
+			throw new IllegalArgumentException("Relationship has neither target, nor concrete value");
+		}
+		return new org.snomed.otf.owltoolkit.domain.Relationship.ConcreteValue(getToolKitConcreteValueType(cv), cv.getValue());
+	}
+
+	private org.snomed.otf.owltoolkit.domain.Relationship.ConcreteValue.Type getToolKitConcreteValueType(ConcreteValue cv) {
+		return switch (cv.getDataType()) {
+			case DECIMAL -> org.snomed.otf.owltoolkit.domain.Relationship.ConcreteValue.Type.DECIMAL;
+			case INTEGER -> org.snomed.otf.owltoolkit.domain.Relationship.ConcreteValue.Type.INTEGER;
+			case STRING -> org.snomed.otf.owltoolkit.domain.Relationship.ConcreteValue.Type.STRING;
+		};
 	}
 
 	public Concept getSourceConcept() {
