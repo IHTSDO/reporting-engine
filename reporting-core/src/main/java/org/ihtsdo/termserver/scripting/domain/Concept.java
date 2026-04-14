@@ -1901,6 +1901,12 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		return null;
 	}
 
+	public List<RefsetMember> getOtherRefsetMembers(String refsetId) {
+		return getOtherRefsetMembers().stream()
+				.filter(m -> refsetId.equals(m.getRefsetId()))
+				.toList();
+	}
+
 	//Set the same axiom details on all stated relationships - if possible
 	public void normalizeStatedRelationships() {
 		AxiomEntry axiomEntry = null;
