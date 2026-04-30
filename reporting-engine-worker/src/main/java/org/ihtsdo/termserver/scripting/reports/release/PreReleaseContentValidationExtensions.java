@@ -9,8 +9,10 @@ import org.snomed.otf.scheduler.domain.*;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("java:S110")
 public class PreReleaseContentValidationExtensions extends PreReleaseContentValidation {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PreReleaseContentValidationExtensions.class);
@@ -91,16 +93,16 @@ public class PreReleaseContentValidationExtensions extends PreReleaseContentVali
 			moduleFilter = Collections.singletonList(defaultModule);
 		}
 
-		LOGGER.info("Setting previous dependency archive: " + prevDependency);
-		setDependencyArchive(prevDependency);
+		LOGGER.info("Setting previous dependency archive: {}", prevDependency);
+		setDependencyArchives(List.of(prevDependency));
 
 		super.loadProjectSnapshot(fsnOnly);
 	}
 
 	@Override
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
-		LOGGER.info("Setting dependency archive: " + thisDependency);
-		setDependencyArchive(thisDependency);
+		LOGGER.info("Setting dependency archive: {}", thisDependency);
+		setDependencyArchives(List.of(thisDependency));
 
 		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}

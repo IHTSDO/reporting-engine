@@ -158,7 +158,7 @@ public class HistoricDataUser extends TermServerReport {
 			if (!StringUtils.isEmpty(thisDependency)) {
 				ensurePrevIsEarlierThanThis(currentPositionProjectKey, thisDependency, RELEASE, DEPENDENCY);
 				ensurePrevIsEarlierThanThis(thisDependency, prevDependency, DEPENDENCY, DEPENDENCY);
-				mgr.setLoadDependencyPlusExtensionArchive(true);
+				mgr.setLoadDependencyPlusExtensionArchives(true);
 			}
 			setProject(new Project(currentPositionProjectKey));
 			mgr.loadSnapshot(false);

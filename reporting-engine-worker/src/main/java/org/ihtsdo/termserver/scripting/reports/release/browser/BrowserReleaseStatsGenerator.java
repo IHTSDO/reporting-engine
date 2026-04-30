@@ -1,11 +1,8 @@
 package org.ihtsdo.termserver.scripting.reports.release.browser;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.reports.release.SummaryComponentStats;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.dao.ReportConfiguration;
 
@@ -14,8 +11,6 @@ import java.util.Map;
 
 @SuppressWarnings("java:S110")
 public class BrowserReleaseStatsGenerator extends SummaryComponentStats {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(BrowserReleaseStatsGenerator.class);
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
@@ -57,22 +52,12 @@ public class BrowserReleaseStatsGenerator extends SummaryComponentStats {
 
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
-		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
-		if (!StringUtils.isEmpty(prevDependency)) {
-			LOGGER.info("Setting previous dependency archive to {}", prevDependency);
-			setDependencyArchive(prevDependency);
-		}
-		super.loadProjectSnapshot(fsnOnly);
+		super.loadProjectSnapshotWithDependency(fsnOnly);
 	}
 
 	@Override
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
-		thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
-		if (!StringUtils.isEmpty(thisDependency)) {
-			LOGGER.info("Setting current dependency archive to {}", thisDependency);
-			setDependencyArchive(thisDependency);
-		}
-		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
+		super.loadCurrentPositionWithDependency(compareTwoSnapshots, fsnOnly);
 	}
 
 }

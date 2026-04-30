@@ -198,7 +198,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
 		//Reset this flag for Editions as we might run against the same project so not reset as expected.
-		getArchiveManager().setLoadDependencyPlusExtensionArchive(false);
+		getArchiveManager().setLoadDependencyPlusExtensionArchives(false);
 		
 		boolean runIntegrityChecks = Boolean.parseBoolean(run.getParamValue("runIntegrityChecks", "true"));
 		LOGGER.info("Running report with runIntegrityChecks set to {}", runIntegrityChecks);
@@ -213,6 +213,24 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		topLevelHierarchies.add(ROOT_CONCEPT);
 		topLevelHierarchies.sort(Comparator.comparing(Concept::getFsn));
 		super.postInit(getTabNames(), getColumnHeadings());
+	}
+
+	protected void loadProjectSnapshotWithDependency(boolean fsnOnly) throws TermServerScriptException {
+		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
+		if (!StringUtils.isEmpty(prevDependency)) {
+			LOGGER.info("Setting previous dependency archive to {}", prevDependency);
+			setDependencyArchives(List.of(prevDependency));
+		}
+		super.loadProjectSnapshot(fsnOnly);
+	}
+
+	protected void loadCurrentPositionWithDependency(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
+		thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
+		if (!StringUtils.isEmpty(thisDependency)) {
+			LOGGER.info("Setting current dependency archive to {}", thisDependency);
+			setDependencyArchives(List.of(thisDependency));
+		}
+		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}
 
 	public String[] getTabNames() {

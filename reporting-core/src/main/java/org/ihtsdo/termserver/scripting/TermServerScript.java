@@ -49,7 +49,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			"[-m <modules>] " +
 			"[-n <taskSize>] " +
 			"[-p <projectName>] " +
-			"[-dp <dependency package>] " +
+			"[-dp <dependency package(s) - comma separated>] " +
 			"[-r2 <restart position>] " +
 			"[-headless <env_number>] " +
 			"[-task <taskKey>]";
@@ -75,7 +75,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected boolean inputFileHasHeaderRow = false;
 	protected boolean runStandAlone = false; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
 	protected List<File> inputFiles = new ArrayList<>(Collections.nCopies(10, (File) null));
-	private String dependencyArchive;
+	private List<String> dependencyArchives;
 	protected String projectName;
 	private String reportName;
 	protected int summaryTabIdx = NOT_SET;
@@ -195,7 +195,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected void init(String[] args) throws TermServerScriptException {
 		
 		if (args.length < 2) {
-			println("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] [-f <batch file Location>] [-dp <dependency file>] [--config <configuration string>]");
+			println("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] [-f <batch file Location>] [-dp <dependency file(s) - comma separate>] [--config <configuration string>]");
 			println(" d - dry run");
 			System.exit(-1);
 		}
@@ -232,7 +232,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			} else if (thisArg.equals("-r")) {
 				restartPosition = Integer.parseInt(args[x+1]);
 			} else if (thisArg.equals("-dp")) {
-				dependencyArchive = args[x+1];
+				String dependencyArchiveStr = args[x+1];
+				dependencyArchives = List.of(dependencyArchiveStr.split(","));
 			} else if (thisArg.equals("-task") || thisArg.equals("--task")) {
 				taskKey = args[x+1];
 			}
@@ -527,11 +528,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			LOGGER.debug("Application context has {}been supplied{}", (appContext == null?"not " : ""), (appContext == null?", hopefully running on a developer's local machine!" : "."));
 			this.appContext = appContext;
 			this.jobRun = jobRun;
-			this.dependencyArchive = jobRun.getDependencyPackage();
+			if (jobRun.getDependencyPackage() != null) {
+				this.dependencyArchives = List.of(jobRun.getDependencyPackage());
+			}
 
 			//If we have a dependency archive, then set loadDependencyPlusExtensionArchive
-			if (dependencyArchive != null) {
-				getArchiveManager().setLoadDependencyPlusExtensionArchive(true);
+			if (dependencyArchives != null) {
+				getArchiveManager().setLoadDependencyPlusExtensionArchives(true);
 			}
 			//Job Runs generally self determine
 			preInit();
@@ -1947,14 +1950,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		job.instantiate(jobRun, null);
 	}
 
-	public String getDependencyArchive() {
-		return dependencyArchive;
+	public List<String> getDependencyArchives() {
+		return dependencyArchives;
 	}
 	
-	protected void setDependencyArchive(String dependencyArchive) {
-		this.dependencyArchive = dependencyArchive;
-		if (dependencyArchive != null) {
-			getArchiveManager().setLoadDependencyPlusExtensionArchive(true);
+	protected void setDependencyArchives(List<String> dependencyArchives) {
+		this.dependencyArchives = dependencyArchives;
+		if (dependencyArchives != null) {
+			getArchiveManager().setLoadDependencyPlusExtensionArchives(true);
 		}
 	}
 

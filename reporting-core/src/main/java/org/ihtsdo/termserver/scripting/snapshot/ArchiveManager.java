@@ -237,23 +237,25 @@ public class ArchiveManager implements ScriptConstants {
 		ArchiveImporter archiveImporter = new ArchiveImporter(gl, config);
 		try {
 			if (config.isLoadDependencyPlusExtensionArchive()) {
-				if (StringUtils.isEmpty(ts.getDependencyArchive())) {
-					throw new TermServerScriptException("Told to load dependency + extension but no dependency package specified");
+				if (ts.getDependencyArchives() == null) {
+					throw new TermServerScriptException("Told to load dependency + extension but no dependency package(s) specified");
 				} else {
 					LOGGER.info("Loading dependency plus extension archives");
 					gl.reset();
-					File dependency = new File("releases", ts.getDependencyArchive());
-					if (dependency.exists()) {
-						archiveImporter.loadArchive(dependency, fsnOnly, SNAPSHOT, true);
-					} else {
-						//Can we find it in S3?
-						String cwd = new File("").getAbsolutePath();
-						LOGGER.info("Dependency Archive {} not found locally in {}, attempting to download from S3.", ts.getDependencyArchive(), cwd);
-						getArchiveDataLoader().download(dependency);
+					for (String dependencyStr : ts.getDependencyArchives()) {
+						File dependency = new File("releases", dependencyStr);
 						if (dependency.exists()) {
 							archiveImporter.loadArchive(dependency, fsnOnly, SNAPSHOT, true);
 						} else {
-							throw new TermServerScriptException("Dependency Package " + dependency.getAbsolutePath() + " does not exist and was not recovered from S3.");
+							//Can we find it in S3?
+							String cwd = new File("").getAbsolutePath();
+							LOGGER.info("Dependency Archive {} not found locally in {}, attempting to download from S3.", ts.getDependencyArchives(), cwd);
+							getArchiveDataLoader().download(dependency);
+							if (dependency.exists()) {
+								archiveImporter.loadArchive(dependency, fsnOnly, SNAPSHOT, true);
+							} else {
+								throw new TermServerScriptException("Dependency Package " + dependency.getAbsolutePath() + " does not exist and was not recovered from S3.");
+							}
 						}
 					}
 					//Now let's not pretend we're holding anything in memory at this point, because we still have to load in
@@ -488,8 +490,8 @@ public class ArchiveManager implements ScriptConstants {
 			//Now SOMETHING had a reference to this concept, so let's try and work out what and
 			//report that, rather than talk about a concept that doesn't exist
 			String msg = determineSourceofPhantomConcept(c);
-			if (ts.getDependencyArchive() != null) {
-				msg += ". Check dependency is appropriate - " + ts.getDependencyArchive();
+			if (ts.getDependencyArchives() != null) {
+				msg += ". Check dependency is appropriate - " + ts.getDependencyArchives();
 			}
 			//Now if we've imported all reference sets and we've got a phantom concept that's coming from an
 			//inactive referenceset member, then we're just going to report that as a "final word" rather than
@@ -773,7 +775,7 @@ public class ArchiveManager implements ScriptConstants {
 		return config.isLoadDependencyPlusExtensionArchive();
 	}
 
-	public void setLoadDependencyPlusExtensionArchive(boolean loadDependencyPlusExtensionArchive) {
+	public void setLoadDependencyPlusExtensionArchives(boolean loadDependencyPlusExtensionArchive) {
 		config.setLoadDependencyPlusExtensionArchive(loadDependencyPlusExtensionArchive);
 	}
 
