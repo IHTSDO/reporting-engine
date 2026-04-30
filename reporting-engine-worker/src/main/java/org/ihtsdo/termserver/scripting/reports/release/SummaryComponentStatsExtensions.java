@@ -77,7 +77,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 			}
 		}
 
-		setDependencyArchive(prevDependency);
+		setDependencyArchives(List.of(prevDependency));
 
 		thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
 		if (StringUtils.isEmpty(thisDependency)) {
@@ -118,7 +118,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 	@Override
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
 		LOGGER.info("Setting dependency archive: {}", thisDependency);
-		setDependencyArchive(thisDependency);
+		setDependencyArchives(List.of(thisDependency));
 		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}
 }

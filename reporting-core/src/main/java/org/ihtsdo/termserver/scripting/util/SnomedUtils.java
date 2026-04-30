@@ -579,6 +579,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			case SCTID_INACT_MEANING_OF_COMPONENT_UNKNOWN: return InactivationIndicator.MEANING_OF_COMPONENT_UNKNOWN;
 			case SCTID_INACT_CLASS_DERIVED_COMPONENT : return InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT;
 			case SCTID_INACT_GRAMMATICAL_DESCRIPTION_ERROR : return InactivationIndicator.GRAMMATICAL_DESCRIPTION_ERROR;
+			case SCTID_INACT_OBSOLETE : return InactivationIndicator.OBSOLETE;
 			default: throw new IllegalArgumentException("Unrecognised inactivation indicator value " + indicatorSctId);
 		}
 	}
@@ -599,6 +600,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			case MEANING_OF_COMPONENT_UNKNOWN: return SCTID_INACT_MEANING_OF_COMPONENT_UNKNOWN;
 			case CLASSIFICATION_DERIVED_COMPONENT : return SCTID_INACT_CLASS_DERIVED_COMPONENT;
 			case GRAMMATICAL_DESCRIPTION_ERROR : return SCTID_INACT_GRAMMATICAL_DESCRIPTION_ERROR;
+			case OBSOLETE : return SCTID_INACT_OBSOLETE;
 			default: throw new IllegalArgumentException("Unrecognised inactivation indicator  " + ii.toString());
 		}
 	}

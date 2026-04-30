@@ -148,7 +148,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
 		thisDependency = project.getMetadata().getDependencyPackage();
 		LOGGER.info("Setting dependency archive: {}", thisDependency);
-		setDependencyArchive(thisDependency);
+		setDependencyArchives(List.of(thisDependency));
 		super.loadCurrentPosition(false, fsnOnly);
 	}
 

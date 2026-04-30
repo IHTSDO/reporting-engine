@@ -150,22 +150,12 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
-		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
-		if (!StringUtils.isEmpty(prevDependency)) {
-			LOGGER.info("Setting previous dependency archive to {}", prevDependency);
-			setDependencyArchive(prevDependency);
- 		}
-		super.loadProjectSnapshot(fsnOnly);
+		super.loadProjectSnapshotWithDependency(fsnOnly);
 	}
 
 	@Override
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
-		thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
-		if (!StringUtils.isEmpty(thisDependency)) {
-			LOGGER.info("Setting dependency archive to {}", thisDependency);
-			setDependencyArchive(thisDependency);
-		}
-		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
+		super.loadCurrentPositionWithDependency(compareTwoSnapshots, fsnOnly);
 	}
 
 	@Override
