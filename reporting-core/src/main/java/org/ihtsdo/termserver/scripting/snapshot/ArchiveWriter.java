@@ -149,15 +149,19 @@ public class ArchiveWriter implements Runnable, RF2Constants {
 	protected void outputRF2(Concept c) throws TermServerScriptException {
 		ts.writeToRF2File(conSnapshotFilename, c.toRF2());
 
-		for (Description d : c.getDescriptions(RF2Constants.ActiveState.BOTH)) {
+		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
 			outputRF2(d);  //Will output langrefset, inactivation indicators and associations in turn
 		}
 
-		for (Relationship r : c.getRelationships(RF2Constants.CharacteristicType.STATED_RELATIONSHIP, RF2Constants.ActiveState.BOTH)) {
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
 			outputRF2(r);
 		}
 
-		for (Relationship r : c.getRelationships(RF2Constants.CharacteristicType.INFERRED_RELATIONSHIP, RF2Constants.ActiveState.BOTH)) {
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)) {
+			outputRF2(r);
+		}
+
+		for (Relationship r : c.getRelationships(CharacteristicType.ADDITIONAL_RELATIONSHIP, ActiveState.BOTH)) {
 			outputRF2(r);
 		}
 
@@ -215,7 +219,7 @@ public class ArchiveWriter implements Runnable, RF2Constants {
 			case STATED_RELATIONSHIP:
 				ts.writeToRF2File(sRelSnapshotFilename, r.toRF2());
 				break;
-			case INFERRED_RELATIONSHIP:
+			case INFERRED_RELATIONSHIP, ADDITIONAL_RELATIONSHIP:
 			default:
 				outputRF2InferredRel(r);
 		}
