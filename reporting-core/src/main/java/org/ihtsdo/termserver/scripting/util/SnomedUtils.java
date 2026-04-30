@@ -2081,6 +2081,10 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		c.getRelationships().stream()
 			.filter(r -> r.getCharacteristicType().equals(CharacteristicType.INFERRED_RELATIONSHIP))
 			.forEach(components::add);
+
+		c.getRelationships().stream()
+				.filter(r -> r.getCharacteristicType().equals(CharacteristicType.ADDITIONAL_RELATIONSHIP))
+				.forEach(components::add);
 		
 		if (includeStatedRels) {
 			//Not included by default because they're normally transient.  They are persisted in axioms
