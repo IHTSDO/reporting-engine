@@ -1955,4 +1955,10 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 				.filter(RefsetMember::isActiveSafely)
 				.anyMatch(m -> m.getRefsetId().equals(refset.getId()));
 	}
+
+	@Override
+	public void setClean() {
+		super.setClean();
+		this.isModified = false;
+	}
 }
