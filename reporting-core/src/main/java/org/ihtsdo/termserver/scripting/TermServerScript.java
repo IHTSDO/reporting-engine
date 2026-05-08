@@ -62,6 +62,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected boolean offlineMode = false;
 	protected String env;
 	protected String url = environments[0];
+	protected int envIndex = NOT_SET;
 	protected boolean stateComponentType = true;
 	protected JobRun jobRun;
 	protected boolean localClientsRequired = true;
@@ -176,7 +177,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public void setAuthenticatedCookie(String authenticatedCookie) {
 		this.authenticatedCookie = authenticatedCookie;
 	}
-	
+
+
 	protected static String[] envKeys = new String[] {"local","dev","uat","prod","dev","dev","uat", "uat", "prod", "prod"};
 
 	protected static String[] environments = new String[] {	"http://localhost:8080/",
@@ -301,7 +303,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				project.setBranchPath(MAIN_SLASH + projectName);
 			} else {
 				try {
-					project = scaClient.getProject(projectName);
+					project = scaClient.getProject(projectName, true);
 					LOGGER.info("Recovered project {} with branch path: {}", project.getKey(), project.getBranchPath());
 				} catch (RestClientException e) {
 					throw new TermServerScriptException("Unable to recover project: " + projectName,e);
@@ -312,9 +314,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
-		int envChoice = NOT_SET;
 		if (headlessEnvironment != null) {
-			envChoice = headlessEnvironment;
+			envIndex = headlessEnvironment;
 		} else {
 			println("Select an environment ");
 			for (int i=0; i < environments.length; i++) {
@@ -323,10 +324,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			
 			print("Choice: ");
 			String choice = STDIN.nextLine().trim();
-			envChoice = Integer.parseInt(choice);
+			envIndex = Integer.parseInt(choice);
 		}
-		url = environments[envChoice];
-		env = envKeys[envChoice];
+		url = environments[envIndex];
+		env = envKeys[envIndex];
 		
 		if (jobRun != null) {
 			//Not sure historically why we have this in two places
