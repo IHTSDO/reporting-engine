@@ -152,7 +152,7 @@ public class MRCMDomainManager implements ScriptConstants  {
 		return null;
 	}
 
-	public void finaliseFromStagingArea(List<String> integrityWarnings) throws TermServerScriptException {
+	public void finaliseFromStagingArea(List<List<Object>> integrityWarnings) throws TermServerScriptException {
 		//Only current work required here is to verify that the Delta import has resolved
 		//any apparent conflicts in the MRCM.  Convert the staging collection (which will hold duplicates)
 		//into the non-staging collection only if all duplications have been resolved.
@@ -164,7 +164,7 @@ public class MRCMDomainManager implements ScriptConstants  {
 			String msg = "MRCM Domain File conflicts: \n";
 			msg += conflictingAttributes.stream().collect(Collectors.joining(",\n"));
 			if (allContentAcceptable || !gl.isRunIntegrityChecks()) {
-				integrityWarnings.add(msg);
+				integrityWarnings.add(List.of(msg));
 			} else {
 				throw new TermServerScriptException(msg);
 			}

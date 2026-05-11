@@ -285,6 +285,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	@Override
 	public void runJob() throws TermServerScriptException {
+		//Did we record any integrity issues?
+		if (!gl.getIntegrityWarnings().isEmpty()) {
+			incrementSummaryCount(ISSUES, "Snapshot Integrity Issues", gl.getIntegrityWarnings().size());
+		}
 		LOGGER.info("Checking {} concepts...", gl.getAllConcepts().size());
 		allConceptsSorted = SnomedUtils.sort(gl.getAllConcepts());
 		allActiveConceptsSorted = allConceptsSorted.stream()
