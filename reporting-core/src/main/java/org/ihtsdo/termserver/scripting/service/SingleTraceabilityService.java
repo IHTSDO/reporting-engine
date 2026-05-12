@@ -103,7 +103,8 @@ public class SingleTraceabilityService extends CommonTraceabilityService {
 			requestCount++;
 		}
 	}
-	
+
+	@SuppressWarnings("java:S125")
 	private void populateReportRowWithTraceabilityInfo(ReportRow row, boolean intOnly, String onBranch2) throws TermServerScriptException {
 		if (row == null) {
 			throw new TermServerScriptException("Request to populate row with traceability information, but row was not supplied");
@@ -152,17 +153,18 @@ public class SingleTraceabilityService extends CommonTraceabilityService {
 			if (row.traceabilityInfo == null) {
 				LOGGER.warn("Failed to find any traceability information for {} can't even look up task", row.c);
 			} else {
-				if (row.traceabilityInfo[IDX_USERNAME] == null
+				/*if (row.traceabilityInfo[IDX_USERNAME] == null
 						|| StringUtils.isEmpty(row.traceabilityInfo[IDX_USERNAME])
 						|| StringUtils.isEmpty(row.traceabilityInfo[IDX_USERNAME].toString().trim())
 						|| unacceptableUsernames.contains(row.traceabilityInfo[IDX_USERNAME].toString())) {
 					recoverTaskAuthor(row.traceabilityInfo);
-				}
+				}*/
 				traceabilityCache.put(row.c.getId(), row.traceabilityInfo);
 			}
 		}
 	}
 
+	@SuppressWarnings("java:S1144")
 	private void recoverTaskAuthor(Object[] info) {
 		if (info[IDX_BRANCH] == null) {
 			return;
