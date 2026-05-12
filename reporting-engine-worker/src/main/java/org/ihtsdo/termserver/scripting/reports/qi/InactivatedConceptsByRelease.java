@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.reports.qi;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -19,7 +18,7 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
-/**
+/*
  * QI-1019 List inactivated concepts from 20180131 to current
  */
 
@@ -30,24 +29,27 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(InactivatedConceptsByRelease.class);
 
-	List<String> releaseETs;
-	private static int startYear = 2018;
-	private static String startET = "20180131";
-	TraceabilityService traceabilityService;
-	
-	SimpleDateFormat dateFormat =  new SimpleDateFormat("yyyyMMdd");
-	
+	private static final String START_ET = "20230101";
+	private static final int START_YEAR = 2023;
+
+	private final List<String> releaseETs = new ArrayList<>();
+	private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+
+	private TraceabilityService traceabilityService;
+
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		TermServerScript.run(InactivatedConceptsByRelease.class, args, params);
 	}
-	
+
+	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 		ReportSheetManager.setTargetFolderId("11i7XQyb46P2xXNBwlCOd3ssMNhLOx1m1"); //QI / Misc Analysis
 		super.init(run);
 	}
-	
+
+	@Override
 	public void postInit() throws TermServerScriptException {
 		populateReleaseEffectiveTimes();
 		int releases = releaseETs.size();
@@ -60,16 +62,15 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 	}
 	
 	private void populateReleaseEffectiveTimes() {
-		releaseETs = new ArrayList<>();
 		int year = Calendar.getInstance().get(Calendar.YEAR);
 		int month = Calendar.getInstance().get(Calendar.MONTH);
 		releaseETs.add("");
-		for (int i=year; i >= startYear; i--) {
+		for (int i = year; i >= START_YEAR; i--) {
 			//Are we in the 2nd half of the year?
 			if (i != year || month > 6) {
-				releaseETs.add(i + "0731");
+				releaseETs.add(i + "0701");
 			}
-			releaseETs.add(i + "0131");
+			releaseETs.add(i + "0101");
 		}
 	}
 
@@ -86,24 +87,23 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 				.withExpectedDuration(60)
 				.build();
 	}
-	
+
+	@Override
 	public void runJob() throws TermServerScriptException {
 		List<Concept> recentlyInactiveConcepts = gl.getAllConcepts().stream()
 				.filter(c -> !c.isActive())
-				.filter(c -> StringUtils.isEmpty(c.getEffectiveTime()) ||
-						c.getEffectiveTime().compareTo(startET) > 0)
-				.sorted((c1, c2) -> SnomedUtils.compareSemTagFSN(c1,c2))
-				.collect(Collectors.toList());
-		//recentlyInactiveConcepts = Collections.singletonList(gl.getConcept("371283006"));
+				.filter(c -> StringUtils.isEmpty(c.getEffectiveTime()) || c.getEffectiveTime().compareTo(START_ET) >= 0)
+				.sorted(SnomedUtils::compareSemTagFSN)
+				.toList();
 		try {
 			for (Concept c : recentlyInactiveConcepts) {
 				int tab = determineRelease(c);
-				String toDate = tab > 0 ? releaseETs.get(tab-1) : null;
+				String toDate = tab > 0 ? releaseETs.get(tab - 1) : null;
 				String fromDate = releaseETs.get(tab);
 				//Work 2 months earlier, as changes could have been sitting in a task
 				try {
 					if (StringUtils.isEmpty(fromDate) || fromDate.length() < 5) {
-						LOGGER.warn("What's the story here?");
+						LOGGER.warn("What's the story here? Concept: {}, tab: {}, fromDate: '{}'", c.getConceptId(), tab, fromDate);
 						//If we 're running to the current time, work back 
 						fromDate = dateFormat.format(new Date());
 					}
@@ -127,8 +127,8 @@ public class InactivatedConceptsByRelease extends TermServerReport implements Re
 		if (StringUtils.isEmpty(et)) {
 			return 0;
 		}
-		for (int i=1; i < releaseETs.size(); i++) {
-			if (et.compareTo(releaseETs.get(i)) > 0) {
+		for (int i = 1; i < releaseETs.size(); i++) {
+			if (et.compareTo(releaseETs.get(i)) >= 0) {
 				return i;
 			}
 		}
