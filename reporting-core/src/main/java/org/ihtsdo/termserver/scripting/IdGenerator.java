@@ -31,10 +31,13 @@ public class IdGenerator implements ScriptConstants{
 	private boolean useValidSequence = false;
 	private long validSequence = 0;
 	
-	 private static final String ID_CONFIG = "running_id_config.txt";
-	 private static boolean configFileReset = false;
+	private static final String ID_CONFIG_ROOT = "running_id_config_";
+	private static final String ID_CONFIG_EXT = ".txt";
+	private static String generatorProgressTrackerName;
+	private static boolean configFileReset = false;
 
-	public static IdGenerator initiateIdGenerator(String sctidFilename, PartitionIdentifier p) throws TermServerScriptException {
+	public static IdGenerator initiateIdGenerator(String sctidFilename, PartitionIdentifier p, String runId) throws TermServerScriptException {
+		generatorProgressTrackerName = ID_CONFIG_ROOT + runId + ID_CONFIG_EXT;
 		if (isDummyFile(sctidFilename)) {
 			return new IdGenerator(p);
 		}
@@ -84,7 +87,7 @@ public class IdGenerator implements ScriptConstants{
 	
 	private static void runForward (IdGenerator idGen) throws NumberFormatException, IOException {
 		//Is there a config file to consider? If not, do nothing.
-		File idConfigFile = new File (ID_CONFIG);
+		File idConfigFile = new File (generatorProgressTrackerName);
 		if (idConfigFile.canRead()) {
 			for (String line : FileUtils.readLines(idConfigFile, StandardCharsets.UTF_8)) {
 				String[] lineItems = line.split(TAB);
@@ -165,12 +168,12 @@ public class IdGenerator implements ScriptConstants{
 		OutputStreamWriter osw; 
 		String dataLine = partitionIdentifier + TAB + (runForwardCount + idsAssigned);
  		if (!IdGenerator.configFileReset) {
- 			LOGGER.debug("Writing {} to {}", dataLine, ID_CONFIG);
- 			osw = new OutputStreamWriter(new FileOutputStream(new File(ID_CONFIG), false), StandardCharsets.UTF_8);
+ 			LOGGER.debug("Writing {} to {}", dataLine, generatorProgressTrackerName);
+ 			osw = new OutputStreamWriter(new FileOutputStream(new File(generatorProgressTrackerName), false), StandardCharsets.UTF_8);
 			IdGenerator.configFileReset = true;
  		} else {
-			LOGGER.debug("Appending {} to {}", dataLine, ID_CONFIG);
-			osw = new OutputStreamWriter(new FileOutputStream(new File(ID_CONFIG), true), StandardCharsets.UTF_8);
+			LOGGER.debug("Appending {} to {}", dataLine, generatorProgressTrackerName);
+			osw = new OutputStreamWriter(new FileOutputStream(new File(generatorProgressTrackerName), true), StandardCharsets.UTF_8);
 		}
 		PrintWriter pw = new PrintWriter(new BufferedWriter(osw));
 		pw.write(dataLine + LINE_DELIMITER);
