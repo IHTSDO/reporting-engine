@@ -869,8 +869,10 @@ public class TermServerClient {
 
 	public Collection<RefsetMember> findRefsetMembers(String branchPath, String refsetId, Boolean isNullEffectiveTime) throws TermServerScriptException {
 		try {
-			Collection<RefsetMember> members = new ArrayList<>(); 
-			String url = getRefsetMembersUrl(branchPath) + "?";
+			Collection<RefsetMember> members = new ArrayList<>();
+			// limit=10000 keeps large refsets (8K+ members) to a single page; the
+			// searchAfter loop below still handles any overflow.
+			String url = getRefsetMembersUrl(branchPath) + "?limit=10000";
 			if (refsetId != null) {
 				url += "&referenceSet=" + refsetId;
 			}
