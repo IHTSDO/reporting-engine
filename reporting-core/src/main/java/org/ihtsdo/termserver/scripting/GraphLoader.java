@@ -74,7 +74,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	private TransitiveClosure transitiveClosure;
 	private TransitiveClosure previousTransitiveClosure;
 
-	private List<String> integrityWarnings = new ArrayList<>();
+	private List<List<Object>> integrityWarnings;
 	
 	public static GraphLoader getGraphLoader() {
 		if (singleton == null) {
@@ -1903,9 +1903,17 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		allowIllegalSCTIDs = setting;
 	}
 
-	public List<String> getIntegrityWarnings() {
+	public List<List<Object>> getIntegrityWarnings() {
+		if (integrityWarnings == null) {
+			integrityWarnings = new ArrayList<>();
+		}
 		return integrityWarnings;
 	}
+
+	public void addIntegrityWarning(List<Object> warning) {
+		getIntegrityWarnings().add(warning);
+	}
+
 
 	public Map<String, String> getSchemaMap(Concept scheme) {
 		return alternateIdentifierMap.computeIfAbsent(scheme, k -> new HashMap<>());

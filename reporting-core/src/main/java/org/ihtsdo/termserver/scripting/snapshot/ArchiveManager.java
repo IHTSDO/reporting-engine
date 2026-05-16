@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.TermServerLocation;
 import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
@@ -46,7 +47,7 @@ public class ArchiveManager implements ScriptConstants {
 
 	@Autowired
 	private ArchiveDataLoader archiveDataLoader;
-
+	
 	@Autowired
 	private BuildArchiveDataLoader buildArchiveDataLoader;
 	
@@ -358,12 +359,15 @@ public class ArchiveManager implements ScriptConstants {
 		LOGGER.info("Snapshot loading complete, checking integrity");
 		checkIntegrity(fsnOnly);
 
-		if (writeSnapshotToCache ) {
-			archiveImporter.writeSnapshotToCache(ts, SCTID_CORE_MODULE);
+		if (writeSnapshotToCache) {
+			if (gl.getIntegrityWarnings().isEmpty()) {
+				archiveImporter.writeSnapshotToCache(ts, SCTID_CORE_MODULE);
+			} else {
+				LOGGER.warn("Skipping cache to disk due to detected integrity problems.");
+			}
 		}
 		
 		LOGGER.info("Setting all components to be clean");
-
 		//Make sure to include stated rels in our clean-up, otherwise delta generators
 		//will output every axiom!
 		gl.getAllConcepts().stream()
@@ -431,11 +435,10 @@ public class ArchiveManager implements ScriptConstants {
 			StringBuilder integrityFailureMessage = new StringBuilder();
 			//We need a separate copy of all concepts because we might modify it in passing if we encounter a phantom concept
 			for (Concept c : new ArrayList<>(gl.getAllConcepts())) {
-				if (integrityCheckIgnoreList.contains(c.getId())) {
+				if (integrityCheckIgnoreList.contains(c.getId()) ||
+						isPhantomConcept(c, integrityFailureMessage)) {
 					continue;
 				}
-				
-				checkForPhantomConcept(c, integrityFailureMessage);
 
 				if (c.isActiveSafely() && !c.equals(ROOT_CONCEPT)) {
 					checkParentalIntegrity(c, CharacteristicType.INFERRED_RELATIONSHIP, integrityFailureMessage);
@@ -483,41 +486,75 @@ public class ArchiveManager implements ScriptConstants {
 		}
 	}
 
-	private void checkForPhantomConcept(Concept c, StringBuilder integrityFailureMessage) {
-		if (c.getActive() == null) {
-			//Now SOMETHING had a reference to this concept, so let's try and work out what and
-			//report that, rather than talk about a concept that doesn't exist
-			String msg = determineSourceofPhantomConcept(c);
-			if (ts.getDependencyArchive() != null) {
-				msg += ". Check dependency is appropriate - " + ts.getDependencyArchive();
-			}
-			//Now if we've imported all reference sets and we've got a phantom concept that's coming from an
-			//inactive referenceset member, then we're just going to report that as a "final word" rather than
-			//bomb out the entire report
-			if (config.isLoadOtherReferenceSets() && msg.contains("*RM")) {
-				LOGGER.warn("Recording final words rather than throwing exception: {}", msg);
-				ts.addFinalWords(msg);
-				//And we're going to remove this concept so that we don't trip over it again
-				ts.getGraphLoader().removeConcept(c);
-			} else {
-				if (!integrityFailureMessage.isEmpty()) {
-					integrityFailureMessage.append(",\n");
-				}
-				integrityFailureMessage.append(msg);
-			}
+	private boolean isPhantomConcept(Concept c, StringBuilder integrityFailureMessage) {
+		if (c.getActive() != null) {
+			return false;
 		}
+
+		//Now SOMETHING had a reference to this concept, so let's try and work out what and
+		//report that, rather than talk about a concept that doesn't exist
+
+		//If this reference has come from some 'other' refset, then we can just record and later report
+		//that without having the whole report bomb out
+		if (phantomConceptReferencedByOtherRefsetOnly(c)) {
+			return true;
+		}
+
+		String msg = determineSourceOfPhantomConcept(c);
+		if (ts.getDependencyArchive() != null) {
+			msg += ". Check dependency is appropriate - " + ts.getDependencyArchive();
+		}
+		//Now if we've imported all reference sets and we've got a phantom concept that's coming from an
+		//inactive referenceset member, then we're just going to report that as a "final word" rather than
+		//bomb out the entire report
+		if (config.isLoadOtherReferenceSets() && msg.contains("*RM")) {
+			LOGGER.warn("Recording final words rather than throwing exception: {}", msg);
+			ts.addFinalWords(msg);
+			//And we're going to remove this concept so that we don't trip over it again
+			ts.getGraphLoader().removeConcept(c);
+		} else {
+			if (!integrityFailureMessage.isEmpty()) {
+				integrityFailureMessage.append(",\n");
+			}
+			integrityFailureMessage.append(msg);
+		}
+		return true;
 	}
 
-	private String determineSourceofPhantomConcept(Concept c) {
+	private boolean phantomConceptReferencedByOtherRefsetOnly(Concept c) {
+		Set<RefsetMember> otherRefsetMembers = c.getOtherRefsetMembers();
+		Collection<Component> allComponents = SnomedUtils.getAllComponents(c);
+		allComponents.removeAll(otherRefsetMembers);
+		allComponents.removeIf(Concept.class::isInstance);
+		if (otherRefsetMembers.isEmpty() || !allComponents.isEmpty()) {
+			return false;
+		}
+
+		//record the refset members that reference this concept for later reporting
+		for (RefsetMember rm : otherRefsetMembers) {
+			gl.addIntegrityWarning(List.of(
+					c.getId(),
+					"does not appear in this extension, but is referenced by refset member in refset",
+					gl.getConceptSafely(rm.getRefsetId()),
+					rm));
+		}
+		//Remove this concept from the graph so we don't attempt to sort it, or cache to disk
+		//Actually, block caching to disk, else these issues will disappear
+		gl.removeConcept(c);
+
+		return true;
+	}
+
+	private String determineSourceOfPhantomConcept(Concept c) {
 		//Which components referenced this concept?
 		Collection<Component> components = SnomedUtils.getAllComponents(c);
 		if (components.isEmpty()) {
-			return "Integrity concern: concept " + c.getId() + " does not appear in concept file and is not referenced by any components.  Could have come in via WhiteListing?";
+			return "Integrity concern: concept" + c.getId() + " does not appear in concept file and is not referenced by any components.  Could have come in via WhiteListing?";
 		}
 		//Reduce the count by 1 because the concept itself gets counted, and that's a phantom.
 		int refCount = components.size()-1;
 
-		//If the concept is not referenced by any of it's own components, then we'll see what other concepts reference it.
+		//If the concept is not referenced by any of its own components, then we'll see what other concepts reference it.
 		if (refCount == 0) {
 			//Find Inferred Relationship References
 			List<Relationship> inferredReferences = getInferredReferences(c);
@@ -549,7 +586,7 @@ public class ArchiveManager implements ScriptConstants {
 				return c.toString();
 			}
 		}
-		return "No non-concept components found.";
+		return "No non-concept components found";
 	}
 
 	private boolean checkIsStale(Branch branch, File snapshot) throws IOException {
@@ -722,7 +759,7 @@ public class ArchiveManager implements ScriptConstants {
 		}
 		
 		for (Concept parent : parents) {
-			checkForPhantomConcept(parent, integrityFailureMessage);
+			isPhantomConcept(parent, integrityFailureMessage);
 			if (!parent.isActiveSafely()) {
 				if (!integrityFailureMessage.isEmpty()) {
 					integrityFailureMessage.append(",\n");
@@ -840,8 +877,8 @@ public class ArchiveManager implements ScriptConstants {
 		this.gl.setRunIntegrityChecks(runIntegrityChecks);
 	}
 
-
 	public S3Manager getS3Manager() throws TermServerScriptException {
 		return ((ArchiveDataLoader)getArchiveDataLoader()).getS3Manager();
 	}
+
 }

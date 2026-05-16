@@ -105,7 +105,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected String secondaryReportColumns = "ActionDetail, ";
 	protected boolean expectNullConcepts = false; //Set to true to avoid warning about rows in input file that result in no concept to modify
 	public Scanner STDIN = new Scanner(System.in);
-	
 
 	private static final String DUE_TO_STR = " due to ";
 	private static final String DELETING = "Deleting {}";
@@ -509,15 +508,32 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			//RP-4 And post that back in, so the FSN is always populated
 			jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
 		}
+
+		int integrityIssuesTabId = NOT_SET;
+		if (!gl.getIntegrityWarnings().isEmpty()) {
+			integrityIssuesTabId = columnHeadings.length;
+			if (tabNames == null) {
+				tabNames = new String[columnHeadings.length];
+				for (int i = 0; i < columnHeadings.length; i++) {
+					tabNames[i] = "Tab " + (i + 1);
+				}
+			}
+			tabNames = Arrays.copyOf(tabNames, tabNames.length + 1);
+			tabNames[integrityIssuesTabId] = "Snapshot Integrity Issues";
+			columnHeadings = Arrays.copyOf(columnHeadings, columnHeadings.length + 1);
+			columnHeadings[integrityIssuesTabId] = "SCTID, Issue, Refset, RefsetMember";
+		}
+
 		super.postInit(tabNames, columnHeadings, csvOutput);
 
-		if (!gl.getIntegrityWarnings().isEmpty()) {
-			report(PRIMARY_REPORT, "***********  Snapshot Integrity Warnings  ***********");
-			for (String warning : gl.getIntegrityWarnings()) {
-				report(PRIMARY_REPORT, warning);
-			}
-			report(PRIMARY_REPORT, "******************************************************");
-			report(PRIMARY_REPORT, "");
+		if (integrityIssuesTabId != NOT_SET) {
+			reportIntegrityWarnings(integrityIssuesTabId);
+		}
+	}
+
+	private void reportIntegrityWarnings(int tabId) throws TermServerScriptException {
+		for (List<Object> warning : gl.getIntegrityWarnings()) {
+			report(tabId, warning.toArray());
 		}
 	}
 	
