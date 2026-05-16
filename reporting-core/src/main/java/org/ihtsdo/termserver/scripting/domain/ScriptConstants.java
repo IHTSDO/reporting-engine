@@ -41,7 +41,8 @@ public interface ScriptConstants extends RF2Constants {
 	
 	//Drugs and Substances
 	Concept PHARM_BIO_PRODUCT = new Concept ("373873005") ; //Pharmaceutical / biologic product (product)
-	Concept MEDICINAL_PRODUCT = new Concept ("763158003", "Medicinal product (product)"); 
+	Concept MEDICINAL_PRODUCT = new Concept ("763158003", "Medicinal product (product)");
+	Concept VACCINE_PRODUCT = new Concept ("787859002", "Vaccine product (medicinal product)");
 	Concept HAS_ACTIVE_INGRED = new Concept ("127489000","Has active ingredient (attribute)");
 	Concept HAS_PRECISE_INGRED = new Concept ("762949000", "Has precise active ingredient (attribute)");
 	Concept SUBSTANCE = new Concept("105590001", "Substance (substance)");
