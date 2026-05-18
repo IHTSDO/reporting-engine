@@ -103,14 +103,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	Map<String, Concept> semTagHierarchyMap = new HashMap<>();
 	List<Concept> allConceptsSorted;
 
-	public static final String SCTID_CF_MOD = "11000241103";   //Common French Module
-	public static final String SCTID_CH_MOD = "2011000195101"; //Swiss Module
-	
 	private static final int MUT_IDX_MODULEID = 1;
 
 	private List<String> expectedExtensionModules = null;
-
-	private static final int MAX_DESC_LENGTH = 255;
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
@@ -311,7 +306,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 
 		LOGGER.info("...description rules");
-		maxLengthCheck();
 		fullStopInSynonym();
 		missingFSN_PT();
 		unexpectedCharacters();
@@ -621,33 +615,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issue2Str, "N", "Y");
 					}
 				}
-			}
-		}
-	}
-
-	private void maxLengthCheck() throws TermServerScriptException {
-		String issueStr = "Description (not TextDefn) exceeds " + MAX_DESC_LENGTH + " characters";
-		initialiseSummary(issueStr);
-		for (Concept c : allConceptsSorted) {
-			if (whiteListedConceptIds.contains(c.getId())) {
-				continue;
-			}
-			//Only look at concepts that have been in some way edited in this release cycle
-			//Unless we're interested in legacy issues
-			if (c.isActiveSafely() && (includeLegacyIssues || SnomedUtils.hasNewChanges(c))) {
-				checkDescriptionsForExcessiveLength(c, issueStr);
-			}
-		}
-	}
-
-	private void checkDescriptionsForExcessiveLength(Concept c, String issueStr) throws TermServerScriptException {
-		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-			if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
-				continue;
-			}
-
-			if (inScope(d) && d.getTerm().length() > MAX_DESC_LENGTH) {
-				reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), d);
 			}
 		}
 	}
