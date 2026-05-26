@@ -245,7 +245,7 @@ public class CaseSensitivityUtils implements ScriptConstants {
 		return (List<String>) caseSensitiveSourceOfTruthMap.computeIfAbsent(type, k -> new ArrayList<String>());
 	}
 
-	public CaseSignificance suggestCorrectCaseSignificance(Concept context, Description d) throws TermServerScriptException {
+	public CaseSignificance suggestCorrectCaseSignificance(Concept context, Description d)  {
 		//Have we set a flag for override?
 		if (d.hasIssue(FORCE_CS)) {
 			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
