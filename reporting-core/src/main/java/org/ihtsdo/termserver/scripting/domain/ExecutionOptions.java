@@ -7,6 +7,7 @@ public class ExecutionOptions {
 	boolean doSnapshotImport = true;
 	boolean doIntegrityChecking = true;
 	boolean importAllRefsets = false;
+	boolean drivenByInputFile = false;
 
 	public boolean isSnapshotImport() {
 		return doSnapshotImport;
@@ -22,6 +23,16 @@ public class ExecutionOptions {
 		return this;
 	}
 
+	public ExecutionOptions withImportAllRefsets() {
+		importAllRefsets = true;
+		return this;
+	}
+
+	public ExecutionOptions withDrivenByInputFile() {
+		drivenByInputFile = true;
+		return this;
+	}
+
 	public boolean isIntegrityChecking() {
 		return doIntegrityChecking;
 	}
@@ -30,8 +41,7 @@ public class ExecutionOptions {
 		return importAllRefsets;
 	}
 
-	public ExecutionOptions withImportAllRefsets() {
-		importAllRefsets = true;
-		return this;
+	public boolean isDrivenByInputFile() {
+		return drivenByInputFile;
 	}
 }
