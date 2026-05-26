@@ -458,7 +458,7 @@ public class Description extends Component implements ScriptConstants, Serializa
 				SnomedUtils.translateDescType(type), term, SnomedUtils.translateCaseSignificanceToSctId(getCaseSignificance())};
 	}
 	
-	public String[] toRF2Deletion() throws TermServerScriptException {
+	public String[] toRF2Deletion()  {
 		//"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"
 		return new String[] {descriptionId, effectiveTime, deletionEffectiveTime,
 				(isActiveSafely()?"1":"0"), "1",
