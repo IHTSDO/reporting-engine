@@ -52,7 +52,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			"[-dp <dependency package(s) - comma separated>] " +
 			"[-r2 <restart position>] " +
 			"[-headless <env_number>] " +
-			"[-task <taskKey>]";
+			"[-task <taskKey>]" +
+			"[-s <secondary server Url>]";
 
 	protected boolean debug = true;
 	protected boolean dryRun = true;
@@ -84,6 +85,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected boolean expectStatedRelationshipInactivations = false;
 	protected String subHierarchyStr;
 	protected String subsetECL;
+	protected String secondaryServerUrl;
 	protected String overrideEclBranch = null;
 	protected Concept subHierarchy;
 	protected List<Concept> excludeHierarchies = new ArrayList<>();
@@ -237,6 +239,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				dependencyArchives = List.of(dependencyArchiveStr.split(","));
 			} else if (thisArg.equals("-task") || thisArg.equals("--task")) {
 				taskKey = args[x+1];
+			} else if (thisArg.equals("-s") || thisArg.equals("--server")) {
+				secondaryServerUrl = args[x+1];
+			} else {
+				LOGGER.warn("Ignoring unknown argument: {}", thisArg);
 			}
 		}
 		

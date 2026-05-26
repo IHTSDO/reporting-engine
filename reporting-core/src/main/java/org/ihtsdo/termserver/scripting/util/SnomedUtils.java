@@ -329,7 +329,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			}
 			FileInputStream in = new FileInputStream(files[i].getAbsolutePath());
 			String relativePath = files[i].getAbsolutePath().substring(rootLocation.length()).replaceAll(BWD_SLASH,FWD_SLASH);
-			LOGGER.debug(" Adding: " + relativePath);
+			LOGGER.debug(" Adding: {}", relativePath);
 			out.putNextEntry(new ZipEntry(relativePath));
 			int len;
 			while ((len = in.read(tmpBuf)) > 0) {
@@ -342,13 +342,9 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 
 	//TODO See if the JSON will allow us to create the abstract "Component" which allows us to do this with one function
 	public static boolean descriptionHasActiveState(Description d, ActiveState a) {
-		boolean hasActiveState = false;
-		if (a.equals(ActiveState.BOTH) ||
+		return (a.equals(ActiveState.BOTH) ||
 			(a.equals(ActiveState.ACTIVE) && d.isActiveSafely()) ||
-			(a.equals(ActiveState.INACTIVE) && !d.isActiveSafely())) {
-			hasActiveState = true;
-		}
-		return hasActiveState;
+			(a.equals(ActiveState.INACTIVE) && !d.isActiveSafely()));
 	}
 
 	//Merge the lang refset entries of a into b such that b obtains the 
@@ -400,243 +396,230 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 
 	public static String translateCharacteristicType(
 			CharacteristicType characteristicType) {
-		switch (characteristicType) {
-			case STATED_RELATIONSHIP : return SCTID_STATED_RELATIONSHIP;
-			case INFERRED_RELATIONSHIP : return SCTID_INFERRED_RELATIONSHIP;
-			case QUALIFYING_RELATIONSHIP : return SCTID_QUALIFYING_RELATIONSHIP;
-			case ADDITIONAL_RELATIONSHIP : return SCTID_ADDITIONAL_RELATIONSHIP;
-			default : return "";
-		}
+		return switch (characteristicType) {
+			case STATED_RELATIONSHIP -> SCTID_STATED_RELATIONSHIP;
+			case INFERRED_RELATIONSHIP -> SCTID_INFERRED_RELATIONSHIP;
+			case QUALIFYING_RELATIONSHIP -> SCTID_QUALIFYING_RELATIONSHIP;
+			case ADDITIONAL_RELATIONSHIP -> SCTID_ADDITIONAL_RELATIONSHIP;
+			default -> "";
+		};
 	}
 	
 	public static CharacteristicType translateCharacteristicType(String characteristicTypeId) {
-		switch (characteristicTypeId) {
-			case SCTID_STATED_RELATIONSHIP : return CharacteristicType.STATED_RELATIONSHIP;
-			case SCTID_INFERRED_RELATIONSHIP : return CharacteristicType.INFERRED_RELATIONSHIP;
-			case SCTID_QUALIFYING_RELATIONSHIP : return CharacteristicType.QUALIFYING_RELATIONSHIP;
-			case SCTID_ADDITIONAL_RELATIONSHIP : return CharacteristicType.ADDITIONAL_RELATIONSHIP;
-			default : throw new IllegalArgumentException("Unexpected characteristicTypeId " + characteristicTypeId);
-		}
+		return switch (characteristicTypeId) {
+			case SCTID_STATED_RELATIONSHIP -> CharacteristicType.STATED_RELATIONSHIP;
+			case SCTID_INFERRED_RELATIONSHIP -> CharacteristicType.INFERRED_RELATIONSHIP;
+			case SCTID_QUALIFYING_RELATIONSHIP -> CharacteristicType.QUALIFYING_RELATIONSHIP;
+			case SCTID_ADDITIONAL_RELATIONSHIP -> CharacteristicType.ADDITIONAL_RELATIONSHIP;
+			default -> throw new IllegalArgumentException("Unexpected characteristicTypeId " + characteristicTypeId);
+		};
 	}
 
 	public static String translateModifier(Modifier modifier) {
-		switch (modifier) {
-			case UNIVERSAL : return SCTID_UNIVERSAL_MODIFIER;
-			case EXISTENTIAL :
-			default : return SCTID_EXISTENTIAL_MODIFIER;
-		}
+		return switch (modifier) {
+			case UNIVERSAL -> SCTID_UNIVERSAL_MODIFIER;
+			default -> SCTID_EXISTENTIAL_MODIFIER;
+		};
 	}
 	
 	public static Modifier translateModifier(String modifierSCTID) {
-		switch (modifierSCTID) {
-			case SCTID_UNIVERSAL_MODIFIER : return Modifier.UNIVERSAL;
-			case SCTID_EXISTENTIAL_MODIFIER  :
-			default : return Modifier.EXISTENTIAL;
-		}
+		return switch (modifierSCTID) {
+			case SCTID_UNIVERSAL_MODIFIER -> Modifier.UNIVERSAL;
+			default -> Modifier.EXISTENTIAL;
+		};
 	}
 	
 
 	public static DefinitionStatus translateDefnStatus(String defnStatusSctId) {
-		switch (defnStatusSctId) {
-			case SCTID_PRIMITIVE : return DefinitionStatus.PRIMITIVE;
-			case SCTID_FULLY_DEFINED: return DefinitionStatus.FULLY_DEFINED;
-			default:
-		}
-		return null;
+		return switch (defnStatusSctId) {
+			case SCTID_PRIMITIVE -> DefinitionStatus.PRIMITIVE;
+			case SCTID_FULLY_DEFINED -> DefinitionStatus.FULLY_DEFINED;
+			default -> null;
+		};
 	}
 	
 	public static String translateDefnStatusToSctid(DefinitionStatus defn) {
-		switch (defn) {
-			case PRIMITIVE: return SCTID_PRIMITIVE;
-			case FULLY_DEFINED: return SCTID_FULLY_DEFINED;
-			default:
-		}
-		return null;
+		return switch (defn) {
+			case PRIMITIVE -> SCTID_PRIMITIVE;
+			case FULLY_DEFINED -> SCTID_FULLY_DEFINED;
+		};
 	}
 	
 	public static String translateDefnStatus(DefinitionStatus defn) {
-		switch (defn) {
-			case PRIMITIVE: return "P";
-			case FULLY_DEFINED: return "SD";
-			default:
-		}
-		return null;
+		return switch (defn) {
+			case PRIMITIVE -> "P";
+			case FULLY_DEFINED -> "SD";
+		};
 	}
 	
 	public static DefinitionStatus translateDefnStatusStr(String defnStr) throws TermServerScriptException {
-		switch (defnStr) {
-			case "P": return DefinitionStatus.PRIMITIVE;
-			case "FD":
-			case "SD": return DefinitionStatus.FULLY_DEFINED;
-			default: throw new TermServerScriptException("Unrecognised definition status :" + defnStr);
-		}
+		return switch (defnStr) {
+			case "P" -> DefinitionStatus.PRIMITIVE;
+			case "FD", "SD" -> DefinitionStatus.FULLY_DEFINED;
+			default -> throw new TermServerScriptException("Unrecognised definition status :" + defnStr);
+		};
 	}
 	
 
 	public static boolean translateActive(ActiveState active) throws TermServerScriptException {
-		switch (active) {
-			case ACTIVE : return true;
-			case INACTIVE : return false;
-			default: throw new TermServerScriptException("Unable to translate " + active + " into boolean state");
-		}
+		return switch (active) {
+			case ACTIVE -> true;
+			case INACTIVE -> false;
+			default -> throw new TermServerScriptException("Unable to translate " + active + " into boolean state");
+		};
 	}
 
 	public static CaseSignificance translateCaseSignificance(String caseSignificanceIndicatorStr) throws TermServerScriptException {
-		switch (caseSignificanceIndicatorStr) {
-			case "ENTIRE_TERM_CASE_SENSITIVE" : return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
-			case "CASE_INSENSITIVE" : return CaseSignificance.CASE_INSENSITIVE;
-			case "INITIAL_CHARACTER_CASE_INSENSITIVE" : return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
-			default :
-		}
-		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceIndicatorStr);
+		return switch (caseSignificanceIndicatorStr) {
+			case "ENTIRE_TERM_CASE_SENSITIVE" -> CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
+			case "CASE_INSENSITIVE" -> CaseSignificance.CASE_INSENSITIVE;
+			case "INITIAL_CHARACTER_CASE_INSENSITIVE" -> CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
+			default ->
+					throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceIndicatorStr);
+		};
 	}
 	
 	public static CaseSignificance translateCaseSignificanceFromString(String caseSignificanceIndicatorStr) throws TermServerScriptException {
-		switch (caseSignificanceIndicatorStr) {
-			case "CS" : return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
-			case "ci" : return CaseSignificance.CASE_INSENSITIVE;
-			case "cI" : return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
-			default :
-		}
-		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceIndicatorStr);
+		return switch (caseSignificanceIndicatorStr) {
+			case "CS" -> CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
+			case "ci" -> CaseSignificance.CASE_INSENSITIVE;
+			case "cI" -> CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
+			default ->
+					throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceIndicatorStr);
+		};
 	}
 	
 	public static String translateCaseSignificanceToSctId(String caseSignificanceIndicator) throws TermServerScriptException {
-		switch (caseSignificanceIndicator) {
-			case "CS" : return SCTID_ENTIRE_TERM_CASE_SENSITIVE;
-			case "ci" : return SCTID_ENTIRE_TERM_CASE_INSENSITIVE;
-			case "cl" :
-			case "cI" : return SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE;
-			default :
-		}
-		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceIndicator);
+		return switch (caseSignificanceIndicator) {
+			case "CS" -> SCTID_ENTIRE_TERM_CASE_SENSITIVE;
+			case "ci" -> SCTID_ENTIRE_TERM_CASE_INSENSITIVE;
+			case "cl", "cI" -> SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE;
+			default ->
+					throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceIndicator);
+		};
 	}
 	
-	public static String translateCaseSignificanceToSctId(CaseSignificance caseSignificance) throws TermServerScriptException {
-		switch (caseSignificance) {
-			case ENTIRE_TERM_CASE_SENSITIVE : return SCTID_ENTIRE_TERM_CASE_SENSITIVE;
-			case CASE_INSENSITIVE : return SCTID_ENTIRE_TERM_CASE_INSENSITIVE;
-			case INITIAL_CHARACTER_CASE_INSENSITIVE : return SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE;
-			default :
-		}
-		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificance);
+	public static String translateCaseSignificanceToSctId(CaseSignificance caseSignificance)  {
+		return switch (caseSignificance) {
+			case ENTIRE_TERM_CASE_SENSITIVE -> SCTID_ENTIRE_TERM_CASE_SENSITIVE;
+			case CASE_INSENSITIVE -> SCTID_ENTIRE_TERM_CASE_INSENSITIVE;
+			case INITIAL_CHARACTER_CASE_INSENSITIVE -> SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE;
+		};
 	}
 
 	public static String translateCaseSignificanceFromSctId(
 			String caseSignificanceSctId) throws TermServerScriptException {
-		switch (caseSignificanceSctId) {
-			case SCTID_ENTIRE_TERM_CASE_SENSITIVE: return "CS";
-			case SCTID_ENTIRE_TERM_CASE_INSENSITIVE: return "ci";
-			case SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE : return "cI";
-			default :
-		}
-		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceSctId);
+		return switch (caseSignificanceSctId) {
+			case SCTID_ENTIRE_TERM_CASE_SENSITIVE -> "CS";
+			case SCTID_ENTIRE_TERM_CASE_INSENSITIVE -> "ci";
+			case SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE -> "cI";
+			default ->
+					throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceSctId);
+		};
 	}
 	
-	public static String translateCaseSignificanceFromEnum(CaseSignificance caseSignificance) throws TermServerScriptException {
-		switch (caseSignificance) {
-			case ENTIRE_TERM_CASE_SENSITIVE: return "CS";
-			case CASE_INSENSITIVE: return "ci";
-			case INITIAL_CHARACTER_CASE_INSENSITIVE : return "cI";
-			default :
-		}
-		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificance);
+	public static String translateCaseSignificanceFromEnum(CaseSignificance caseSignificance) {
+		return switch (caseSignificance) {
+			case ENTIRE_TERM_CASE_SENSITIVE -> "CS";
+			case CASE_INSENSITIVE -> "ci";
+			case INITIAL_CHARACTER_CASE_INSENSITIVE -> "cI";
+		};
 	}
 
 	public static String translateCaseSignificanceFromEnumSafely(CaseSignificance caseSignificance) {
-		switch (caseSignificance) {
-			case ENTIRE_TERM_CASE_SENSITIVE: return "CS";
-			case CASE_INSENSITIVE: return "ci";
-			case INITIAL_CHARACTER_CASE_INSENSITIVE : return "cI";
-			default : return "??";
-		}
+		return switch (caseSignificance) {
+			case ENTIRE_TERM_CASE_SENSITIVE -> "CS";
+			case CASE_INSENSITIVE -> "ci";
+			case INITIAL_CHARACTER_CASE_INSENSITIVE -> "cI";
+		};
 	}
 	
 	public static CaseSignificance translateCaseSignificanceToEnum(
 			String caseSignificanceSctId) throws TermServerScriptException {
-		switch (caseSignificanceSctId) {
-			case SCTID_ENTIRE_TERM_CASE_SENSITIVE: return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
-			case SCTID_ENTIRE_TERM_CASE_INSENSITIVE: return CaseSignificance.CASE_INSENSITIVE;
-			case SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE : return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
-			default :
-		}
-		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceSctId);
+		return switch (caseSignificanceSctId) {
+			case SCTID_ENTIRE_TERM_CASE_SENSITIVE -> CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
+			case SCTID_ENTIRE_TERM_CASE_INSENSITIVE -> CaseSignificance.CASE_INSENSITIVE;
+			case SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE -> CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
+			default ->
+					throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceSctId);
+		};
 	}
 
 	public static InactivationIndicator translateInactivationIndicator(String indicatorSctId) {
-		switch (indicatorSctId) {
-			case SCTID_INACT_AMBIGUOUS: return InactivationIndicator.AMBIGUOUS;
-			case SCTID_INACT_MOVED_ELSEWHERE : return InactivationIndicator.MOVED_ELSEWHERE;
-			case SCTID_INACT_CONCEPT_NON_CURRENT : return InactivationIndicator.CONCEPT_NON_CURRENT;
-			case SCTID_INACT_DUPLICATE : return InactivationIndicator.DUPLICATE;
-			case SCTID_INACT_ERRONEOUS : return InactivationIndicator.ERRONEOUS;
-			case SCTID_INACT_INAPPROPRIATE : return InactivationIndicator.INAPPROPRIATE;
-			case SCTID_INACT_LIMITED : return InactivationIndicator.LIMITED;
-			case SCTID_INACT_OUTDATED : return InactivationIndicator.OUTDATED; 
-			case SCTID_INACT_PENDING_MOVE : return InactivationIndicator.PENDING_MOVE;
-			case SCTID_INACT_NON_CONFORMANCE: return InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
-			case SCTID_INACT_NOT_SEMANTICALLY_EQUIVALENT : return InactivationIndicator.NOT_SEMANTICALLY_EQUIVALENT;
-			case SCTID_INACT_MEANING_OF_COMPONENT_UNKNOWN: return InactivationIndicator.MEANING_OF_COMPONENT_UNKNOWN;
-			case SCTID_INACT_CLASS_DERIVED_COMPONENT : return InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT;
-			case SCTID_INACT_GRAMMATICAL_DESCRIPTION_ERROR : return InactivationIndicator.GRAMMATICAL_DESCRIPTION_ERROR;
-			case SCTID_INACT_OBSOLETE : return InactivationIndicator.OBSOLETE;
-			default: throw new IllegalArgumentException("Unrecognised inactivation indicator value " + indicatorSctId);
-		}
+		return switch (indicatorSctId) {
+			case SCTID_INACT_AMBIGUOUS -> InactivationIndicator.AMBIGUOUS;
+			case SCTID_INACT_MOVED_ELSEWHERE -> InactivationIndicator.MOVED_ELSEWHERE;
+			case SCTID_INACT_CONCEPT_NON_CURRENT -> InactivationIndicator.CONCEPT_NON_CURRENT;
+			case SCTID_INACT_DUPLICATE -> InactivationIndicator.DUPLICATE;
+			case SCTID_INACT_ERRONEOUS -> InactivationIndicator.ERRONEOUS;
+			case SCTID_INACT_INAPPROPRIATE -> InactivationIndicator.INAPPROPRIATE;
+			case SCTID_INACT_LIMITED -> InactivationIndicator.LIMITED;
+			case SCTID_INACT_OUTDATED -> InactivationIndicator.OUTDATED;
+			case SCTID_INACT_PENDING_MOVE -> InactivationIndicator.PENDING_MOVE;
+			case SCTID_INACT_NON_CONFORMANCE -> InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
+			case SCTID_INACT_NOT_SEMANTICALLY_EQUIVALENT -> InactivationIndicator.NOT_SEMANTICALLY_EQUIVALENT;
+			case SCTID_INACT_MEANING_OF_COMPONENT_UNKNOWN -> InactivationIndicator.MEANING_OF_COMPONENT_UNKNOWN;
+			case SCTID_INACT_CLASS_DERIVED_COMPONENT -> InactivationIndicator.CLASSIFICATION_DERIVED_COMPONENT;
+			case SCTID_INACT_GRAMMATICAL_DESCRIPTION_ERROR -> InactivationIndicator.GRAMMATICAL_DESCRIPTION_ERROR;
+			case SCTID_INACT_OBSOLETE -> InactivationIndicator.OBSOLETE;
+			default ->
+					throw new IllegalArgumentException("Unrecognised inactivation indicator value " + indicatorSctId);
+		};
 	}
 
 	public static String translateInactivationIndicator(InactivationIndicator ii) {
-		switch (ii) {
-			case AMBIGUOUS : return SCTID_INACT_AMBIGUOUS;
-			case MOVED_ELSEWHERE : return SCTID_INACT_MOVED_ELSEWHERE;
-			case CONCEPT_NON_CURRENT : return SCTID_INACT_CONCEPT_NON_CURRENT;
-			case DUPLICATE : return SCTID_INACT_DUPLICATE;
-			case ERRONEOUS : return SCTID_INACT_ERRONEOUS;
-			case INAPPROPRIATE : return SCTID_INACT_INAPPROPRIATE;
-			case LIMITED : return SCTID_INACT_LIMITED;
-			case OUTDATED : return SCTID_INACT_OUTDATED;
-			case PENDING_MOVE : return SCTID_INACT_PENDING_MOVE;
-			case NONCONFORMANCE_TO_EDITORIAL_POLICY : return SCTID_INACT_NON_CONFORMANCE;
-			case NOT_SEMANTICALLY_EQUIVALENT : return SCTID_INACT_NOT_SEMANTICALLY_EQUIVALENT;
-			case MEANING_OF_COMPONENT_UNKNOWN: return SCTID_INACT_MEANING_OF_COMPONENT_UNKNOWN;
-			case CLASSIFICATION_DERIVED_COMPONENT : return SCTID_INACT_CLASS_DERIVED_COMPONENT;
-			case GRAMMATICAL_DESCRIPTION_ERROR : return SCTID_INACT_GRAMMATICAL_DESCRIPTION_ERROR;
-			case OBSOLETE : return SCTID_INACT_OBSOLETE;
-			default: throw new IllegalArgumentException("Unrecognised inactivation indicator  " + ii.toString());
-		}
+		return switch (ii) {
+			case AMBIGUOUS -> SCTID_INACT_AMBIGUOUS;
+			case MOVED_ELSEWHERE -> SCTID_INACT_MOVED_ELSEWHERE;
+			case CONCEPT_NON_CURRENT -> SCTID_INACT_CONCEPT_NON_CURRENT;
+			case DUPLICATE -> SCTID_INACT_DUPLICATE;
+			case ERRONEOUS -> SCTID_INACT_ERRONEOUS;
+			case INAPPROPRIATE -> SCTID_INACT_INAPPROPRIATE;
+			case LIMITED -> SCTID_INACT_LIMITED;
+			case OUTDATED -> SCTID_INACT_OUTDATED;
+			case PENDING_MOVE -> SCTID_INACT_PENDING_MOVE;
+			case NONCONFORMANCE_TO_EDITORIAL_POLICY -> SCTID_INACT_NON_CONFORMANCE;
+			case NOT_SEMANTICALLY_EQUIVALENT -> SCTID_INACT_NOT_SEMANTICALLY_EQUIVALENT;
+			case MEANING_OF_COMPONENT_UNKNOWN -> SCTID_INACT_MEANING_OF_COMPONENT_UNKNOWN;
+			case CLASSIFICATION_DERIVED_COMPONENT -> SCTID_INACT_CLASS_DERIVED_COMPONENT;
+			case GRAMMATICAL_DESCRIPTION_ERROR -> SCTID_INACT_GRAMMATICAL_DESCRIPTION_ERROR;
+			case OBSOLETE -> SCTID_INACT_OBSOLETE;
+			default -> throw new IllegalArgumentException("Unrecognised inactivation indicator  " + ii.toString());
+		};
 	}
 	
 	public static Association translateAssociation(String assocSctId) {
-		switch (assocSctId) {
-			case SCTID_ASSOC_WAS_A_REFSETID: return Association.WAS_A;
-			case SCTID_ASSOC_POSS_REPLACED_BY_REFSETID : return Association.POSS_REPLACED_BY;
-			case SCTID_ASSOC_REPLACED_BY_REFSETID : return Association.REPLACED_BY;
-			case SCTID_ASSOC_SAME_AS_REFSETID : return Association.SAME_AS;
-			case SCTID_ASSOC_MOVED_TO_REFSETID : return Association.MOVED_TO;
-			case SCTID_ASSOC_POSS_EQUIV_REFSETID : return Association.POSS_EQUIV_TO;
-			case SCTID_ASSOC_PART_EQUIV_REFSETID : return Association.PARTIALLY_EQUIV_TO;
-			case SCTID_ASSOC_ALTERNATIVE_REFSETID : return Association.ALTERNATIVE;
-			case SCTID_ASSOC_REFERS_TO_REFSETID : return Association.REFERS_TO;
-			case SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID : return Association.ANATOMY_STRUC_ENTIRE;
-			case SCTID_ASSOC_ANATOMY_STRUC_PART_REFSETID : return Association.ANATOMY_STRUC_PART;
-			default: throw new IllegalArgumentException("Unrecognised historical association indicator value " + assocSctId);
-		}
+		return switch (assocSctId) {
+			case SCTID_ASSOC_WAS_A_REFSETID -> Association.WAS_A;
+			case SCTID_ASSOC_POSS_REPLACED_BY_REFSETID -> Association.POSS_REPLACED_BY;
+			case SCTID_ASSOC_REPLACED_BY_REFSETID -> Association.REPLACED_BY;
+			case SCTID_ASSOC_SAME_AS_REFSETID -> Association.SAME_AS;
+			case SCTID_ASSOC_MOVED_TO_REFSETID -> Association.MOVED_TO;
+			case SCTID_ASSOC_POSS_EQUIV_REFSETID -> Association.POSS_EQUIV_TO;
+			case SCTID_ASSOC_PART_EQUIV_REFSETID -> Association.PARTIALLY_EQUIV_TO;
+			case SCTID_ASSOC_ALTERNATIVE_REFSETID -> Association.ALTERNATIVE;
+			case SCTID_ASSOC_REFERS_TO_REFSETID -> Association.REFERS_TO;
+			case SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID -> Association.ANATOMY_STRUC_ENTIRE;
+			case SCTID_ASSOC_ANATOMY_STRUC_PART_REFSETID -> Association.ANATOMY_STRUC_PART;
+			default ->
+					throw new IllegalArgumentException("Unrecognised historical association indicator value " + assocSctId);
+		};
 	}
 
 	public static String translateAssociation(Association assoc) {
-		switch (assoc) {
-			case WAS_A : return SCTID_ASSOC_WAS_A_REFSETID;
-			case POSS_REPLACED_BY : return SCTID_ASSOC_POSS_REPLACED_BY_REFSETID ;
-			case REPLACED_BY : return SCTID_ASSOC_REPLACED_BY_REFSETID ;
-			case SAME_AS : return SCTID_ASSOC_SAME_AS_REFSETID ;
-			case MOVED_TO : return SCTID_ASSOC_MOVED_TO_REFSETID ;
-			case POSS_EQUIV_TO : return SCTID_ASSOC_POSS_EQUIV_REFSETID ;
-			case PARTIALLY_EQUIV_TO : return SCTID_ASSOC_PART_EQUIV_REFSETID ;
-			case ALTERNATIVE : return SCTID_ASSOC_ALTERNATIVE_REFSETID ;
-			case REFERS_TO : return SCTID_ASSOC_REFERS_TO_REFSETID ;
-			case ANATOMY_STRUC_ENTIRE : return SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID ;
-			case ANATOMY_STRUC_PART : return SCTID_ASSOC_ANATOMY_STRUC_PART_REFSETID ;
-			default: throw new IllegalArgumentException("Unrecognised historical association indicator value " + assoc);
-		}
+		return switch (assoc) {
+			case WAS_A -> SCTID_ASSOC_WAS_A_REFSETID;
+			case POSS_REPLACED_BY -> SCTID_ASSOC_POSS_REPLACED_BY_REFSETID;
+			case REPLACED_BY -> SCTID_ASSOC_REPLACED_BY_REFSETID;
+			case SAME_AS -> SCTID_ASSOC_SAME_AS_REFSETID;
+			case MOVED_TO -> SCTID_ASSOC_MOVED_TO_REFSETID;
+			case POSS_EQUIV_TO -> SCTID_ASSOC_POSS_EQUIV_REFSETID;
+			case PARTIALLY_EQUIV_TO -> SCTID_ASSOC_PART_EQUIV_REFSETID;
+			case ALTERNATIVE -> SCTID_ASSOC_ALTERNATIVE_REFSETID;
+			case REFERS_TO -> SCTID_ASSOC_REFERS_TO_REFSETID;
+			case ANATOMY_STRUC_ENTIRE -> SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID;
+			case ANATOMY_STRUC_PART -> SCTID_ASSOC_ANATOMY_STRUC_PART_REFSETID;
+		};
 	}
 
 	public static String prettyPrintHistoricalAssociations(Concept c, GraphLoader gl) throws TermServerScriptException {
@@ -940,7 +923,7 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 		return null;
 	}
 	
-	public static String getConcreteValue(Concept c, Concept[] types, int groupId, CharacteristicType charType) throws TermServerScriptException {
+	public static String getConcreteValue(Concept c, Concept[] types, int groupId, CharacteristicType charType) {
 		for (Concept type : types) {
 			Set<Relationship> rels = c.getRelationships(charType, type, groupId);
 			if (rels.size() > 1) {
