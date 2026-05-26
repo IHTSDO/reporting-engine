@@ -905,14 +905,10 @@ public class Description extends Component implements ScriptConstants, Serializa
 	
 	@Override
 	public String toWhitelistString() {
-		try {
 			return super.toWhitelistString() + conceptId + "," + lang + "," +
 					SnomedUtils.translateDescType(type) + "," +
 					term + "," +
 					SnomedUtils.translateCaseSignificanceToSctId(caseSignificance);
-		} catch (TermServerScriptException e) {
-			throw new IllegalArgumentException("Failed to form whitelist string in " + this);
-		}
 	}
 
 	public Set<RefsetMember> getOtherRefsetMembers() {
