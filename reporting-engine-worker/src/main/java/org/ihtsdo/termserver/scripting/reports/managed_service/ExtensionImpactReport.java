@@ -70,7 +70,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Extension Impact Report")
-				.withDescription("This report estimates the size of the changes that will need to be made when the extension is upgraded to the latest international edition.  Leave the parameter blank for a preview of impact of current unpublished MAIN.")
+				.withDescription("This report estimates the size of the changes that will need to be made when the extension is upgraded to the latest international edition.  Leave the Proposed Release parameter blank for a preview of impact of current unpublished MAIN.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(MS)
