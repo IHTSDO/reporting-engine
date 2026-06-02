@@ -22,6 +22,8 @@
 	<properties>
 		<packageName>${project.artifactId}</packageName>
 		<execFinalName>${project.build.finalName}.jar</execFinalName>
+        <java.version>25</java.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
 	</properties>
 
 	<build>
