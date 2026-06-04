@@ -2497,10 +2497,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	public String getUserAgent() {
 		String userAgent = getConfigurationItem("reporting-worker.http.user-agent");
-		if (userAgent == null) {
-			throw new IllegalStateException("Missing user agent value.  Check consul or application-local.properties if running locally.");
-		}
-		return userAgent;
+		return userAgent == null ? "" : userAgent;
 	}
 
 	protected String getTemplateServiceUrl() {
