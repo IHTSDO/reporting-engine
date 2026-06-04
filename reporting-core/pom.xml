@@ -155,7 +155,7 @@
 					</execution>
 				</executions>
                 <configuration>
-                    <targetBytecode>25</targetBytecode>
+                    <targetBytecode>${java.version}</targetBytecode>
                 </configuration>
 			</plugin>
 		</plugins>
