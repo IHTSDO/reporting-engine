@@ -15,7 +15,7 @@ import java.util.stream.*;
 
 public class FindConceptsAcrossAllExtensions extends TermServerReport implements ReportClass {
 
-	private static final String BROWSER_URL = "https://browser.ihtsdotools.org/snowstorm/snomed-ct";
+	private static final String BROWSER_URL = "https://snomedbrowser.org/snowstorm/snomed-ct";
 	private static final String SNOMEDCT = "SNOMEDCT";
 
 	private List<CodeSystem> codeSystems;

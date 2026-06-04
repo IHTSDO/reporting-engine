@@ -50,7 +50,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		// << 48694002 |Anxiety| OR 1237275009  //Found in the Nursing Issues Refset && EDQM respectively
-		params.put(CONCEPT_INACTIVATIONS, "246454002, 387461009");
+		params.put(CONCEPT_INACTIVATIONS, "188754005, 277602003");
 		params.put(INCLUDE_INFERRED, "false");
 		TermServerScript.run(InactivationImpactAssessment.class, args, params);
 	}
@@ -97,7 +97,7 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 			//With ECL selection we don't need to worry about the concept already being inactive
 			inactivatingConcepts = findConcepts(selectionCriteria);
 			inactivatingConceptIds = inactivatingConcepts.stream()
-					.map(c -> c.getId())
+					.map(Concept::getId)
 					.collect(Collectors.toList());
 		} else {
 			for (String inactivatingConceptId : selectionCriteria.split(",")) {
@@ -120,11 +120,9 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	private void removeEmptyNoScopeAndDerivativeRefsets() {
 		LOGGER.info("Checking local refsets for emptiness, out of scope and derivative refsets");
 		List<Concept> emptyReferenceSets = new ArrayList<>();
-		List<Concept> outOfScopeReferenceSets = new ArrayList<>();
 		List<Concept> derivativeRefsets = new ArrayList<>();
 		for (Concept refset : referenceSets) {
 			if (!inScope(refset)) {
-				outOfScopeReferenceSets.add(refset);
 				continue;
 			}
 			if (getConceptsCount("^" + refset) == 0) {

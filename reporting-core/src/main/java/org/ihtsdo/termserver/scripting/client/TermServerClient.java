@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import org.apache.hc.core5.util.Timeout;
@@ -564,7 +565,7 @@ public class TermServerClient {
 		//Now wait for the import to complete
 		while(true) {
 			try {
-				Thread.sleep(5 * 1000);
+				Thread.sleep(5 * 1000L);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
@@ -913,12 +914,30 @@ public class TermServerClient {
 	}
 
 	public CodeSystem getCodeSystem(String codeSystemName) throws TermServerScriptException {
+		String url = this.serverUrl + "/codesystems/" + codeSystemName;
+		LOGGER.debug("Recovering codesystem from {}", url);
 		try {
-			String url = this.serverUrl + "/codesystems/" + codeSystemName;
-			LOGGER.debug("Recovering codesystem from {}", url);
-			return restTemplate.getForObject(url, CodeSystem.class);
+			// Use execute() with a raw ResponseExtractor to bypass message converter
+			// selection — getForObject fails when the server returns text/html (e.g. an
+			// error page) because no converter is registered for that content type.
+			String body = restTemplate.execute(url, HttpMethod.GET, null, response -> {
+				if (response.getStatusCode().is3xxRedirection()) {
+					throw new RestClientException(response.getStatusCode().value()
+							+ " redirect to: " + response.getHeaders().getLocation());
+				}
+				return StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
+			});
+			return getCodeSystem(body, url);
 		} catch (RestClientException e) {
 			throw new TermServerScriptException(translateRestClientException(e));
+		}
+	}
+
+	private CodeSystem getCodeSystem(String body, String url) throws TermServerScriptException {
+		try {
+			return gson.fromJson(body, CodeSystem.class);
+		} catch (Exception parseEx) {
+			throw new TermServerScriptException("Could not parse codesystem response from " + url + ". Raw body: " + body, parseEx);
 		}
 	}
 
