@@ -73,9 +73,6 @@ public class TemplateCompliance extends TemplateReport implements ReportClass {
 					.withType(JobParameter.Type.TEMPLATE)
 				.add(TEMPLATE_NAME)
 					.withType(JobParameter.Type.TEMPLATE_NAME)
-				.add(SERVER_URL)
-					.withType(JobParameter.Type.HIDDEN)
-					.withMandatory()
 				.build();
 		
 		return new Job()
@@ -111,25 +108,11 @@ public class TemplateCompliance extends TemplateReport implements ReportClass {
 		
 		super.init(jobRun);
 
-		String templateServerUrl;
+		String templateServerUrl = getTemplateServiceUrl();
 
-		//Have we been called via the reporting platform or are we running standalone?
-		if (appContext == null) {
-			templateServerUrl = getServerUrl();
-		} else {
-			templateServerUrl = jobRun.getMandatoryParamValue(SERVER_URL);
-		}
-		if (!templateServerUrl.endsWith("template-service/") && (!templateServerUrl.endsWith("template-service"))) {
-			if (templateServerUrl.endsWith("/")) {
-				templateServerUrl += "template-service";
-			} else {
-				templateServerUrl += "/template-service";
-			}
-		}
-
-		LOGGER.info("Connecting to template server: " + templateServerUrl + " with cookie starting: " + authenticatedCookie.substring(0, 15));
+		String cookieStart = authenticatedCookie.substring(0, 15);
+		LOGGER.info("Connecting to template server: {} with cookie starting: {}", templateServerUrl, cookieStart);
 		tsc = new TemplateServiceClient(templateServerUrl, authenticatedCookie);
-		
 
 		if (appContext == null && jobRun.getParameters().getValue(ECL) == null) {
 			localRunInit();
@@ -188,9 +171,9 @@ public class TemplateCompliance extends TemplateReport implements ReportClass {
 			}
 			templates.add(t);
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to load tempate '" + template + "'", e);
+			throw new TermServerScriptException("Failed to load template '" + template + "'", e);
 		}
-		LOGGER.info("Loaded user specified template: " + template);
+		LOGGER.info("Loaded user specified template: {}", template);
 	}
 
 	protected void localRunInit() throws TermServerScriptException {
@@ -430,18 +413,8 @@ public class TemplateCompliance extends TemplateReport implements ReportClass {
 		super.postInit(tabNames, columnHeadings);
 		outputMetaData();
 	}
-	
-	private void report(Task t, Concept c) throws TermServerScriptException {
-		//Collect the diagnostic information about why this concept didn't match any templates as a string
-		String diagnosticStr = "No diagnostic information available";
-		if (conceptDiagnosticsInferred.get(c) != null) {
-			diagnosticStr = String.join("\n", conceptDiagnosticsInferred.get(c));
-		}
-		report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, isComplex(c)?"Y":"N", gl.isOrphanetConcept(c)?"Y":"N", diagnosticStr);
-	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-	
 		List<Component> inferredMisaligned = identifyComponentsToProcess(CharacteristicType.INFERRED_RELATIONSHIP);
 		
 		//Inferred misaligned will be processed into tasks, so still need to report on stated and both

@@ -20,15 +20,14 @@ import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * DEVICES-92, QI-784
- * CDI-52 Update to run successfully against projects with concrete values
- */
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 
+/**
+ * DEVICES-92, QI-784
+ * CDI-52 Update to run successfully against projects with concrete values
+ */
 public class InactivationImpactAssessment extends AllKnownTemplates implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(InactivationImpactAssessment.class);
@@ -153,7 +152,6 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 				.add("Notes").withType(Type.STRING)
 					.withDescription("Any notes the Author might want to make about why they're running this report.  Has no functional impact")
 				.add(INCLUDE_INFERRED).withType(Type.BOOLEAN).withDefaultValue(false).withMandatory()
-				.add(SERVER_URL).withType(JobParameter.Type.HIDDEN).withMandatory()
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))

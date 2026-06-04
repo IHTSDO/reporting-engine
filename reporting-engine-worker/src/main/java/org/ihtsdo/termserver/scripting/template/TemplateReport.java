@@ -222,7 +222,7 @@ public abstract class TemplateReport extends TermServerReport {
 	
 	protected Template loadTemplate (char id, String templateName) throws TermServerScriptException {
 		try {
-			LOGGER.info("Loading remote template {}: '{}' from {}", id, templateName, tsc.getServerUrl() );
+			LOGGER.info("Loading remote template {}: '{}' from {}", id, templateName, tsc.getTemplateServiceUrl() );
 			ConceptTemplate ct = tsc.loadLogicalTemplate(templateName);
 			LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 			Template t = new Template(id, lt, templateName);

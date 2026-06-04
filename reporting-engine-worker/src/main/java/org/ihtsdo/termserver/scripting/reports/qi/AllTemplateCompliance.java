@@ -36,7 +36,6 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(SERVER_URL, "https://authoring.ihtsdotools.org/template-service");
 		TermServerScript.run(AllTemplateCompliance.class,args, params);
 	}
 
@@ -53,18 +52,12 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 
 	@Override
 	public Job getJob() {
-		JobParameters params = new JobParameters()
-				.add(SERVER_URL)
-					.withType(JobParameter.Type.HIDDEN)
-					.withMandatory()
-				.build();
-
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
 				.withName("All Templates Compliance Stats")
 				.withDescription("For every domain which has one or more templates, determine how many concepts comply to that template(s).")
 				.withProductionStatus(ProductionStatus.PROD_READY)
-				.withParameters(params)
+				.withParameters(new JobParameters())
 				.withTag(INT)
 				.build();
 	}

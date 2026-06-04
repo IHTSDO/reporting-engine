@@ -36,10 +36,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 	
 	protected void commonInit(JobRun run, boolean singleTemplateMode) {
 		this.singleTemplateMode = singleTemplateMode;
-		String templateServiceUrl = run.getMandatoryParamValue(SERVER_URL);
-		if (!templateServiceUrl.endsWith("/template-service")) {
-			templateServiceUrl += "/template-service";
-		}
+		String templateServiceUrl = getTemplateServiceUrl();
 		tsc = new TemplateServiceClient(templateServiceUrl, run.getAuthToken());
 		sctidExtractorPattern = Pattern.compile("\\d{8,}");
 		ReportSheetManager.setTargetFolderId(GFOLDER_QI_STATS);
@@ -47,6 +44,8 @@ public abstract class AllKnownTemplates extends TermServerReport {
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
+		//Need base class init to run first so that we pick up the terminology server url from the run object
+		super.init(run);
 		commonInit(run, singleTemplateMode);
 		if (!singleTemplateMode) {
 			populateTemplates("<< 125605004 |Fracture of bone (disorder)|",	"templates/fracture/Fracture of Bone Structure.json",
@@ -315,7 +314,6 @@ public abstract class AllKnownTemplates extends TermServerReport {
 			
 			populateTemplatesFromTS();
 		}
-		super.init(run);
 	}
 	
 	public void populateTemplateFromTS(String templateName) throws TermServerScriptException {

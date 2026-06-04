@@ -128,7 +128,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public static final String NEW_CONCEPTS_ONLY = "New Concepts Only";
 	public static final String RESTART_FROM_TASK = "Restart from task";
 	public static final String RUN_HEADLESS = "Run Headless";
-	public static final String SERVER_URL = "ServerUrl";
 	public static final String SUB_HIERARCHY = "Subhierarchy";
 	public static final String TEMPLATE = "Template";
 	public static final String TEMPLATE2 = "Template 2";
@@ -330,7 +329,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		if (jobRun != null) {
 			//Not sure historically why we have this in two places
 			jobRun.setTerminologyServerUrl(url);
-			jobRun.setParameter(SERVER_URL, url);
 		}
 	
 		if (jobRun != null && !jobRun.getAuthToken().isEmpty()) {
@@ -2495,6 +2493,33 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 							reportSafely(summaryTabIdx, "", entry.getKey(), entry.getValue())
 					);
 				});
+	}
+
+	protected String getTemplateServiceUrl() {
+		String templateServiceName = getConfigurationItem("templateService.name");
+		if (templateServiceName == null) {
+			throw new IllegalStateException("Missing template service name.  Check consul or application-local.properties if running locally.");
+		}
+		//We'll assume that the template service lives on the same server as the TS
+		return getServerUrl() + templateServiceName;
+	}
+
+	protected String getConfigurationItem(String key) {
+		if (appContext != null) {
+			return appContext.getEnvironment().getProperty(key);
+		}
+		Properties props = new Properties();
+		File localProps = new File("application-local.properties");
+		if (localProps.exists()) {
+			try (InputStream is = new FileInputStream(localProps)) {
+				props.load(is);
+			} catch (IOException e) {
+				LOGGER.warn("Could not load application-local.properties for key '{}'", key, e);
+			}
+		} else {
+			LOGGER.warn("No application-local.properties found in working directory ({}) for key '{}'", localProps.getAbsolutePath(), key);
+		}
+		return props.getProperty(key);
 	}
 
 }

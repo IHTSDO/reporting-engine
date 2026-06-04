@@ -13,25 +13,20 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
  * CDI-52 Update report to successfully run against projects with concrete values.
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class TemplateList extends AllKnownTemplates implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateList.class);
 	
-	private static final String DEFAULT_TEMPLATE_SERVICE_URL = "https://dev-snowstorm.ihtsdotools.org/template-service";
-
 	public static void main(String[] args) throws TermServerScriptException {
-		Map<String, String> params = new HashMap<>();
-		params.put(SERVER_URL, DEFAULT_TEMPLATE_SERVICE_URL);
-		TermServerScript.run(TemplateList.class, args, params);
+		TermServerScript.run(TemplateList.class, args, new HashMap<>());
 	}
 
 	@Override
@@ -51,18 +46,12 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 
 	@Override
 	public Job getJob() {
-		JobParameters params = new JobParameters()
-				.add(SERVER_URL)
-					.withType(JobParameter.Type.HIDDEN)
-					.withMandatory()
-				.build();
-		
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
 				.withName("Template List")
 				.withDescription("Lists all known templates")
 				.withProductionStatus(ProductionStatus.PROD_READY)
-				.withParameters(params)
+				.withParameters(new JobParameters())
 				.withTag(INT)
 				.build();
 	}
@@ -103,7 +92,7 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 					//Did this template come from QI or the Template Service
 					report(PRIMARY_REPORT, domainStr, template.getName(), template.getSource(), template.getDocumentation());
 				} catch (Exception e) {
-					LOGGER.error ("Exception while processing template " + domainStr, e);
+					LOGGER.error("Exception while processing template {}", domainStr, e);
 					report(SECONDARY_REPORT, template, e);
 				}
 			}

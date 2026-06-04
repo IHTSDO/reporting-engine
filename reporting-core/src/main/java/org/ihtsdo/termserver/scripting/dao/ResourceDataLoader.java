@@ -60,9 +60,9 @@ public class ResourceDataLoader {
 	
 	@EventListener(ApplicationReadyEvent.class)
 	private void init() throws TermServerScriptException {
-		boolean useCloud = false;
+		boolean useCloud;
 		if (!StringUtils.isEmpty(useCloudStr)) {
-			useCloud = useCloudStr.toLowerCase().equals("true");
+			useCloud = useCloudStr.equalsIgnoreCase("true");
 		} else {
 			throw new TermServerScriptException("Check application.properties - resources.useCloud is not specified");
 		}

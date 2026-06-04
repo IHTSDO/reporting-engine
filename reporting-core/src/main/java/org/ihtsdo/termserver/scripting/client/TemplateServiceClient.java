@@ -27,7 +27,7 @@ public class TemplateServiceClient {
 	
 	private final HttpHeaders headers;
 	private final RestTemplate restTemplate;
-	private String serverUrl;
+	private String templateServiceUrl;
 	LogicalTemplateParserService service  = new LogicalTemplateParserService();
 	ObjectMapper mapper = new ObjectMapper();
 	private static final String CONTENT_TYPE = "application/json";
@@ -66,26 +66,18 @@ public class TemplateServiceClient {
 		return service.parseTemplate(logicalTemplateStr);
 	}
 	
-	public TemplateServiceClient(String serverUrl, String cookie) {
+	public TemplateServiceClient(String templateServiceUrl, String cookie) {
 		headers = new HttpHeaders();
 		headers.add("Cookie", cookie);
 		headers.add("Accept", CONTENT_TYPE);
 		
-		if (serverUrl != null) {
-			//Have we been passed a full url?
-			int cutPoint = serverUrl.indexOf(TEMPLATES);
-			if (cutPoint != -1) {
-				serverUrl = serverUrl.substring(0,cutPoint);
-			}
-		}
-
 		restTemplate = new RestTemplateBuilder()
-				.rootUri(serverUrl)
+				.rootUri(templateServiceUrl)
 				.additionalMessageConverters(new GsonHttpMessageConverter())
 				.errorHandler(new ExpressiveErrorHandler())
 				.build();
 		
-		this.serverUrl = serverUrl;
+		this.templateServiceUrl = templateServiceUrl;
 		
 		//Add a ClientHttpRequestInterceptor to the RestTemplate
 		restTemplate.getInterceptors().add(new ClientHttpRequestInterceptor(){
@@ -102,12 +94,13 @@ public class TemplateServiceClient {
 				"/templates",
 				HttpMethod.GET,
 				null,
-				new ParameterizedTypeReference<List<ConceptTemplate>>(){});
+				new ParameterizedTypeReference<>() {
+				});
 		return response.getBody();
 	}
 	
-	public String getServerUrl() {
-		return serverUrl;
+	public String getTemplateServiceUrl() {
+		return templateServiceUrl;
 	}
 
 }
