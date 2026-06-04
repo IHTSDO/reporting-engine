@@ -96,10 +96,11 @@ public class DerivativeHelper implements ScriptConstants {
 
 	public EclCache getEclCacheForDerivativeRefset(String refsetId) {
 		String authenticatedCookie = script.getAuthenticatedCookie();
+		String userAgent = script.getUserAgent();
 		GraphLoader gl = script.getGraphLoader();
 
 		DerivativeLocation location = derivativeLocationMap.get(refsetId);
-		TermServerClient tsClient = serverTsClientMap.computeIfAbsent(location.server, k -> new TermServerClient(k, authenticatedCookie));
+		TermServerClient tsClient = serverTsClientMap.computeIfAbsent(location.server, k -> new TermServerClient(k, authenticatedCookie, userAgent));
 		AuthoringServicesClient asClient = serverAsClientMap.computeIfAbsent(location.server, k -> new AuthoringServicesClient(getAsServerURL(k), authenticatedCookie));
 		String branch = branchForProjectOrCodeSystem.computeIfAbsent(location.getProjectOrCodeSystem(), k -> getBranchForDerivativeLocation(tsClient, asClient, location));
 

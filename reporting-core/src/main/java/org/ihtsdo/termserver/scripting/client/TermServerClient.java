@@ -85,15 +85,15 @@ public class TermServerClient {
 	private final RestTemplate restTemplate;
 	private final HttpHeaders headers;
 	private final String serverUrl;
-	private static final String JSON_CONTENT_TYPE = "application/json";
 	private static final Logger LOGGER = LoggerFactory.getLogger(TermServerClient.class);
 
-	public TermServerClient(String serverUrl, String cookie) {
+	public TermServerClient(String serverUrl, String cookie, String userAgent) {
 		this.serverUrl = serverUrl;
 
 		headers = new HttpHeaders();
-		headers.add("Cookie", cookie);
-		headers.add("Accept", JSON_CONTENT_TYPE);
+		headers.add(HttpHeaders.COOKIE, cookie);
+		headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+		headers.add(HttpHeaders.USER_AGENT, userAgent);
 
 		RequestConfig requestConfig = RequestConfig.custom()
 				.setConnectionRequestTimeout(Timeout.ofSeconds(10))
@@ -116,13 +116,10 @@ public class TermServerClient {
 
 
 		//Add a ClientHttpRequestInterceptor to the RestTemplate
-		restTemplate.getInterceptors().add(new ClientHttpRequestInterceptor(){
-			@Override
-			public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
-				request.getHeaders().addAll(headers);
-				return execution.execute(request, body);
-			}
-		}); 
+		restTemplate.getInterceptors().add((request, body, execution) -> {
+			request.getHeaders().addAll(headers);
+			return execution.execute(request, body);
+		});
 	}
 	
 	public Branch getBranch(String branchPath) throws TermServerScriptException {

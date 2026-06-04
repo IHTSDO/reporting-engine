@@ -31,7 +31,7 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc
 		super.init(run);
-		tsClient = new TermServerClient(BROWSER_URL, getAuthenticatedCookie());
+		tsClient = new TermServerClient(BROWSER_URL, getAuthenticatedCookie(), getUserAgent());
 		codeSystems = tsClient.getCodeSystems();
 		internationalModules = codeSystems.stream()
 				.filter(cs -> cs.getShortName().equals(SNOMEDCT))

@@ -701,7 +701,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			throw new IllegalArgumentException("Malformed cookie detected.  Expected <env>-ihtsdo=<token> instead received: " + authenticatedCookie);
 		}
 		String contextPath = "snowstorm/snomed-ct";
-		return new TermServerClient(url + contextPath, authenticatedCookie);
+		return new TermServerClient(url + contextPath, authenticatedCookie, getUserAgent());
 	}
 
 	//Default implementation - load all descriptions
@@ -2495,6 +2495,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				});
 	}
 
+	public String getUserAgent() {
+		String userAgent = getConfigurationItem("reporting-worker.http.user-agent");
+		if (userAgent == null) {
+			throw new IllegalStateException("Missing user agent value.  Check consul or application-local.properties if running locally.");
+		}
+		return userAgent;
+	}
+
 	protected String getTemplateServiceUrl() {
 		String templateServiceName = getConfigurationItem("templateService.name");
 		if (templateServiceName == null) {
@@ -2509,16 +2517,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			return appContext.getEnvironment().getProperty(key);
 		}
 		Properties props = new Properties();
-		File localProps = new File("application-local.properties");
-		if (localProps.exists()) {
-			try (InputStream is = new FileInputStream(localProps)) {
-				props.load(is);
-			} catch (IOException e) {
-				LOGGER.warn("Could not load application-local.properties for key '{}'", key, e);
-			}
-		} else {
-			LOGGER.warn("No application-local.properties found in working directory ({}) for key '{}'", localProps.getAbsolutePath(), key);
+
+		try (InputStream is = getClass().getClassLoader().getResourceAsStream("application-local.properties")) {
+			props.load(is);
+		} catch (IOException e) {
+			LOGGER.warn("Could not load application-local.properties for key '{}'", key, e);
 		}
+
 		return props.getProperty(key);
 	}
 
