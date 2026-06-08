@@ -136,8 +136,8 @@
 					<additionalProperties>
 						<encoding.source>UTF-8</encoding.source>
 						<encoding.reporting>UTF-8</encoding.reporting>
-						<java.source>${maven.compiler.source}</java.source>
-						<java.target>${maven.compiler.target}</java.target>
+						<java.source>${maven.compiler.release}</java.source>
+						<java.target>${maven.compiler.release}</java.target>
 					</additionalProperties>
 				</configuration>
 				<executions>
