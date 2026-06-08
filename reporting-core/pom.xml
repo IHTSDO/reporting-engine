@@ -75,9 +75,15 @@
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 		</dependency>
+        <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy</artifactId>
+            <version>5.0.3</version>
+        </dependency>
 		<dependency>
 			<groupId>org.spockframework</groupId>
 			<artifactId>spock-core</artifactId>
+            <version>2.4-groovy-5.0</version>
 		</dependency>
 		<!-- Spock optional dependencies, objenesis and bytebuddy, see: https://spockframework.org/spock/docs/2.0/faq.html -->
 		<dependency>
@@ -92,7 +98,6 @@
 			<version>1.14.10</version>
 			<scope>test</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>commons-net</groupId>
 			<artifactId>commons-net</artifactId>
@@ -100,10 +105,6 @@
 		<dependency>
 			<groupId>xom</groupId>
 			<artifactId>xom</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.dataformat</groupId>
-			<artifactId>jackson-dataformat-xml</artifactId>
 		</dependency>
 	</dependencies>
 
@@ -145,7 +146,7 @@
 			<plugin>
 				<groupId>org.codehaus.gmavenplus</groupId>
 				<artifactId>gmavenplus-plugin</artifactId>
-				<version>2.1.0</version>
+                <version>4.3.1</version>
 				<executions>
 					<execution>
 						<goals>
@@ -153,6 +154,9 @@
 						</goals>
 					</execution>
 				</executions>
+                <configuration>
+                    <targetBytecode>${java.version}</targetBytecode>
+                </configuration>
 			</plugin>
 		</plugins>
 	</build>
