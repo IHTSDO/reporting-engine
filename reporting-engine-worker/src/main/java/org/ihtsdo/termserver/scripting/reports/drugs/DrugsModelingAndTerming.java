@@ -73,6 +73,7 @@ public class DrugsModelingAndTerming extends TermServerReport implements ReportC
 		ReportSheetManager.setTargetFolderId("1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3");  //DRUGS/Validation
 		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";  //DRUGS-267
 		super.init(run);
+		getArchiveManager().setPopulateReleaseFlag(true);
 	}
 
 	@Override
