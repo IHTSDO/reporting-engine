@@ -41,6 +41,7 @@ import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import org.springframework.web.util.UriComponentsBuilder;
 
 public class TermServerClient {
 
@@ -835,26 +836,25 @@ public class TermServerClient {
 
 	@SuppressWarnings("java:S2259")
 	public Collection<RefsetMember> searchMembers(String branchPath, List<String> referencedComponentIds, String referenceSet) throws TermServerScriptException {
+		int limit = 100;
+		int offset = 0;
+
+		Collection<RefsetMember> members = new ArrayList<>();
+		String url = getSearchMembersUrl(branchPath);
+
 		try {
-			Collection<RefsetMember> members = new ArrayList<>();
-			String url = getSearchMembersUrl(branchPath);
 
-			Map<String, Object> body = new HashMap<>();
-			body.put("referenceSet", referenceSet);
-			body.put("referencedComponentIds", referencedComponentIds);
-
+			Map<String, Object> body = Map.of("referenceSet", referenceSet, "referencedComponentIds", referencedComponentIds);
 			HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
-			RefsetMemberCollection memberCollection = restTemplate.postForObject(url, request, RefsetMemberCollection.class);
+			RefsetMemberCollection memberCollection = restTemplate.postForObject(buildUri(url, limit, offset), request, RefsetMemberCollection.class);
 			members.addAll(memberCollection.getItems());
 
 			int totalExpected = memberCollection.getTotal();
-			String searchAfter = memberCollection.getSearchAfter();
-
 			while (members.size() < totalExpected) {
-				memberCollection = restTemplate.postForObject(url + SEARCH_AFTER + searchAfter, request, RefsetMemberCollection.class);
+				offset += limit;
+				memberCollection = restTemplate.postForObject(buildUri(url, limit, offset), request, RefsetMemberCollection.class);
 				members.addAll(memberCollection.getItems());
-				searchAfter = memberCollection.getSearchAfter();
 			}
 
 			return members;
@@ -862,6 +862,14 @@ public class TermServerClient {
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
 		}
+	}
+
+	private URI buildUri(String url, int limit, int offset) {
+		return UriComponentsBuilder.fromUriString(url)
+				.queryParam("limit", limit)
+				.queryParam("offset", offset)
+				.build()
+				.toUri();
 	}
 
 
