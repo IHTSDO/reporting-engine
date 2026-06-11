@@ -66,6 +66,7 @@ public class MP_MPF_Validation extends TermServerReport implements ReportClass {
 		ReportSheetManager.setTargetFolderId("1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3");  //DRUGS/Validation
 		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";  //DRUGS-267
 		super.init(run);
+		getArchiveManager().setPopulateReleaseFlag(true);
 	}
 
 	@Override
