@@ -2,33 +2,20 @@ package org.ihtsdo.termserver.scripting.reports.drugs;
 
 import java.util.*;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.util.DoseFormHelper;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
-import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
-import org.snomed.otf.script.dao.ReportSheetManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DoseFormValidation extends TermServerReport implements ReportClass {
+public class DoseFormValidation extends DrugsReport {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DoseFormValidation.class);
-	private static final String RECENT_CHANGES_ONLY = "Recent Changes Only";
 
-	private List<Concept> allDrugs;
-	private final Concept[] doseFormTypes = new Concept[] {HAS_MANUFACTURED_DOSE_FORM};
-	private boolean isRecentlyTouchedConceptsOnly = false;
-	private Set<Concept> recentlyTouchedConcepts;
-	private DoseFormHelper doseFormHelper;
-	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(RECENT_CHANGES_ONLY, "true");
@@ -36,49 +23,9 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 	}
 
 	@Override
-	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.setTargetFolderId("1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3");  //DRUGS/Validation
-		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";
-		super.init(run);
-	}
-
-	@Override
-	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {
-				"SCTID, FSN, Semtag, Issue, Details, Details, Details, Further Details",
-				"Issue, Count"
-		};
-		String[] tabNames = new String[] {
-				"Issues",
-				"Summary"
-		};
-		allDrugs = SnomedUtils.sort(gl.getDescendantsCache().getDescendants(MEDICINAL_PRODUCT));
-		doseFormHelper = new DoseFormHelper();
-		doseFormHelper.initialise(gl);
-		
-		super.postInit(tabNames, columnHeadings);
-		
-		if (jobRun.getParamBoolean(RECENT_CHANGES_ONLY)) {
-			isRecentlyTouchedConceptsOnly = true;
-			recentlyTouchedConcepts = SnomedUtils.getRecentlyTouchedConcepts(gl.getAllConcepts());
-		}
-	}
-
-	@Override
 	public Job getJob() {
-		JobParameters params = new JobParameters()
-				.add(RECENT_CHANGES_ONLY)
-					.withType(JobParameter.Type.BOOLEAN)
-					.withDefaultValue(true)
-			.build();
-		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
-				.withName("Dose Form Validation")
-				.withDescription("This report checks CD and MPF Dose forms against a curated file of acceptable dose forms.")
-				.withProductionStatus(ProductionStatus.PROD_READY)
-				.withTag(INT)
-				.withParameters(params)
-				.build();
+		return getDrugJob("Dose Form Validation",
+				   "This report checks CD and MPF Dose forms against a curated file of acceptable dose forms.");
 	}
 
 	@Override
@@ -88,7 +35,7 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 		LOGGER.info("Summary tab complete, all done.");
 	}
 
-	private void validateDoseFormUsage() throws TermServerScriptException {
+	public void validateDoseFormUsage() throws TermServerScriptException {
 		double conceptsConsidered = 0;
 		for (Concept c : allDrugs) {
 			if (isRecentlyTouchedConceptsOnly && !recentlyTouchedConcepts.contains(c)) {
@@ -109,7 +56,6 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 		}
 		LOGGER.info("Dose Form usage validation complete");
 	}
-	
 
 	private void validateAcceptableDoseForm(Concept c) throws TermServerScriptException {
 		String issueStr1 = c.getConceptType() + " uses unlisted dose form";
@@ -129,22 +75,5 @@ public class DoseFormValidation extends TermServerReport implements ReportClass 
 		}
 	}
 
-	private void populateSummaryTab() {
-		issueSummaryMap.entrySet().stream()
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
-		
-		int total = issueSummaryMap.values().stream()
-				.mapToInt(Integer::intValue).sum();
-		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
-	}
-
-	@Override
-	public boolean report(Concept c, Object...details) throws TermServerScriptException {
-		//The first detail is the issue
-		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
-		countIssue(c);
-		return super.report(PRIMARY_REPORT, c, details);
-	}
 
 }

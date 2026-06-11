@@ -14,7 +14,7 @@ import org.snomed.otf.scheduler.domain.JobRun;
 
 public abstract class TermServerReport extends TermServerScript {
 
-	protected final Map<String, Integer> issueSummaryMap = new HashMap<>();
+	protected Map<String, Integer> issueSummaryMap = new HashMap<>();
 
 	protected boolean unpromotedChangesOnly = false;
 	protected boolean includeLegacyIssues = false;
