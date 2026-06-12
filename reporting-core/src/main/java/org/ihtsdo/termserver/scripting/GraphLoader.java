@@ -498,7 +498,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		String typeId = lineItems[REL_IDX_TYPEID];
 		
 		if (sourceId.length() < 4 || typeId.length() < 4 ) {
-			LOGGER.debug("*** Invalid SCTID encountered in relationship " + lineItems[REL_IDX_ID] + ": s" + sourceId + " t" + typeId);
+			LOGGER.debug("*** Invalid SCTID encountered in relationship {}: s{} t{}", lineItems[REL_IDX_ID], sourceId,typeId);
 		}
 		Concept type = getConcept(typeId);
 		int groupNum = Integer.parseInt(lineItems[REL_IDX_RELATIONSHIPGROUP]);
@@ -507,7 +507,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		if (lineItems[REL_IDX_VALUE].startsWith("#")) {
 			//Trim leading hash symbol. Leave as string to preserve DPs
 			String value = lineItems[REL_IDX_VALUE].substring(1);
-			r = new Relationship(source, type, value, groupNum, ConcreteValue.ConcreteValueType.DECIMAL);
+			r = new Relationship(source, type, value, groupNum, ConcreteValue.ConcreteValueType.NUMERIC);
 		} else if (lineItems[REL_IDX_VALUE].startsWith("\"")) {
 			//Trim of start and ending quote
 			String value = lineItems[REL_IDX_VALUE].substring(1, lineItems[REL_IDX_VALUE].length()-1);

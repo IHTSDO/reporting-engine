@@ -57,7 +57,6 @@ public class ArchiveImporter implements ScriptConstants {
 		String sizeMbStr = String.format("%.2f", sizeMb);
 		LOGGER.info("Loading delta {} of size {}Mb", delta, sizeMbStr);
 		loadArchive(delta, false, "Delta", false);
-		gl.finalizeMRCM();
 	}
 
 	public void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException {
@@ -81,6 +80,8 @@ public class ArchiveImporter implements ScriptConstants {
 			if(!isDelta && gl.isPopulateOriginalModuleMap()) {
 				gl.populateOriginalModuleMap();
 			}
+
+			gl.finalizeMRCM();
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
 		} catch (IllegalArgumentException e) {
@@ -183,8 +184,11 @@ public class ArchiveImporter implements ScriptConstants {
 		} else if (fileName.contains("ComponentAnnotationStringValue")) {
 			LOGGER.info("Loading ComponentAnnotationStringValue File: {} file: {}", fileType, fileName);
 			gl.loadComponentAnnotationFile(is, isReleased);
-		}  else if (fileName.contains("ssRefset_ModuleDependency")) {
+		} else if (fileName.contains("ssRefset_ModuleDependency")) {
 			LOGGER.info("Loading Module Dependency File: {} file: {}", fileType, fileName);
+			gl.loadModuleDependencyFile(is, isReleased);
+		} else if (fileName.contains("MRCM")) {
+			LOGGER.info("Loading MRCM File: {} file: {}", fileType, fileName);
 			gl.loadModuleDependencyFile(is, isReleased);
 		} else if (config.isLoadOtherReferenceSets() && fileName.contains("Refset")) {
 			loadTheReferenceSet = true;

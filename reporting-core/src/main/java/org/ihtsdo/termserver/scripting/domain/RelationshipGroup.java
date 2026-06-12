@@ -1,5 +1,8 @@
 package org.ihtsdo.termserver.scripting.domain;
 
+import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeRange;
+import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeRangeManager;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -345,12 +348,17 @@ public class RelationshipGroup implements ScriptConstants {
 		}
 	}
 
-	public List<org.snomed.otf.owltoolkit.domain.Relationship> getToolKitRelationships() {
+	public List<org.snomed.otf.owltoolkit.domain.Relationship> getToolKitRelationships(MRCMAttributeRangeManager mrcmAttributeRangeManager) {
 		List<org.snomed.otf.owltoolkit.domain.Relationship> toolkitRels = new ArrayList<>();
 		for (IRelationship r : getIRelationships()) {
 			int groupId = r.getGroupId();
 			long type = Long.parseLong(r.getType().getConceptId());
 			if (r.getTarget() == null) {
+				//If the type of this CV is just 'numeric', let's determine what it should be via the MRCM
+				if (r.getConcreteValue().getDataType().equals(ConcreteValue.ConcreteValueType.NUMERIC)) {
+					MRCMAttributeRange range = mrcmAttributeRangeManager.getAttributeRangeForType(r.getType());
+					r.getConcreteValue().setDataType(ConcreteValue.ConcreteValueType.getTypeForRange(range));
+				}
 				org.snomed.otf.owltoolkit.domain.Relationship.ConcreteValue cv = getToolKitConcreteValue(r);
 				org.snomed.otf.owltoolkit.domain.Relationship toolKitRel =
 						new org.snomed.otf.owltoolkit.domain.Relationship(groupId, type, cv);
@@ -378,6 +386,7 @@ public class RelationshipGroup implements ScriptConstants {
 			case DECIMAL -> org.snomed.otf.owltoolkit.domain.Relationship.ConcreteValue.Type.DECIMAL;
 			case INTEGER -> org.snomed.otf.owltoolkit.domain.Relationship.ConcreteValue.Type.INTEGER;
 			case STRING -> org.snomed.otf.owltoolkit.domain.Relationship.ConcreteValue.Type.STRING;
+			case NUMERIC -> throw new IllegalArgumentException("Attempt to transform concrete value of indeterminate type (INT or DEC?)");
 		};
 	}
 

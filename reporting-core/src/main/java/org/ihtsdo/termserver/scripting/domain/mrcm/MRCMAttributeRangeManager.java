@@ -218,4 +218,13 @@ public class MRCMAttributeRangeManager implements ScriptConstants  {
 			}
 		}
 	}
+
+	public MRCMAttributeRange getAttributeRangeForType(Concept type) {
+		//Try all, then fall back to pre-coord
+		MRCMAttributeRange attribRange = mrcmAttributeRangeMapAll.get(type);
+		if (attribRange == null) {
+			attribRange = mrcmAttributeRangeMapPreCoord.get(type);
+		}
+		return attribRange;
+	}
 }
