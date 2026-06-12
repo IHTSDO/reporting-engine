@@ -2,13 +2,24 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeRange;
 
 public class ConcreteValue {
 
 	public enum ConcreteValueType {
 		@SerializedName("INTEGER") INTEGER,
 		@SerializedName("DECIMAL") DECIMAL,
-		@SerializedName("STRING") STRING }
+		@SerializedName("STRING") STRING,
+		@SerializedName("NUMERIC") NUMERIC;
+
+		public static ConcreteValueType getTypeForRange(MRCMAttributeRange range) {
+			ConcreteValueType type = ConcreteValueType.DECIMAL;
+			if (range != null && range.getField("rangeConstraint").contains("int")) {
+				type = ConcreteValueType.INTEGER;
+			}
+			return type;
+		}
+	}
 
 	@SerializedName("dataType")
 	@Expose
@@ -33,7 +44,7 @@ public class ConcreteValue {
 			value = valueWithPrefix.replace("#", "");
 			dataType = ConcreteValueType.DECIMAL;
 		} else if (valueWithPrefix.startsWith("\"")) {
-			value = valueWithPrefix.replaceAll("\"", "");
+			value = valueWithPrefix.replace("\"", "");
 			dataType = ConcreteValueType.STRING;
 		} else {
 			throw new IllegalArgumentException("Cannot determine datatype of Concrete Value '" + decoratedStr + "'");
@@ -54,9 +65,10 @@ public class ConcreteValue {
 
 	public void setValue(String value) {
 		this.value = value;
-		switch (dataType) {
-			case STRING : valueWithPrefix = "\"" + value + "\"";
-			default : valueWithPrefix =  "#" + value;
+		if (dataType == ConcreteValueType.STRING) {
+			valueWithPrefix = "\"" + value + "\"";
+		} else {
+			valueWithPrefix = "#" + value;
 		}
 	}
 
@@ -78,8 +90,7 @@ public class ConcreteValue {
 	
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof ConcreteValue) {
-			ConcreteValue otherCV = (ConcreteValue)other;
+		if (other instanceof ConcreteValue otherCV) {
 			return this.valueWithPrefix.equals(otherCV.valueWithPrefix);
 		}
 		return false;
