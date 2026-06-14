@@ -94,7 +94,7 @@ public class DerivativeHelper implements ScriptConstants {
 		return derivativeRefsetConcepts;
 	}
 
-	public EclCache getEclCacheForDerivativeRefset(String refsetId) {
+	public EclCache getEclCacheForDerivativeRefset(String refsetId) throws TermServerScriptException {
 		String authenticatedCookie = script.getAuthenticatedCookie();
 		String userAgent = script.getUserAgent();
 		GraphLoader gl = script.getGraphLoader();

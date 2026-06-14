@@ -706,7 +706,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return jobRun;
 	}
 	
-	protected TermServerClient createTSClient(String url, String authenticatedCookie) {
+	protected TermServerClient createTSClient(String url, String authenticatedCookie) throws TermServerScriptException {
 		if (!authenticatedCookie.contains("ihtsdo=")) {
 			throw new IllegalArgumentException("Malformed cookie detected.  Expected <env>-ihtsdo=<token> instead received: " + authenticatedCookie);
 		}
@@ -2505,12 +2505,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				});
 	}
 
-	public String getUserAgent() {
+	public String getUserAgent() throws TermServerScriptException {
 		String userAgent = getConfigurationItem("reporting-worker.http.user-agent");
 		return userAgent == null ? "" : userAgent;
 	}
 
-	protected String getTemplateServiceUrl() {
+	protected String getTemplateServiceUrl() throws TermServerScriptException {
 		String templateServiceName = getConfigurationItem("templateService.name");
 		if (templateServiceName == null) {
 			throw new IllegalStateException("Missing template service name.  Check consul or application-local.properties if running locally.");
@@ -2519,19 +2519,32 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return getServerUrl() + templateServiceName;
 	}
 
-	protected String getConfigurationItem(String key) {
+	protected String getConfigurationItem(String key) throws TermServerScriptException {
 		if (appContext != null) {
 			return appContext.getEnvironment().getProperty(key);
 		}
 		Properties props = new Properties();
-
-		try (InputStream is = getClass().getClassLoader().getResourceAsStream("application-local.properties")) {
-			props.load(is);
+		try (InputStream is = openLocalPropertiesStream()) {
+			if (is != null) {
+				props.load(is);
+			}
 		} catch (IOException e) {
 			LOGGER.warn("Could not load application-local.properties for key '{}'", key, e);
 		}
+		String value = props.getProperty(key);
+		if (value == null) {
+			throw new TermServerScriptException("Configuration item '" + key + "' not found in application-local.properties");
+		}
+		return value;
+	}
 
-		return props.getProperty(key);
+	private InputStream openLocalPropertiesStream() throws FileNotFoundException {
+		File localProps = new File("application-local.properties");
+		if (localProps.exists()) {
+			return new FileInputStream(localProps);
+		}
+		LOGGER.warn("No application-local.properties found in working directory ({}), falling back to classpath", localProps.getAbsolutePath());
+		return getClass().getClassLoader().getResourceAsStream("application-local.properties");
 	}
 
 }

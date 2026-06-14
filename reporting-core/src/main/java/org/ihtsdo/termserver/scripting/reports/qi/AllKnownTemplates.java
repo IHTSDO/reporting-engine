@@ -34,7 +34,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 
 	private Map<Template, Set<String>> templateToSctidMap;
 	
-	protected void commonInit(JobRun run, boolean singleTemplateMode) {
+	protected void commonInit(JobRun run, boolean singleTemplateMode) throws TermServerScriptException {
 		this.singleTemplateMode = singleTemplateMode;
 		String templateServiceUrl = getTemplateServiceUrl();
 		tsc = new TemplateServiceClient(templateServiceUrl, run.getAuthToken());
