@@ -31,7 +31,7 @@ public class DoseFormValidation extends DrugsReport {
 	@Override
 	public void runJob() throws TermServerScriptException {
 		validateDoseFormUsage();
-		populateSummaryTab();
+		reportSummaryCounts(SECONDARY_REPORT, SUMMARY_SORT_ORDER.COUNT);
 		LOGGER.info("Summary tab complete, all done.");
 	}
 

@@ -356,10 +356,6 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 				.collect(Collectors.toList());
 	}
 
-	protected void initialiseSummary(String issue) {
-		issueSummaryMap.merge(issue, 0, Integer::sum);
-	}
-	
 	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//Are we filtering this report to only concepts with unpromoted changes?
 		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {

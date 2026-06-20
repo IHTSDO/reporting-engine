@@ -111,7 +111,7 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 			try {
 				for (Concept c : findConcepts(eclForExtensionModules)) {
 					report(tabIdx, c);
-					issueSummaryMap.merge(cs.getName(), 1, Integer::sum);
+					incrementSummaryCount(cs.getName());
 					if (!cs.getShortName().equals(SNOMEDCT)) {
 						countIssue(c);
 					}
@@ -120,7 +120,7 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 				report(tabIdx, null, "Failed to find concepts for " + cs.getShortName() + " due to " + e.getMessage());
 			}
 		}
-		this.populateSummaryTabAndTotal(PRIMARY_REPORT);
+		reportSummaryCounts(PRIMARY_REPORT, SUMMARY_SORT_ORDER.COUNT);
 	}
 
 	private String addModuleFilter(String ecl, CodeSystem cs) {

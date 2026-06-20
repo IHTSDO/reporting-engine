@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
@@ -120,7 +119,7 @@ public abstract class DrugsReport extends TermServerReport implements ReportClas
 
 	protected void linkReport(DrugsReport drugsReport) {
 		//Link this report to an existing running report, so they write to the same structures
-		this.issueSummaryMap = drugsReport.issueSummaryMap;
+		this.setSummaryCountsByCategoryMap(drugsReport.getSummaryCountsByCategoryMap());
 		this.allDrugs = drugsReport.allDrugs;
 		this.baseMDFMap = drugsReport.baseMDFMap;
 		this.reportManager = drugsReport.reportManager;
@@ -209,19 +208,10 @@ public abstract class DrugsReport extends TermServerReport implements ReportClas
 		return concept.getConceptType().equals(ConceptType.CLINICAL_DRUG);
 	}
 
-	protected void populateSummaryTab() {
-		issueSummaryMap.entrySet().stream()
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
-
-		int total = issueSummaryMap.values().stream().mapToInt(Integer::intValue).sum();
-		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
-	}
-
 	@Override
 	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
-		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+		incrementSummaryCount((String)details[0]);
 		countIssue(c);
 		return super.report(PRIMARY_REPORT, c, details);
 	}

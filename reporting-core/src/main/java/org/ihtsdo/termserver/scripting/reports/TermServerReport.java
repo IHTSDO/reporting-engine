@@ -11,10 +11,9 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.release.UnpromotedChangesHelper;
 import org.snomed.otf.scheduler.domain.JobRun;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 public abstract class TermServerReport extends TermServerScript {
-
-	protected Map<String, Integer> issueSummaryMap = new HashMap<>();
 
 	protected boolean unpromotedChangesOnly = false;
 	protected boolean includeLegacyIssues = false;
@@ -43,6 +42,21 @@ public abstract class TermServerReport extends TermServerScript {
 
 	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
 		super.postInit(tabNames, columnHeadings, false);
+	}
+
+	protected void standardExecution(String[] args, ExecutionOptions options) throws TermServerScriptException {
+		try {
+			ReportSheetManager.setTargetFolderId(GFOLDER_ADHOC_REPORTS);
+			init(args);
+			getArchiveManager().setLoadOtherReferenceSets(options.isImportAllRefsets());
+			if (options.isSnapshotImport()) {
+				loadProjectSnapshot(false);
+			}
+			postInit();
+			runJob();
+		} finally {
+			finish();
+		}
 	}
 	
 	@Override
@@ -116,15 +130,6 @@ public abstract class TermServerReport extends TermServerScript {
 		report(0, c, details);
 	}
 
-	@Override
-	public void incrementSummaryInformation(String key) {
-		if (!quiet) {
-			//This is a bit silly to have two maps
-			super.incrementSummaryInformation(key);
-			issueSummaryMap.merge(key, 1, Integer::sum);
-		}
-	}
-	
 	public static void run(Class<? extends ReportClass> reportClass, String[] args) throws TermServerScriptException {
 		run(reportClass, args, null);
 	}
@@ -164,40 +169,6 @@ public abstract class TermServerReport extends TermServerScript {
 		return false;
 	}
 
-	protected void populateSummaryTabAndTotal() {
-		populateSummaryTabAndTotal(SECONDARY_REPORT);
-	}
-
-	protected void populateSummaryTabAndTotal(int tabIdx) {
-		populateSummaryTab(tabIdx);
-		int total = issueSummaryMap.entrySet().stream()
-				.filter(this::summaryItemSafeToCount)
-				.map(Map.Entry::getValue)
-				.mapToInt(Integer::intValue).sum();
-		
-		reportSafely(tabIdx, (Component) null, "TOTAL", total);
-	}
-
-	protected void populateSummaryTab(int tabIdx) {
-		issueSummaryMap.entrySet().stream()
-				.filter(this::summaryItemSafeToCount)
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely(tabIdx, (Component) null, e.getKey(), e.getValue()));
-	}
-
-
-		private boolean summaryItemSafeToCount(Map.Entry<String, Integer> mapEntry) {
-		//Temporary work around because we're tracking a count of lines written in the same structure
-		//that some reports count specific issues
-		return !mapEntry.getKey().equals("Report lines written")
-				&& !mapEntry.getKey().equals("Legacy Issues Reported")
-				&& !mapEntry.getKey().equals("White Listed Count");
-	}
-
-	protected void initialiseSummary(String issue) {
-		issueSummaryMap.merge(issue, 0, Integer::sum);
-	}
-
 	protected String isActive(Component c1, Component c2) {
 		return isActive(c1) + "/" + (c2 == null ? "" : isActive(c2));
 	}
@@ -207,40 +178,28 @@ public abstract class TermServerReport extends TermServerScript {
 	}
 
 	protected void reportAndIncrementCategoryCount(int tabIdx, String category, boolean isIssueToCount, Concept c, boolean isLegacy, Object... details) throws TermServerScriptException {
-		//Are we filtering this report to only concepts with unpromoted changes?
 		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
 			return;
 		}
-
-		if (includeLegacyIssues || !isLegacy) {
-			//The first detail is the issue text
-			incrementSummaryCount(category, details[0].toString());
-			if (report(tabIdx, c, details) && isIssueToCount) {
-				countIssue(c);
-				incrementSummaryCount("Issue Type Summary", (isLegacy?"Legacy Issues Reported": "Fresh Issues Reported"));
+		if (!includeLegacyIssues && isLegacy) {
+			return;
+		}
+		//The first detail is the issue text
+		incrementSummaryCount(category, details[0].toString());
+		if(report(tabIdx, c, details)) {
+			if (isIssueToCount) {
+				recordIssueTypeCount(c, isLegacy);
 			}
+		} else {
+			//Secondary count captures whitelisted items that were not reported
+			incrementSecondaryCount(category, details[0].toString());
 		}
 	}
 
-	protected void reportAndIncrementSummary(Concept c, boolean isLegacy, Object... details) throws TermServerScriptException {
-		//Are we filtering this report to only concepts with unpromoted changes?
-		if (unpromotedChangesOnly && !unpromotedChangesHelper.hasUnpromotedChange(c)) {
-			return;
-		}
-
-		if (includeLegacyIssues || !isLegacy) {
-			//The first detail is the issue text
-			issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
-			countIssue(c);
-			boolean reported = report(PRIMARY_REPORT, c, details);
-			incrementSummary(reported, isLegacy);
-		}
-	}
-
-	private void incrementSummary(boolean reported, boolean isLegacy) {
-		if (reported) {
-			incrementSummaryInformation((isLegacy ? "Legacy" : "Fresh") + " Issues Reported");
-		}
+	private void recordIssueTypeCount(Concept c, boolean isLegacy) {
+		String issueTypeLabel = isLegacy ? "Legacy Issues Reported" : "Fresh Issues Reported";
+		countIssue(c);
+		incrementSummaryCount("Issue Type Summary", issueTypeLabel);
 	}
 
 	protected String getLegacyIndicator(Component c) {
