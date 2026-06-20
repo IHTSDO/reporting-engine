@@ -41,7 +41,7 @@ public class MpMpfValidation extends DrugsReport implements ReportClass {
 	@Override
 	public void runJob() throws TermServerScriptException {
 		validateMpMpfModeling();
-		populateSummaryTab();
+		reportSummaryCounts(SECONDARY_REPORT, SUMMARY_SORT_ORDER.COUNT);
 		LOGGER.info("Summary tab complete, all done.");
 	}
 

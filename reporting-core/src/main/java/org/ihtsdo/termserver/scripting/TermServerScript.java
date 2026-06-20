@@ -126,6 +126,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public static final String INCLUDE_ALL_LEGACY_ISSUES = "Include All Legacy Issues";
 	public static final String INPUT_FILE = "InputFile";
 	public static final String ISSUE_COUNT = "Issue count";
+	public static final String ISSUES = "Issues";
 	public static final String MAIN_SLASH = "MAIN/";
 	public static final String MODULES = "Modules";
 	public static final String NEW_CONCEPTS_ONLY = "New Concepts Only";
@@ -140,7 +141,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected ReportDataBroker reportDataBroker;
 
-	private  Map<String, Map<String, Integer>> summaryCountsByCategory = new HashMap<>();
+	private Map<String, Map<String, Integer>> summaryCountsByCategory = new HashMap<>();
+	//Secondary counts might be whitelisted items for same items as the main count
+	private Map<String, Map<String, Integer>> secondaryCountsByCategory = new HashMap<>();
+	protected boolean includeSecondaryCounts = false;
 
 	public static Gson gson;
 	static {
@@ -2359,13 +2363,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		Set<RelationshipGroup> removedGroups = new HashSet<>();
 
 		for (RelationshipGroup originalGroup : originalGroups) {
-			if (removedGroups.contains(originalGroup) || originalGroup.size() == 0) {
+			if (removedGroups.contains(originalGroup) || originalGroup.isEmpty()) {
 				continue;
 			}
 			for (RelationshipGroup potentialRedundancy : originalGroups) {
 				//Don't compare self, removed or empty groups
 				if (originalGroup.getGroupId() == potentialRedundancy.getGroupId() ||
-						potentialRedundancy.size() == 0 ||
+						potentialRedundancy.isEmpty() ||
 						removedGroups.contains(potentialRedundancy)) {
 					continue;
 				}
@@ -2384,10 +2388,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 						report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Group of larger size appears redundant - check!");
 						groupToRemove = originalGroup;
 					} else {
-						LOGGER.warn ("DEBUG HERE, Redundancy in " + c);
+						LOGGER.warn("DEBUG HERE, Redundancy in {}", c);
 					}
 
-					if (groupToRemove != null && groupToRemove.size() > 0) {
+					if (groupToRemove != null && !groupToRemove.isEmpty()) {
 						removedGroups.add(groupToRemove);
 						report(t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_GROUP_REMOVED, "Redundant relationship group removed:", groupToRemove);
 						for (Relationship r : groupToRemove.getRelationships()) {
@@ -2449,20 +2453,44 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return dryRun;
 	}
 
+	public void initialiseSummary (String item) {
+		initialiseSummaryCount(ISSUES, item);
+	}
+
 	public void initialiseSummaryCount(String category, String item) {
 		summaryCountsByCategory
 				.computeIfAbsent(category, k -> new HashMap<>())
 				.putIfAbsent(item, 0);
 	}
 
+	public void initialiseSecondarySummaryCount(String category, String item) {
+		secondaryCountsByCategory
+				.computeIfAbsent(category, k -> new HashMap<>())
+				.putIfAbsent(item, 0);
+	}
+
+	public void incrementSummaryCount(String summaryItem) {
+		incrementSummaryCount(ISSUES, summaryItem, 1);
+	}
+
 	public void incrementSummaryCount(String category, String summaryItem) {
 		incrementSummaryCount(category, summaryItem, 1);
+	}
+
+	public void incrementSecondaryCount(String category, String summaryItem) {
+		incrementSecondaryCount(category, summaryItem, 1);
 	}
 
 	public void incrementSummaryCount(String category, String summaryItem, int increment) {
 		//Increment the count for this summary item, in the appropriate category
 		Map<String, Integer> summaryCounts = summaryCountsByCategory.computeIfAbsent(category, k -> new HashMap<>());
 		summaryCounts.merge(summaryItem, increment, Integer::sum);
+	}
+
+	public void incrementSecondaryCount(String category, String summaryItem, int increment) {
+		//Increment the count for this summary item, in the appropriate category
+		Map<String, Integer> secondaryCounts = secondaryCountsByCategory.computeIfAbsent(category, k -> new HashMap<>());
+		secondaryCounts.merge(summaryItem, increment, Integer::sum);
 	}
 
 	public enum SUMMARY_SORT_ORDER {
@@ -2499,9 +2527,17 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 						);
 					}
 
-					stream.forEach(entry ->
-							reportSafely(summaryTabIdx, "", entry.getKey(), entry.getValue())
-					);
+					Map<String, Integer> secondaryCounts = secondaryCountsByCategory.get(cat);
+					stream.forEach(entry -> {
+						Integer secondaryCount = (includeSecondaryCounts && secondaryCounts != null)
+								? secondaryCounts.get(entry.getKey())
+								: null;
+						if (secondaryCount != null && secondaryCount > 0) {
+							reportSafely(summaryTabIdx, "", entry.getKey(), entry.getValue(), secondaryCount);
+						} else {
+							reportSafely(summaryTabIdx, "", entry.getKey(), entry.getValue());
+						}
+					});
 				});
 	}
 
@@ -2545,6 +2581,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		LOGGER.warn("No application-local.properties found in working directory ({}), falling back to classpath", localProps.getAbsolutePath());
 		return getClass().getClassLoader().getResourceAsStream("application-local.properties");
+	}
+
+	protected Map<String, Map<String, Integer>> getSummaryCountsByCategoryMap() {
+		return summaryCountsByCategory;
+	}
+
+	protected void setSummaryCountsByCategoryMap(Map<String, Map<String, Integer>> summaryCountsByCategory) {
+		this.summaryCountsByCategory = summaryCountsByCategory;
 	}
 
 }

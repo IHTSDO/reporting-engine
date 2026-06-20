@@ -33,7 +33,7 @@ public class VaccineValidation extends DrugsReport {
 		drugsModelingAndTerming.validateDrugsModeling();
 		drugsModelingAndTerming.validateTherapeuticRole();
 
-		populateSummaryTab();
+		reportSummaryCounts(SECONDARY_REPORT, SUMMARY_SORT_ORDER.COUNT);
 		LOGGER.info("Summary tab complete, all done.");
 	}
 

@@ -64,7 +64,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
 		validateTherapeuticRole();
-		populateSummaryTab();
+		reportSummaryCounts(SECONDARY_REPORT, SUMMARY_SORT_ORDER.COUNT);
 		LOGGER.info("Summary tab complete, all done.");
 	}
 

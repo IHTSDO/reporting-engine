@@ -34,7 +34,7 @@ public class BoSSPAICheck extends DrugsReport {
 	@Override
 	public void runJob() throws TermServerScriptException {
 		validateBoSSPai();
-		populateSummaryTab();
+		reportSummaryCounts(SECONDARY_REPORT, SUMMARY_SORT_ORDER.COUNT);
 		LOGGER.info("Summary tab complete, all done.");
 	}
 

@@ -120,6 +120,7 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 	}
 
+	@Override
 	public void postInit() throws TermServerScriptException {
 		super.postInit(REPORT_TAB_NAMES,
 				new String[]{REPORT_TAB_ISSUES_COLUMNS, REPORT_TAB_SUMMARY_COLUMNS}
@@ -206,7 +207,8 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 						}
 
 						summaryCounts.merge(refsetStr, 1, Integer::sum);
-						reportAndIncrementSummary(concept,
+						incrementSummaryCount(refset.toString());
+						report(PRIMARY_REPORT, concept,
 								isLegacySimple(component),
 								ISSUE_TITLE,
 								refset,
@@ -221,9 +223,8 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 		}
 	}
 
-	@Override
-	public void populateSummaryTabAndTotal() {
-		super.populateSummaryTabAndTotal();
+	public void populateSummaryTabAndTotal() throws TermServerScriptException {
+		reportSummaryCounts(SECONDARY_REPORT, SUMMARY_SORT_ORDER.COUNT);
 		summaryCounts.entrySet().stream()
 				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
 				.forEach(e -> reportSafely(SECONDARY_REPORT, (Component) null, e.getKey(), e.getValue()));

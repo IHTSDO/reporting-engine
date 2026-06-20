@@ -15,7 +15,6 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 /**
  * Lists all active descriptions that have no acceptability
  */
-
 public class DescriptionAnomalies extends TermServerReport implements ReportClass {
 
 	private Map<String, Integer> descriptionIssueSummaryMap = new HashMap<>();
@@ -114,11 +113,6 @@ public class DescriptionAnomalies extends TermServerReport implements ReportClas
 				.map(Map.Entry::getValue)
 				.collect(Collectors.summingInt(Integer::intValue));
 		reportSafely (PRIMARY_REPORT, (Component)null, "TOTAL", total);
-	}
-
-	@Override
-	protected void initialiseSummary(String issue) {
-		descriptionIssueSummaryMap.merge(issue, 0, Integer::sum);
 	}
 
 	@Override

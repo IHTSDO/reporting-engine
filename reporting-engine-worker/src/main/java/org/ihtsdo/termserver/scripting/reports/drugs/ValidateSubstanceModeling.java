@@ -1,9 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
@@ -60,19 +58,8 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 	@Override
 	public void runJob() throws TermServerScriptException {
 		validateSubstancesModeling();
-		populateSummaryTab();
+		reportSummaryCounts(SECONDARY_REPORT, SUMMARY_SORT_ORDER.COUNT);
 		LOGGER.info("Summary tab complete, all done.");
-	}
-
-	private void populateSummaryTab() {
-		issueSummaryMap.entrySet().stream()
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
-		
-		int total = issueSummaryMap.entrySet().stream()
-				.map(Map.Entry::getValue)
-				.collect(Collectors.summingInt(Integer::intValue));
-		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
 
 	private void validateSubstancesModeling() throws TermServerScriptException {
@@ -197,7 +184,7 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 	@Override
 	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//First detail is the issue
-		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
+		incrementSummaryCount((String)details[0]);
 		countIssue(c);
 		return super.report(PRIMARY_REPORT, c, details);
 	}

@@ -219,11 +219,6 @@ public class QIPatternsReport extends TermServerReport implements ReportClass {
 	}
 
 	@Override
-	protected void initialiseSummary(String issue) {
-		issueSummaryMap.merge(issue, 0, Integer::sum);
-	}
-
-	@Override
 	public boolean report(Concept c, Object...details) throws TermServerScriptException {
 		//The first detail is the issue
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);

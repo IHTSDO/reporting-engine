@@ -79,7 +79,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private static final String CANNOT_READ = "Cannot read ";
 	private static final String FAILURE_WHILE_READING = "Failure while reading: ";
 	private static final String LOADING = "Loading {} ...";
-	private static final String ISSUES = "Issues";
 	private static final String ITEMS_OF_INTEREST = "Items of Interest";
 
 	private static final String FULL_STOP = ".";
@@ -121,6 +120,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		super.init(run);
 		additionalReportColumns = "FSN, Semtag, Issue, Legacy, C/D/R Active, Detail";
 		cache = gl.getDescendantsCache();
+		includeSecondaryCounts = true;
 
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 		getArchiveManager().setLoadOtherReferenceSets(true);
@@ -225,7 +225,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
-				"Category, Item, Count",
+				"Category, Item, Count, Whitelisted",
 				"SCTID, FSN, Semtag, Issue, Legacy, C/D/R Active, Detail, Additional Detail, Further Detail",
 				"SCTID, FSN, Semtag, Item of Interest, Legacy, C/D/R Active, Detail, Additional Detail, Further Detail",
 		};
@@ -1878,8 +1878,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	@Override
-	protected void initialiseSummary(String issue) {
+	public void initialiseSummary(String issue) {
 		initialiseSummaryCount(ISSUES, issue);
+		initialiseSecondarySummaryCount(ISSUES, issue);
 	}
 
 	protected void reportAndIncrementCategoryCount(String category, Concept c, boolean isLegacy, Object... details) throws TermServerScriptException {
