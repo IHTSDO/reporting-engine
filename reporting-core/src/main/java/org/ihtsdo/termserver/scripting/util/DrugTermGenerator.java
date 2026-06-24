@@ -256,7 +256,7 @@ public class DrugTermGenerator extends TermGenerator {
 		String suffix = "";
 		
 		if (c.getConceptType() == null) {
-			SnomedUtils.populateConceptType(c);
+			DrugUtils.populateConceptType(c);
 		}
 		
 		if (isFSN) {

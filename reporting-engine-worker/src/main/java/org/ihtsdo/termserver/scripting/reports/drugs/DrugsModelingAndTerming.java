@@ -128,7 +128,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 		validateProductModellingRules(c);
 
 		//DRUGS-518
-		if (SnomedUtils.isConceptType(c, CD_ONLY)) {
+		if (DrugUtils.isConceptType(c, CD_ONLY)) {
 			checkForInferredGroupsNotStated(c);
 		}
 
@@ -138,7 +138,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 			validateStrengthNormalization(c);
 		}
 
-		if (SnomedUtils.isConceptType(c, ALL_DRUG_TYPES)) {
+		if (DrugUtils.isConceptType(c, ALL_DRUG_TYPES)) {
 			//RP-191
 			ensureStatedInferredAttributesEqual(c);
 			//RP-194, RP-484
@@ -487,7 +487,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		
-		if (drugTypes==null || SnomedUtils.isConceptType(concept, drugTypes)) {
+		if (drugTypes==null || DrugUtils.isConceptType(concept, drugTypes)) {
 			Set<Relationship> statedAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 			Set<Relationship> infAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 			if (statedAttributes.size() != infAttributes.size()) {
@@ -514,7 +514,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 
 	private void validateTerming(Concept c, ConceptType[] drugTypes) throws TermServerScriptException {
 		//Only check FSN for certain drug types (to be expanded later)
-		if (!SnomedUtils.isConceptType(c, drugTypes)) {
+		if (!DrugUtils.isConceptType(c, drugTypes)) {
 			incrementSummaryInformation("Concepts ignored - wrong type");
 		}
 		incrementSummaryInformation("Concepts validated to ensure ingredients correct in FSN");
