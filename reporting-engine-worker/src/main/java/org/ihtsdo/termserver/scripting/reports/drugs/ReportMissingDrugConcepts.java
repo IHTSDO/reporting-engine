@@ -17,6 +17,11 @@ import org.ihtsdo.termserver.scripting.util.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.ihtsdo.termserver.scripting.util.DrugUtils.isOnly;
+
 /**
  * DRUGS-515 - Create MPF-containing concepts where required.  Identify missing MPFs
  * by looking at all CDs which do not have an MPF as an inferred parent
@@ -33,10 +38,6 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * 
  * RP-723 Allowing report to have its claws back and actually create the concepts it proposes.
  */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ReportMissingDrugConcepts extends TermServerReport implements ScriptConstants, ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportMissingDrugConcepts.class);
@@ -52,6 +53,8 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 
 	private Set<Concept> createMPFOs = new HashSet<>();
 	private Set<Concept> knownMPFOs = new HashSet<>();
+
+	private Map<String, Set<Concept>> knownCdMap = new HashMap<>();
 
 	private String[] substanceExceptions = new String[]{}; //"liposome"
 	private String[] complexExceptions = new String[]{}; // "lipid", "phospholipid", "cholesteryl"
@@ -97,7 +100,7 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 	}
 
 	@Override
-	protected void preInit() throws TermServerScriptException {
+	protected void preInit() {
 		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
 		JobRun jobRun = getJobRun();
 		newConceptsOnly = jobRun.getParamBoolean(NEW_CONCEPTS_ONLY);
@@ -108,7 +111,7 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 		String[] columnHeadings = new String[]{
 				"SCTID, FSN, SemTag, Severity, ActionType, Details",
 				"SCTID, FSN, SemTag, Severity, ActionType, Details",
-				"Suppressed Concepts"};
+				"SCTID, FSN, SemTag, Reason for Suppression"};
 		String[] tabNames = new String[]{
 				"Missing MP/MPF Concepts",
 				"Processing Issues",
@@ -124,7 +127,7 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 
 	private void populateKnownConcepts() throws TermServerScriptException {
 		for (Concept c : MEDICINAL_PRODUCT.getDescendants(NOT_SET)) {
-			SnomedUtils.populateConceptType(c);
+			DrugUtils.populateConceptType(c);
 			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
 				knownMPFs.add(c);
 			} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
@@ -133,6 +136,8 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 				knownMPOs.add(c);
 			} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY)) {
 				knownMPFOs.add(c);
+			} else if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
+				knownCdMap.computeIfAbsent(getIngredientsAsKey(c), k -> new HashSet<>()).add(c);
 			}
 		}
 
@@ -168,10 +173,14 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 		suppress.add("Product containing only antigen of Measles morbillivirus and antigen of Mumps orthorubulavirus (medicinal product)");
 		suppress.add("Product containing only antigen of Mumps orthorubulavirus and antigen of Rubella virus (medicinal product)");
 		suppress.add("Product containing only antigen of Clostridium tetani toxoid adsorbed and antigen of Corynebacterium diphtheriae toxoid and antigen of whole cell Bordetella pertussis (medicinal product)");
+	}
 
-		for (String suppressedConcept : suppress) {
-			report(TERTIARY_REPORT, suppressedConcept);
-		}
+	private String getIngredientsAsKey(Concept c) {
+		return DrugUtils.getIngredients(c, CharacteristicType.STATED_RELATIONSHIP)
+				.stream()
+				.map(Concept::getConceptId)
+				.sorted()
+				.collect(Collectors.joining("_"));
 	}
 
 	public int checkConcept(Concept c) throws TermServerScriptException {
@@ -524,9 +533,19 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 
 	private boolean isSuppressed(Concept c) throws TermServerScriptException {
 		termGenerator.ensureTermsConform(null, c, CharacteristicType.STATED_RELATIONSHIP);
-		//Are we suppressing this concept?
-		//RP-915 Don't report suppressed concepts
-		return suppress.contains(c.getFsn());
+		String suppressReason = null;
+
+		if (suppress.contains(c.getFsn())) {
+			suppressReason = "Specified suppression";
+		} else if (isOnly(c) && !knownCdMap.containsKey(getIngredientsAsKey(c))) {
+			suppressReason = "No underlying CD detected";
+		}
+
+		if (suppressReason != null) {
+			report(TERTIARY_REPORT, c, suppressReason);
+			return true;
+		}
+		return false;
 	}
 
 	private boolean containsExceptionSubstance(Concept c) throws TermServerScriptException {
