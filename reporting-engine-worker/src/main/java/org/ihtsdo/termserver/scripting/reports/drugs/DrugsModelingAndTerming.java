@@ -13,7 +13,6 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
-import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,29 +34,9 @@ public class DrugsModelingAndTerming extends DrugsReport {
 	}
 	
 	@Override
-	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details, Further Details",
-				"Issue, Count"};
-		String[] tabNames = new String[] {	"Issues",
-				"Summary"};
-		super.postInit(tabNames, columnHeadings);
-	}
-
-	@Override
 	public Job getJob() {
-		JobParameters params = new JobParameters()
-				.add(RECENT_CHANGES_ONLY)
-					.withType(JobParameter.Type.BOOLEAN)
-					.withDefaultValue(true)
-			.build();
-		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
-				.withName("Drugs Modeling and Terming")
-				.withDescription("This report checks for a number of potential inconsistencies in the Medicinal Product hierarchy.  No longer used.")
-				.withProductionStatus(ProductionStatus.PROD_READY)
-				.withTag(INT)
-				.withParameters(params)
-				.build();
+		return getDrugJob("Drugs Modeling and Terming",
+				"This report checks for a number of potential inconsistencies in the Medicinal Product hierarchy.");
 	}
 
 	@Override
@@ -84,17 +63,21 @@ public class DrugsModelingAndTerming extends DrugsReport {
 		LOGGER.info("Drugs validation complete");
 	}
 
+	private boolean shouldSkipForVaccineMode(Concept c) throws TermServerScriptException {
+		if (mode != Mode.VACCINE) return false;
+		if (!c.getFsn().toLowerCase().contains("vaccine")) return true;
+		if (isCD(c) || isMPF(c) || isMPFOnly(c)) {
+			String issueStr = "Vaccines should only exist at MP/MPO level";
+			initialiseSummaryInformation(issueStr);
+			report(c, issueStr);
+			return true;
+		}
+		return false;
+	}
+
 	private void validateDrug(Concept c) throws TermServerScriptException {
-		if (mode == Mode.VACCINE) {
-			if (!c.getFsn().toLowerCase().contains("vaccine")) {
-				return;
-			}
-			if (isCD(c) || isMPF(c) || isMPFOnly(c)) {
-				String issueStr = "Vaccines should only exist at MP/MPO level";
-				initialiseSummaryInformation(issueStr);
-				report(c, issueStr);
-				return;
-			}
+		if (shouldSkipForVaccineMode(c)) {
+			return;
 		}
 
 		//INFRA-4159 Seeing impossible situation of no stated parents.  Also DRUGS-895
@@ -215,7 +198,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 			}
 		}
 		rels.removeAll(forRemoval);
-		return forRemoval.size() > 0;
+		return !forRemoval.isEmpty();
 	}
 
 	/**
@@ -379,7 +362,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 				throw new IllegalArgumentException("Units previously detected different between " + unit1 + " and " + unit2 );
 			}
 			
-			factor = unit1Idx > unit2Idx ? new BigDecimal(0.001D) : new BigDecimal(1000) ; 
+			factor = unit1Idx > unit2Idx ? BigDecimal.valueOf(0.001D) : new BigDecimal(1000) ;
 		}
 		return factor;
 	}
@@ -513,6 +496,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 	}
 
 	private void validateTerming(Concept c, ConceptType[] drugTypes) throws TermServerScriptException {
+
 		//Only check FSN for certain drug types (to be expanded later)
 		if (!DrugUtils.isConceptType(c, drugTypes)) {
 			incrementSummaryInformation("Concepts ignored - wrong type");
@@ -530,6 +514,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 		Description ptGB = clone.getPreferredSynonym(GB_ENG_LANG_REFSET);
 		if (ptUS == null || ptUS.getTerm() == null || ptGB == null || ptGB.getTerm() == null) {
 			LOGGER.debug("Debug here - hit a null");
+			return;
 		}
 		if (ptUS.getTerm().equals(ptGB.getTerm())) {
 			compareTerms(c, "PT", c.getPreferredSynonym(US_ENG_LANG_REFSET), ptUS);
