@@ -16,6 +16,8 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.ihtsdo.termserver.scripting.util.SnomedUtils.getTargets;
+
 public class DrugUtils implements ScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DrugUtils.class);
@@ -558,6 +560,105 @@ public class DrugUtils implements ScriptConstants {
 			this.targetTextSp = " " + targetText;
 			this.targetTextSpSlash = " " + targetText + "/";
 			this.targetTextSlashSp = "/" + targetText + " ";
+		}
+	}
+
+	public static void populateConceptType(Concept c) throws TermServerScriptException {
+		if (c.getFsn() == null) {
+			determineConceptTypeFromAttributes(c, CharacteristicType.STATED_RELATIONSHIP);
+		} else {
+			String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
+			boolean isOnly = isOnly(c);
+			switch (semTag) {
+				case DrugUtils.MP : c.setConceptType(isOnly ? ConceptType.MEDICINAL_PRODUCT_ONLY : ConceptType.MEDICINAL_PRODUCT);
+					break;
+				case DrugUtils.MPF : c.setConceptType(isOnly ? ConceptType.MEDICINAL_PRODUCT_FORM_ONLY : ConceptType.MEDICINAL_PRODUCT_FORM);
+					break;
+				case DrugUtils.CD : c.setConceptType(ConceptType.CLINICAL_DRUG);
+					break;
+				case DrugUtils.PRODUCT : c.setConceptType(ConceptType.PRODUCT);
+					checkForGroupers(c);  //May further refine the concept type
+					break;
+				default : c.setConceptType(ConceptType.UNKNOWN);
+			}
+		}
+	}
+
+	private static void checkForGroupers(Concept c) throws TermServerScriptException {
+		GraphLoader gl = GraphLoader.getGraphLoader();
+
+		//We're only going to consider sufficiently defined concepts here.
+		if (!c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+			return;
+		}
+
+		//Get the local cached copy of the concept so that we have the fully hierarchy tree populated
+		Concept cCached = gl.getConcept(c.getConceptId());
+
+		Concept dispositions = gl.getConcept("766779001 |Medicinal product categorized by disposition (product)|");
+		Concept structures = gl.getConcept("763760008 |Medicinal product categorized by structure (product)|");
+		boolean isStructure = false;
+		boolean isDisposition = false;
+
+		if (cCached.getAncestors(NOT_SET).contains(structures)) {
+			isStructure = true;
+		}
+
+		if (cCached.getAncestors(NOT_SET).contains(dispositions)) {
+			isDisposition = true;
+		}
+
+		if (isStructure && isDisposition) {
+			c.setConceptType(ConceptType.STRUCTURE_AND_DISPOSITION_GROUPER);
+		} else if (isStructure) {
+			c.setConceptType(ConceptType.STRUCTURAL_GROUPER);
+		} else if (isDisposition) {
+			c.setConceptType(ConceptType.DISPOSITION_GROUPER);
+		}
+	}
+
+	public static boolean isConceptType(Concept c, ConceptType conceptType) throws TermServerScriptException {
+		//Does this concept know it's type?  Assign if not
+		if (c.getConceptType() == null) {
+			populateConceptType(c);
+		}
+		return c.getConceptType().equals(conceptType);
+	}
+
+	public static boolean isConceptType(Concept c, ConceptType[] conceptTypes) throws TermServerScriptException {
+		//Does this concept know it's type?  Assign if not
+		if (c.getConceptType() == null) {
+			populateConceptType(c);
+		}
+		for (ConceptType conceptType : conceptTypes) {
+			if (c.getConceptType().equals(conceptType)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	//Concepts with a base active ingredient count are "Only"
+	public static boolean isOnly(Concept c) {
+		return !c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).isEmpty();
+	}
+
+	public static void determineConceptTypeFromAttributes(Concept c, CharacteristicType charType) {
+		try {
+			//Do we have ingredients?  We're at least an MP
+			if (!getTargets(c, new Concept[] { HAS_ACTIVE_INGRED, HAS_PRECISE_INGRED }, charType).isEmpty()) {
+				c.setConceptType(ConceptType.MEDICINAL_PRODUCT);
+				//Do we also have a dose form?  If so, MPF
+				if (!getTargets(c, new Concept[] { HAS_MANUFACTURED_DOSE_FORM }, charType).isEmpty()) {
+					c.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
+					//And if we have strength, CD
+					if (!getTargets(c, new Concept[] { HAS_CONC_STRENGTH_DENOM_UNIT, HAS_PRES_STRENGTH_UNIT }, charType).isEmpty()) {
+						c.setConceptType(ConceptType.CLINICAL_DRUG);
+					}
+				}
+			}
+		} catch (Exception e) {
+			LOGGER.warn("Unable to determine concept type of {}", c, e);
 		}
 	}
 }
