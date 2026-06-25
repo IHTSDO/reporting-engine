@@ -2080,22 +2080,19 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 
 	public static Concept getHierarchy(GraphLoader gl, Concept c) throws TermServerScriptException {
 		TransitiveClosure tc = gl.getTransitiveClosure();
-		
+
 		if (c.equals(ROOT_CONCEPT)) {
 			return c;
 		}
 
 		if (!c.isActiveSafely() || c.getDepth() == NOT_SET) {
-			if (c.getDepth() == NOT_SET) {
-				LOGGER.warn("Depth of " + c + " not set.  Is that expected?");
-			}
-			return null;  //Hopefully the previous release will know
-		} 
-		
+			return getHierarchyForInactiveConcept(gl, c);
+		}
+
 		if (c.getDepth() == 1) {
 			return c;
-		} 
-		
+		}
+
 		for (Long sctId : tc.getAncestors(c)) {
 			Concept a = gl.getConcept(sctId);
 			if (a.getDepth() == 1) {
@@ -2103,13 +2100,26 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 			} else if (a.getDepth() == NOT_SET) {
 				//Is this a full concept or have we picked it up from a relationship?
 				if (a.getFsn() == null) {
-					LOGGER.warn(a + " encountered as ancestor of " + c + " has partial existence");
+					LOGGER.warn("{} encountered as ancestor of {} has partial existence", a, c);
 				} else {
-					throw new TermServerScriptException ("Depth not populated in Hierarchy for " + c.toString() + "\nDefined as: "+ a.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					throw new TermServerScriptException("Depth not populated in Hierarchy for " + c + "\nDefined as: " + a.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 				}
 			}
 		}
-		throw new TermServerScriptException("Unable to determine hierarchy for " + c.toString() + "\nDefined as: "+ c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+		throw new TermServerScriptException("Unable to determine hierarchy for " + c + "\nDefined as: " + c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+	}
+
+	private static Concept getHierarchyForInactiveConcept(GraphLoader gl, Concept c) throws TermServerScriptException {
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_A, ActiveState.INACTIVE)) {
+			Concept hierarchy = getHierarchy(gl, r.getTarget());
+			if (hierarchy != null) {
+				return hierarchy;
+			}
+		}
+		if (c.getDepth() == NOT_SET) {
+			LOGGER.warn("Depth of {} not set and no inactive IS-A found to determine hierarchy", c);
+		}
+		return null;
 	}
 
 	public static String toString(Map<String, Acceptability> acceptabilityMap, boolean lineFeed) throws TermServerScriptException {
@@ -2138,12 +2148,12 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	}
 	
 	public static String getExtractTypeString (ExtractType type) {
-		switch (type) {
-		case DELTA: return "Delta";
-		case SNAPSHOT : return "Snapshot";
-		case FULL : return "Full";
-		default : throw new IllegalArgumentException("Unknown Extract Type: " + type);
-		}
+		return switch (type) {
+			case DELTA -> "Delta";
+			case SNAPSHOT -> "Snapshot";
+			case FULL -> "Full";
+			default -> throw new IllegalArgumentException("Unknown Extract Type: " + type);
+		};
 	}
 	
 	public static Concept getTopLevel(Concept thisConcept) throws TermServerScriptException {

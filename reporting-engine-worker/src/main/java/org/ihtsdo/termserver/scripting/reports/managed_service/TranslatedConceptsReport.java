@@ -22,11 +22,19 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 
 	private static final String EXTENSION_CONCEPTS_ONLY = "Extension Concepts Only";
 	private static final String INCLUDE_INACTIVE_CONCEPTS = "Include inactive concepts";
+	private static final String PERCENTAGE_FORMAT = "%.1f%%";
 
 	Set<String> expectedLanguages = new HashSet<>();
 	boolean includeIntConcepts = false;
 	boolean includeInactiveConcepts = false;
 	private boolean verboseOutput = true;
+
+	private Map<String, Map<Concept, Set<Concept>>> translationsByLangAndHierarchy = new LinkedHashMap<>();
+	private Map<String, Map<Concept, Integer>> descCountByLangAndHierarchy = new LinkedHashMap<>();
+	private Map<String, Integer> totalDescriptionsByLang = new LinkedHashMap<>();
+	private List<Concept> topLevelHierarchies;
+	private Map<Concept, Integer> hierarchyConceptCounts = new LinkedHashMap<>();
+	private int totalActiveConcepts;
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
@@ -58,19 +66,33 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 			expectedLanguages.remove("en");
 		}
 		
-		String[] columnHeadings = new String[] {
-				"SCTID, FSN, SemTag, Descriptions",
-				"SCTID, FSN, SemTag, Text Definitions"
-		};
+		String summaryHeading = "SCTID, FSN, SemTag, Language, Translated Concepts, Total Descriptions, Total Active Concepts, % of Hierarchy, % of All Concepts";
+		String[] columnHeadings;
 		if (verboseOutput) {
-			columnHeadings = new String[] {
+			columnHeadings = new String[]{
 					"SCTID, FSN, SemTag, Lang, DescriptionId, EffectiveTime, Term",
-					"SCTID, FSN, SemTag, Lang, TextDefinitionId, EffectiveTime, Term"
+					"SCTID, FSN, SemTag, Lang, TextDefinitionId, EffectiveTime, Term",
+					summaryHeading
+			};
+		} else {
+			columnHeadings = new String[]{
+					"SCTID, FSN, SemTag, Descriptions",
+					"SCTID, FSN, SemTag, Text Definitions",
+					summaryHeading
 			};
 		}
-		String[] tabNames = new String[] {	
-				"Descriptions", "Text Definitions"};
+		String[] tabNames = new String[]{"Descriptions", "Text Definitions", "Summary by Hierarchy"};
 		super.postInit(tabNames, columnHeadings);
+
+		topLevelHierarchies = new ArrayList<>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
+		topLevelHierarchies.sort(Comparator.comparing(Concept::getFsn));
+		for (Concept topLevel : topLevelHierarchies) {
+			int count = (int) gl.getDescendantsCache().getDescendants(topLevel).stream()
+					.filter(Concept::isActive)
+					.count() + (topLevel.isActiveSafely() ? 1 : 0);
+			hierarchyConceptCounts.put(topLevel, count);
+			totalActiveConcepts += count;
+		}
 	}
 	
 	private Set<String> getLanguagesFromDescriptions() {
@@ -112,17 +134,22 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 			outputConceptDescriptions(c);
 			countIssue(c);
 		}
+		reportSummaryByHierarchy();
 	}
 
 	private void outputConceptDescriptions(Concept c) throws TermServerScriptException {
-		if (verboseOutput) {
-			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				if (expectedLanguages.contains(d.getLang())) {
-					int reportIdx = DescriptionType.TEXT_DEFINITION.equals(d.getType()) ? SECONDARY_REPORT : PRIMARY_REPORT;
-					report(reportIdx, c, d.getLang(), d.getId(), d.getEffectiveTimeSafely(), d.getTerm());
-				}
+		Concept hierarchy = SnomedUtils.getHierarchy(gl, c);
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			if (!expectedLanguages.contains(d.getLang())) {
+				continue;
 			}
-		} else {
+			recordTranslation(c, d, hierarchy);
+			if (verboseOutput) {
+				int reportIdx = DescriptionType.TEXT_DEFINITION.equals(d.getType()) ? SECONDARY_REPORT : PRIMARY_REPORT;
+				report(reportIdx, c, d.getLang(), d.getId(), d.getEffectiveTimeSafely(), d.getTerm());
+			}
+		}
+		if (!verboseOutput) {
 			String descriptions = c.getDescriptions(ActiveState.ACTIVE, List.of(DescriptionType.FSN, DescriptionType.SYNONYM)).stream()
 					.filter(Component::isActiveSafely)
 					.filter(d -> expectedLanguages.contains(d.getLang()))
@@ -137,6 +164,44 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 					.collect(Collectors.joining(",\n"));
 			if (!textDefinitions.isEmpty()) {
 				report(SECONDARY_REPORT, c, textDefinitions);
+			}
+		}
+	}
+
+	private void recordTranslation(Concept c, Description d, Concept hierarchy) {
+		if (hierarchy == null) {
+			return;
+		}
+		String lang = d.getLang();
+		translationsByLangAndHierarchy
+				.computeIfAbsent(lang, k -> new LinkedHashMap<>())
+				.computeIfAbsent(hierarchy, k -> new HashSet<>())
+				.add(c);
+		descCountByLangAndHierarchy
+				.computeIfAbsent(lang, k -> new LinkedHashMap<>())
+				.merge(hierarchy, 1, Integer::sum);
+		totalDescriptionsByLang.merge(lang, 1, Integer::sum);
+	}
+
+	private void reportSummaryByHierarchy() throws TermServerScriptException {
+		for (Map.Entry<String, Map<Concept, Set<Concept>>> entry : translationsByLangAndHierarchy.entrySet()) {
+			String lang = entry.getKey();
+			Map<Concept, Set<Concept>> conceptsByHierarchy = entry.getValue();
+			Map<Concept, Integer> descsByHierarchy = descCountByLangAndHierarchy.getOrDefault(lang, Collections.emptyMap());
+
+			int totalTranslated = conceptsByHierarchy.values().stream().mapToInt(Set::size).sum();
+			int totalDescs = totalDescriptionsByLang.getOrDefault(lang, 0);
+
+			report(TERTIARY_REPORT, ROOT_CONCEPT, lang, totalTranslated, totalDescs, totalActiveConcepts,
+					"N/A", String.format(PERCENTAGE_FORMAT, 100.0 * totalTranslated / totalActiveConcepts));
+
+			for (Concept hierarchy : topLevelHierarchies) {
+				int translatedCount = conceptsByHierarchy.getOrDefault(hierarchy, Collections.emptySet()).size();
+				int descCount = descsByHierarchy.getOrDefault(hierarchy, 0);
+				int hierarchyTotal = hierarchyConceptCounts.getOrDefault(hierarchy, 0);
+				report(TERTIARY_REPORT, hierarchy, lang, translatedCount, descCount, hierarchyTotal,
+						hierarchyTotal > 0 ? String.format(PERCENTAGE_FORMAT, 100.0 * translatedCount / hierarchyTotal) : "N/A",
+						String.format(PERCENTAGE_FORMAT, 100.0 * translatedCount / totalActiveConcepts));
 			}
 		}
 	}
