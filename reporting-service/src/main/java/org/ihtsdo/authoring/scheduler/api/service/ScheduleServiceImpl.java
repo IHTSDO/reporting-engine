@@ -247,6 +247,20 @@ public class ScheduleServiceImpl implements ScheduleService {
 	}
 
 	@Override
+	public void markJobRunFailed(UUID id, String diagnosticInfo) {
+		jobRunRepository.findById(id).ifPresentOrElse(
+			jobRun -> {
+				jobRun.setStatus(JobStatus.Failed);
+				jobRun.setResultTime(new Date());
+				jobRun.setDebugInfo(StringUtils.truncate(diagnosticInfo, DEBUG_LENGTH_LIMIT + 15));
+				jobRunRepository.save(jobRun);
+				LOGGER.warn("RP-973 Marked job run {} as Failed after receiving malformed response message", id);
+			},
+			() -> LOGGER.error("RP-973 Could not find job run {} to mark as Failed - diagnostic info: {}", id, diagnosticInfo)
+		);
+	}
+
+	@Override
 	public void processMetadata(JobMetadata metadata) {
 		LOGGER.info("Processing metadata for {} job types",metadata.getJobTypes().size());
 		for (JobType jobType : metadata.getJobTypes()) {
