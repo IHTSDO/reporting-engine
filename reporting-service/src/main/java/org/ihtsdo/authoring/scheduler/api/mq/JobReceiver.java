@@ -1,7 +1,7 @@
 package org.ihtsdo.authoring.scheduler.api.mq;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.ihtsdo.authoring.scheduler.api.service.ScheduleService;
+import org.ihtsdo.authoring.scheduler.api.service.ReportingService;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
@@ -29,14 +29,19 @@ public class JobReceiver {
 	private static final int RAW_MESSAGE_EXCERPT_LENGTH = 500;
 
 	@Autowired
-	ScheduleService service;
+	ReportingService service;
 
 	@Autowired
 	ObjectMapper objectMapper;
 
 	@JmsListener(destination = "${reporting.service.queue.response}")
 	public void receiveMessage(TextMessage rawMessage) throws TermServerScriptException {
-		String messageText = rawMessage.getText();
+		String messageText;
+		try {
+			messageText = rawMessage.getText();
+		} catch (jakarta.jms.JMSException e) {
+			throw new TermServerScriptException("RP-973 Failed to read JMS message text", e);
+		}
 		try {
 			JobRun jobRun = objectMapper.readValue(messageText, JobRun.class);
 			service.processResponse(jobRun);

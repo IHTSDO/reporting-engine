@@ -1,7 +1,7 @@
 package org.ihtsdo.authoring.scheduler.api.mq;
 
 
-import org.ihtsdo.authoring.scheduler.api.service.ScheduleService;
+import org.ihtsdo.authoring.scheduler.api.service.ReportingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.JobMetadata;
@@ -14,7 +14,7 @@ public class MetadataReceiver {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MetadataReceiver.class);
 
 	@Autowired
-    ScheduleService service;
+    ReportingService service;
 	
 	@JmsListener(destination = "${reporting.service.queue.metadata}")
 	public void receiveMessage(JobMetadata metadata) {

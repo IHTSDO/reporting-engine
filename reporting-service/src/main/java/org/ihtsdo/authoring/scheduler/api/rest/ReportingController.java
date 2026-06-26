@@ -7,7 +7,7 @@ import org.ihtsdo.authoring.scheduler.api.configuration.WebSecurityConfig;
 import org.ihtsdo.authoring.scheduler.api.rest.tools.AllReportRunner;
 import org.ihtsdo.authoring.scheduler.api.rest.tools.BatchTools;
 import org.ihtsdo.authoring.scheduler.api.service.AccessControlService;
-import org.ihtsdo.authoring.scheduler.api.service.ScheduleService;
+import org.ihtsdo.authoring.scheduler.api.service.ReportingService;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.slf4j.Logger;
@@ -24,13 +24,13 @@ import java.util.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-@Tag(name = "Scheduler")
+@Tag(name = "Reporting")
 @RestController
 @RequestMapping(produces={MediaType.APPLICATION_JSON_VALUE})
-public class SchedulerController {
+public class ReportingController {
 	
 	@Autowired
-	private ScheduleService scheduleService;
+	private ReportingService reportingService;
 	
 	@Autowired
     AccessControlService accessControlService;
@@ -51,7 +51,7 @@ public class SchedulerController {
 	private Date lastCacheUpdate = new Date(0);
 	private static final long CACHE_TIMEOUT = 1000L * 60 * 30; // 30 minutes
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(SchedulerController.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReportingController.class);
 
 	private static final String X_AUTH_TOKEN = "X-AUTH-token";
 	private static final String X_AUTH_USERNAME = "X-AUTH-username";
@@ -95,7 +95,7 @@ public class SchedulerController {
 	@ApiResponse(responseCode = "200", description = "OK")
 	@GetMapping(value="/jobs")
 	public List<JobType> listJobTypes() {
-		return scheduleService.listJobTypes();
+		return reportingService.listJobTypes();
 	}
 
 	@Operation(summary="List job type categories")
@@ -111,7 +111,7 @@ public class SchedulerController {
 		//Do we have the data cached?
 		if (!jobCache.containsKey(typeName)) {
 			LOGGER.info("Populating cache of known jobs for type: {}.  Refresh scheduled for 30mins.", typeName);
-			List<JobCategory> jobCategories = scheduleService.listJobTypeCategories(typeName).stream()
+			List<JobCategory> jobCategories = reportingService.listJobTypeCategories(typeName).stream()
 					.filter(jc -> !jc.getJobs().isEmpty())
 					.map(this::reverseParameterOptions)
 					.toList();
@@ -147,7 +147,7 @@ public class SchedulerController {
 	@GetMapping(value="/jobs/{typeName}/{jobName}")
 	public Job getJobDetails(@PathVariable final String typeName,
 			@PathVariable final String jobName) {
-		return scheduleService.getJob(jobName);
+		return reportingService.getJob(jobName);
 	}
 
 	@Operation(summary="List jobs run")
@@ -161,7 +161,7 @@ public class SchedulerController {
 			@RequestParam(required=false) final String user) throws BusinessServiceException {
 		
 		Pageable pageable = PageRequest.of(page, size, Sort.unsorted());
-		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request), pageable);
+		return reportingService.listJobsRun(typeName, jobName, user, getVisibleProjects(request), pageable);
 	}
 	
 	@Operation(summary="List all jobs run")
@@ -174,7 +174,7 @@ public class SchedulerController {
 			@RequestParam(required=false, defaultValue="50") final Integer size) {
 		
 		Pageable pageable = PageRequest.of(page, size, Sort.unsorted());
-		Page<JobRun> jobRunPage = scheduleService.listAllJobsRun(statusFilter, sinceMins, pageable);
+		Page<JobRun> jobRunPage = reportingService.listAllJobsRun(statusFilter, sinceMins, pageable);
 		sanitise(jobRunPage);
 		return jobRunPage;
 	}
@@ -218,7 +218,7 @@ public class SchedulerController {
 	public JobRun runJob(@PathVariable final String typeName, 
 			@PathVariable final String jobName,
 			@RequestBody JobRun jobRun) throws BusinessServiceException {
-		return scheduleService.runJob(typeName, jobName, jobRun);
+		return reportingService.runJob(typeName, jobName, jobRun);
 	}
 	
 	@Operation(summary="Bulk delete job-runs")
@@ -231,9 +231,9 @@ public class SchedulerController {
 			@RequestParam(required=false) final String user,
 			@RequestBody List<UUID> uuids) throws BusinessServiceException {
 		for (UUID uuid : uuids) {
-			scheduleService.deleteJobRun(null, null, uuid);
+			reportingService.deleteJobRun(null, null, uuid);
 		}
-		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request), null);
+		return reportingService.listJobsRun(typeName, jobName, user, getVisibleProjects(request), null);
 	}
 	
 	@Operation(summary="Schedule job")
@@ -242,7 +242,7 @@ public class SchedulerController {
 	public JobSchedule scheduleJob(@PathVariable final String typeName, 
 			@PathVariable final String jobName,
 			@RequestBody JobSchedule jobSchedule) {
-		return scheduleService.scheduleJob(typeName, jobName, jobSchedule);
+		return reportingService.scheduleJob(typeName, jobName, jobSchedule);
 	}
 	
 	@Operation(summary="Remove job schedule")
@@ -251,7 +251,7 @@ public class SchedulerController {
 	public void deleteSchedule(@PathVariable final String typeName, 
 			@PathVariable final String jobName,
 			@PathVariable final UUID scheduleId) {
-		scheduleService.deleteSchedule(typeName, jobName, scheduleId);
+		reportingService.deleteSchedule(typeName, jobName, scheduleId);
 	}
 	
 	@Operation(summary="Get job run")
@@ -260,7 +260,7 @@ public class SchedulerController {
 	public JobRun getJobStatus(@PathVariable final String typeName,
 			@PathVariable final String jobName,
 			@PathVariable final UUID runId) {
-		return scheduleService.getJobRun(typeName, jobName, runId);
+		return reportingService.getJobRun(typeName, jobName, runId);
 	}
 	
 	@Operation(summary="Delete job run")
@@ -268,7 +268,7 @@ public class SchedulerController {
 	public ResponseEntity<JobRun> deleteJobRun(@PathVariable final String typeName,
 			@PathVariable final String jobName,
 			@PathVariable final UUID runId) {
-		boolean deleted = scheduleService.deleteJobRun(typeName, jobName, runId);
+		boolean deleted = reportingService.deleteJobRun(typeName, jobName, runId);
 		if (!deleted) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
@@ -279,7 +279,7 @@ public class SchedulerController {
 	@ApiResponse(responseCode = "200", description = "OK")
 	@GetMapping(value="/jobs/initialise")
 	public void initialise(HttpServletRequest request) throws BusinessServiceException {
-		scheduleService.initialise();
+		reportingService.initialise();
 		AuthData authData = getAuthData(request);
 		accessControlService.clearCache(authData.userName);
 	}
@@ -300,7 +300,7 @@ public class SchedulerController {
 			@PathVariable final String typeName,
 			@PathVariable final String codeSystemShortname,
 			@PathVariable final String jobName) {
-		return scheduleService.getWhiteList(typeName, codeSystemShortname, jobName);
+		return reportingService.getWhiteList(typeName, codeSystemShortname, jobName);
 	}
 	
 	@Operation(summary="Set whitelisted concept for the given job & code system")
@@ -311,14 +311,14 @@ public class SchedulerController {
 			@PathVariable final String jobName,
 			@PathVariable final String codeSystemShortname,
 			@RequestBody Set<WhiteListedConcept> whiteList) {
-		scheduleService.setWhiteList(typeName, jobName, codeSystemShortname, whiteList);
+		reportingService.setWhiteList(typeName, jobName, codeSystemShortname, whiteList);
 	}
 
 	@Operation(summary="Clear any jobs that have been stuck for more than 10 hours.")
 	@ApiResponse(responseCode = "200", description = "OK")
 	@PostMapping(value="/jobs/clearStuckJobs")
 	public int clearStuckJobs() {
-		return scheduleService.clearStuckJobs();
+		return reportingService.clearStuckJobs();
 	}
 	
 	private Page<JobRun> sanitise(Page<JobRun> jobRuns) {

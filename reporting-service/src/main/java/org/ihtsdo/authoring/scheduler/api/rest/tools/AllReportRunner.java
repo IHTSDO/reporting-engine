@@ -4,7 +4,7 @@ import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.authoring.scheduler.api.repository.JobRepository;
 import org.ihtsdo.authoring.scheduler.api.repository.JobRunBatchRepository;
 import org.ihtsdo.authoring.scheduler.api.repository.JobRunRepository;
-import org.ihtsdo.authoring.scheduler.api.service.ScheduleService;
+import org.ihtsdo.authoring.scheduler.api.service.ReportingService;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +30,7 @@ public class AllReportRunner {
 	private JobRunBatchRepository jobRunBatchRepository;
 
 	@Autowired
-	private ScheduleService scheduleService;
+	private ReportingService reportingService;
 
 	public JobRunBatch runAllReports(boolean dryRun, boolean international, boolean managedService, String projectName, String userName, String authToken) {
 		List<Job> listOfJobs = jobRepository.findAllNotHidden();
@@ -88,7 +88,7 @@ public class AllReportRunner {
 
 	private void runTheReport(String jobName, JobRun reRunJob) {
 		try {
-			JobRun result = scheduleService.runJob(reRunJob);
+			JobRun result = reportingService.runJob(reRunJob);
 			LOGGER.info("Scheduling report job : '{}'", jobName);
 			new AllReportRunnerResult(jobName, JobStatus.Scheduled, result.getId());
 		} catch (BusinessServiceException e) {

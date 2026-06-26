@@ -23,13 +23,13 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.CronTrigger;
 
-public class ScheduleServiceImpl implements ScheduleService {
+public class ReportingServiceImpl implements ReportingService {
 
 	private static final int STUCK_JOB_HOURS = 10;
 
 	private static final int DEBUG_LENGTH_LIMIT = 50000;
 
-	private static final String JOB_UNKNOWN = "Job unknown to Schedule Service: '";
+	private static final String JOB_UNKNOWN = "Job unknown to Reporting Service: '";
 
 	private static final String CHECK_INITIALISE = "'. If job exists and is active, re-run initialise.";
 
@@ -64,7 +64,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 	String terminologyServerUrl;
 	
 	static final JobRun metadataRequest = JobRun.create("METADATA", null);
-	private static final Logger LOGGER = LoggerFactory.getLogger(ScheduleServiceImpl.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReportingServiceImpl.class);
 
 	@PostConstruct
 	public void init() {
