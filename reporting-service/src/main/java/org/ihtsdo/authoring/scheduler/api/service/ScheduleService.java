@@ -33,6 +33,8 @@ public interface ScheduleService {
 
 	public void processResponse(JobRun jobRun);
 
+	public void markJobRunFailed(UUID id, String diagnosticInfo);
+
 	public void processMetadata(JobMetadata metadata);
 
 	public boolean deleteJobRun(String typeName, String jobName, UUID runId);
