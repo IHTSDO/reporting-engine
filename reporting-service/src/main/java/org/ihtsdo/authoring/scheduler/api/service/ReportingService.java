@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
-public interface ScheduleService {
+public interface ReportingService {
 
 	public List<JobType> listJobTypes();
 

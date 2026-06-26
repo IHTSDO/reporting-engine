@@ -10,9 +10,9 @@ public class JobRunner implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(JobRunner.class);
 
 	JobRun jobRun;
-	ScheduleService service;
+	ReportingService service;
 	
-	JobRunner(ScheduleService service, JobRun jobRun) {
+	JobRunner(ReportingService service, JobRun jobRun) {
 		this.service = service;
 		this.jobRun = jobRun;
 	}

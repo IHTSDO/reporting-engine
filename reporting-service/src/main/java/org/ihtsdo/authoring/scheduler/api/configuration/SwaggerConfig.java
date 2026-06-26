@@ -41,12 +41,12 @@ public class SwaggerConfig {
         final String version = buildProperties != null ? buildProperties.getVersion() : "DEV";
         return new OpenAPI()
                 .info(new Info()
-                        .title("Schedule Manager")
+                        .title("Reporting Manager")
                         .version(version)
                         .contact(new Contact().name("SNOMED International").url("https://www.snomed.org"))
                         .license(new License().name("Apache 2.0").url("http://www.apache.org/licenses/LICENSE-2.0")))
                 .externalDocs(new ExternalDocumentation()
-                        .description("See more about Schedule Manager in GitHub")
+                        .description("See more about Reporting Manager in GitHub")
                         .url("https://github.com/IHTSDO/reporting-engine"));
     }
 }
