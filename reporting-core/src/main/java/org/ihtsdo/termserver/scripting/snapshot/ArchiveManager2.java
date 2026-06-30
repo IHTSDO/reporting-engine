@@ -4,16 +4,22 @@ import org.ihtsdo.otf.exception.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
-import org.ihtsdo.termserver.scripting.dao.DataLoader;
 import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.domain.CodeSystemVersion;
 import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.FileType;
+import org.snomed.module.storage.CurrentPreviousModuleMetadataPair;
 import org.snomed.module.storage.ModuleMetadata;
 import org.snomed.module.storage.ModuleStorageCoordinator;
 import org.snomed.module.storage.ModuleStorageCoordinatorException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.net.URI;
@@ -25,12 +31,17 @@ import java.util.List;
  * that explains what is needed.  AM2 will compare this to what it has in memory, and if it's compatible, then no work
  * is needed.  But if different data is needed, then we'll go to the MSC to obtain the packages we need.
  */
+@Service
 public class ArchiveManager2 {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveManager2.class);
 	private static ArchiveManager2 singleton;
-	private static ModuleStorageCoordinator msc;
 
+	@Autowired(required = false)
+	private ArchiveDataLoader archiveDataLoader;
+
+	private ApplicationContext appContext;
+	private ModuleStorageCoordinator msc;
 	private TBCHelper fileHelper;
 	private SnapshotConfiguration currentlyHeldInMemory;
 
@@ -45,11 +56,14 @@ public class ArchiveManager2 {
 		return singleton;
 	}
 
-	private DataLoader getArchiveDataLoader() throws TermServerScriptException {
-		LOGGER.debug("In getArchiveLoader method, scriptName = {}", ts.getScriptName());
-		if (ts.getScriptName().equals("PackageComparisonReport")) {
-			return getBuildArchiveDataLoader();
-		}
+	@EventListener(ApplicationReadyEvent.class)
+	public void init(ApplicationReadyEvent event) {
+		LOGGER.info("ArchiveManager2.init: assigning to singleton");
+		singleton = this;
+		appContext = event.getApplicationContext();
+	}
+
+	private ArchiveDataLoader getArchiveDataLoader() throws TermServerScriptException {
 		if (archiveDataLoader == null) {
 			if (appContext == null) {
 				LOGGER.info("No ArchiveDataLoader configured, creating one locally...");
@@ -61,10 +75,17 @@ public class ArchiveManager2 {
 		return archiveDataLoader;
 	}
 
+	private ModuleStorageCoordinator getModuleStorageCoordinator(TermServerScript ts) throws TermServerScriptException {
+		if (msc == null) {
+			ResourceManager resourceManager = getArchiveDataLoader().getS3Manager().getResourceManager();
+			msc = ModuleStorageCoordinator.create(ts.getEnv(), resourceManager);
+		}
+		return msc;
+	}
+
 	public void loadSnapshot(TermServerScript ts) throws TermServerScriptException {
 		SnapshotConfiguration config = ts.getSnapshotConfiguration();
 		fileHelper = new TBCHelper(ts);
-		msc = ModuleStorageCoordinator.create(ts.getEnv(), null);
 		//Is what I've been asked to load compatible with what I've currently got in memory?
 		if (currentlyHeldInMemory != null && config.isCompatibleWithExisting(currentlyHeldInMemory)) {
 			LOGGER.info("Snapshot currently in memory is compatible with requested snapshot.  No need to load.");
@@ -108,8 +129,8 @@ public class ArchiveManager2 {
 		//Obtain a delta, pass that to Module Storage Coordinator so it can tell us what we need to load
 		try {
 			File delta = fileHelper.getExportedDelta(ts.getSnapshotConfiguration());
-			ModuleMetadata moduleMetadata = msc.getMetadata(delta);
-			constructSnapshotInMemory(ts, delta, moduleMetadata);
+			CurrentPreviousModuleMetadataPair moduleMetadataPair = getModuleStorageCoordinator(ts).getCurrentAndPreviousMetadata(delta);
+			constructSnapshotInMemory(ts, delta, moduleMetadataPair);
 		} catch (ModuleStorageCoordinatorException e) {
 			throw new TermServerScriptException("Unable to obtain delta for " + ts.getSnapshotConfiguration(), e);
 		}
@@ -119,8 +140,8 @@ public class ArchiveManager2 {
 		//In this situation, the MSC call tells us if we also need to load one or more dependencies
 		try {
 			File archive = fileHelper.getPublishedArchive(ts.getSnapshotConfiguration());
-			ModuleMetadata moduleMetadata = msc.getMetadata(archive);
-			constructSnapshotInMemory(ts, null, moduleMetadata);
+			CurrentPreviousModuleMetadataPair moduleMetadataPair = getModuleStorageCoordinator(ts).getCurrentAndPreviousMetadata(archive);
+			constructSnapshotInMemory(ts, null, moduleMetadataPair);
 		} catch (ModuleStorageCoordinatorException e) {
 			throw new TermServerScriptException("Unable to obtain published archive for " + ts.getSnapshotConfiguration(), e);
 		}
@@ -129,21 +150,22 @@ public class ArchiveManager2 {
 	private void loadFromCodeSystemVersion(TermServerScript ts) throws TermServerScriptException {
 		try {
 			URI codeSystemVersionURI = URI.create(ts.getSnapshotConfiguration().getSourceName());
-			ModuleMetadata moduleMetadata = msc.getMetadata(codeSystemVersionURI);
-			constructSnapshotInMemory(ts, null, moduleMetadata);
+			ModuleMetadata moduleMetadata = getModuleStorageCoordinator(ts).getMetadata(codeSystemVersionURI);
+			//constructSnapshotInMemory(ts, null, moduleMetadata);
+			throw new NotImplementedException();
 		} catch (ModuleStorageCoordinatorException e) {
 			throw new TermServerScriptException("Unable to obtain code system version for " + ts.getSnapshotConfiguration(), e);
 		}
 	}
 
-	private void constructSnapshotInMemory(TermServerScript ts, File delta, ModuleMetadata moduleMetadata) throws TermServerScriptException {
+	private void constructSnapshotInMemory(TermServerScript ts, File delta, CurrentPreviousModuleMetadataPair moduleMetadataPair) throws TermServerScriptException {
 		ArchiveImporter archiveImporter = new ArchiveImporter(ts.getGraphLoader(), ts.getSnapshotConfiguration());
 		//First, load the previous version dependencies (perhaps none for an Edition package)
-		for (ModuleMetadata dependency : moduleMetadata.getDependencies()) {
+		for (ModuleMetadata dependency : moduleMetadataPair.getCurrentRelease().getDependencies()) {
 			archiveImporter.loadArchive(dependency.getFile(), FileType.SNAPSHOT, true);
 		}
 		//Now the previous package
-		archiveImporter.loadArchive(moduleMetadata.getFile(), FileType.SNAPSHOT, true);
+		archiveImporter.loadArchive(moduleMetadataPair.getPreviousRelease().getFile(), FileType.SNAPSHOT, true);
 
 		//And finally the delta, if provided
 		archiveImporter.loadArchive(delta, FileType.DELTA, false);
@@ -213,6 +235,7 @@ public class ArchiveManager2 {
 	public void reset(TermServerScript ts) {
 		LOGGER.info("Resetting ArchiveManager2");
 		currentlyHeldInMemory = null;
+		msc = null;
 		ts.getSnapshotConfiguration().reset();
 		ts.getGraphLoader().reset();
 		ts.getGraphLoader().setRecordPreviousState(false);
