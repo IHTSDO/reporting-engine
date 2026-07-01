@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.jspecify.annotations.NonNull;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
@@ -65,8 +66,33 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 			expectedLanguages = getLanguagesFromDescriptions();
 			expectedLanguages.remove("en");
 		}
-		
-		String summaryHeading = "SCTID, FSN, SemTag, Language, Translated Concepts, Total Descriptions, Total Active Concepts, % of Hierarchy, % of All Concepts";
+
+		String[] columnHeadings = getColumnHeadings();
+		String[] tabNames = new String[]{"Descriptions", "Text Definitions", "Summary by Hierarchy"};
+		super.postInit(tabNames, columnHeadings);
+
+		topLevelHierarchies = new ArrayList<>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
+		topLevelHierarchies.sort(Comparator.comparing(Concept::getFsn));
+		for (Concept topLevel : topLevelHierarchies) {
+			int count = (int) gl.getDescendantsCache().getDescendants(topLevel).stream()
+					.filter(Concept::isActive)
+					.count() + (topLevel.isActiveSafely() ? 1 : 0);
+			hierarchyConceptCounts.put(topLevel, count);
+			totalActiveConcepts += count;
+		}
+	}
+
+	private String @NonNull [] getColumnHeadings() {
+		String activeModifier1 = "\n(Active Only)";
+		String activeModifier2 = " Active Only";
+		String activeModifier3 = "";
+		if (includeInactiveConcepts) {
+			activeModifier1 = "\n(including inactive concepts)";
+			activeModifier2 = "";
+			activeModifier3 = activeModifier1;
+		}
+		String summaryHeading = "SCTID, FSN, SemTag, Language, Translated Concepts%s, Total Descriptions, Total %sConcepts%s, %% of Hierarchy, %% of All Concepts"
+				.formatted(activeModifier1, activeModifier2, activeModifier3);
 		String[] columnHeadings;
 		if (verboseOutput) {
 			columnHeadings = new String[]{
@@ -81,20 +107,9 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 					summaryHeading
 			};
 		}
-		String[] tabNames = new String[]{"Descriptions", "Text Definitions", "Summary by Hierarchy"};
-		super.postInit(tabNames, columnHeadings);
-
-		topLevelHierarchies = new ArrayList<>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
-		topLevelHierarchies.sort(Comparator.comparing(Concept::getFsn));
-		for (Concept topLevel : topLevelHierarchies) {
-			int count = (int) gl.getDescendantsCache().getDescendants(topLevel).stream()
-					.filter(Concept::isActive)
-					.count() + (topLevel.isActiveSafely() ? 1 : 0);
-			hierarchyConceptCounts.put(topLevel, count);
-			totalActiveConcepts += count;
-		}
+		return columnHeadings;
 	}
-	
+
 	private Set<String> getLanguagesFromDescriptions() {
 		return gl.getAllConcepts().parallelStream()
 		.flatMap(c -> c.getDescriptions().stream())
@@ -112,7 +127,7 @@ public class TranslatedConceptsReport extends TermServerReport implements Report
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("Translated Concepts")
-				.withDescription("This reports lists all descriptions in the configured language(s)")
+				.withDescription("This reports lists all active descriptions in the configured language(s), optionally a) including those on inactive concepts, and b) filtered by an ECL selection.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(MS)
