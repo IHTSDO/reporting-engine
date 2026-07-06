@@ -1201,15 +1201,12 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
+
 				String id = lineItems[IDX_ID];
 				String referencedComponent = lineItems[INACT_IDX_REFCOMPID];
 				if (isConcept(referencedComponent)) {
 					Concept c = getConcept(referencedComponent);
-					
-					/*if (c.getId().equals("140506004")) {
-						System.out.println("here");
-					}*/
-					
+
 					String revertEffectiveTime = null;
 					if (detectNoChangeDelta && isReleased != null && !isReleased) {
 						//Recover this entry for the component - concept or description
@@ -1243,7 +1240,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 					//Remove first in case we're replacing
 					c.getAssociationEntries().remove(association);
 					c.getAssociationEntries().add(association);
-					if (association.isActive()) {
+					if (association.isActiveSafely()) {
 						SnomedUtils.addHistoricalAssociationInTsForm(c, association);
 						recordHistoricalAssociation(association);
 					}
@@ -1501,6 +1498,11 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		for (LangRefsetEntry l : d.getLangRefsetEntries()) {
 			allComponents.put(l.getId(), l);
 			componentOwnerMap.put(l, c);
+		}
+
+		for (AssociationEntry a : d.getAssociationEntries()) {
+			allComponents.put(a.getId(), a);
+			componentOwnerMap.put(a, c);
 		}
 	}
 

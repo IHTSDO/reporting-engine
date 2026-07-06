@@ -29,7 +29,7 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(COMPONENT_IDS,
-				"34a60d4c-7db7-5e84-bcb7-f5bac882de6b");
+				"bb190b0b-1a17-4a26-898b-97f30befd771");
 		TermServerScript.run(ComponentTraceability.class, args, params);
 	}
 
@@ -82,7 +82,7 @@ public class ComponentTraceability extends TermServerReport implements ReportCla
 		}
 		
 		for (String componentId : componentIds) {
-			Component c = gl.getComponent(componentId);
+ 			Component c = gl.getComponent(componentId);
 			if (c == null) {
 				report(PRIMARY_REPORT, componentId, "Not found in Snapshot build from " + project.getKey());
 				c = new UnknownComponent(componentId, ComponentType.UNKNOWN);
