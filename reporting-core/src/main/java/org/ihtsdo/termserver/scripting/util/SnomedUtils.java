@@ -1896,7 +1896,16 @@ public class SnomedUtils extends SnomedUtilsBase implements ScriptConstants {
 	public static boolean isInternational(Component c) {
 		return InternationalModules.contains(c.getModuleId());
 	}
-	
+
+	//If we've already captured a newer version of this component, eg by loading INT first and a published
+	//MS 2nd (or vice versa depending on import order), then the incoming row should be skipped in favour
+	//of what we're already holding.
+	public static boolean isIncomingRowSupersededByHeld(Component held, Component incoming) {
+		return !StringUtils.isEmpty(held.getEffectiveTime())
+				&& (incoming.isReleased() != null && incoming.isReleased())
+				&& held.getEffectiveTime().compareTo(incoming.getEffectiveTime()) >= 1;
+	}
+
 	public static boolean isEqualValueInGroups(Concept type, RelationshipGroup lhsGroup, RelationshipGroup rhsGroup) {
 		Object lhsValue = getValueInGroup(type, lhsGroup);
 		Object rhsValue = getValueInGroup(type, rhsGroup);

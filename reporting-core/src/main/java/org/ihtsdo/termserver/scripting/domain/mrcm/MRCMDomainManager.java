@@ -82,6 +82,9 @@ public class MRCMDomainManager implements ScriptConstants  {
 		//This will overwrite any existing MRCM row with the same UUID
 		//And allow multiple rows for exist for a given referenced component id
 		attribRanges.merge(ar.getId(), ar, (existing, value) -> {
+			if (SnomedUtils.isIncomingRowSupersededByHeld(existing, value)) {
+				return existing;
+			}
 			value.setReleased(existing.getReleased());
 			return value;
 		});
