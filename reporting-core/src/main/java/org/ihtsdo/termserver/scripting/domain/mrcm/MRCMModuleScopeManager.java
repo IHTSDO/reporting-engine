@@ -76,7 +76,13 @@ public class MRCMModuleScopeManager implements ScriptConstants  {
 		//This will overwrite any existing MRCM row with the same UUID
 		//And allow multiple rows for exist for a given referenced component id
 		UUID uuid = UUID.fromString(ar.getId());
-		applicableRefsets.put(uuid, ar);
+		applicableRefsets.merge(uuid, ar, (existing, value) -> {
+			if (SnomedUtils.isIncomingRowSupersededByHeld(existing, value)) {
+				return existing;
+			}
+			value.setReleased(existing.isReleased());
+			return value;
+		});
 	}
 
 	private boolean finaliseMRCMModuleScope(

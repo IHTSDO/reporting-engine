@@ -130,6 +130,9 @@ public class MRCMAttributeDomainManager implements ScriptConstants  {
 		//And allow multiple rows for exist for a given attribute & domain
 		UUID uuid = UUID.fromString(ar.getId());
 		domainRules.merge(uuid, ar, (existing, value) -> {
+			if (SnomedUtils.isIncomingRowSupersededByHeld(existing, value)) {
+				return existing;
+			}
 			value.setReleased(existing.isReleased());
 			return value;
 		});
