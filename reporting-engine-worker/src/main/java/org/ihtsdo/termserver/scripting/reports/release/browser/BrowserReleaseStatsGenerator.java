@@ -16,9 +16,7 @@ public class BrowserReleaseStatsGenerator extends SummaryComponentStats {
 		Map<String, String> params = new HashMap<>();
 
 		params.put(THIS_RELEASE, "SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20260321T120000Z.zip");
-		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20260301T120000Z.zip");
 		params.put(PREV_RELEASE, "SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20260221T120000Z.zip");
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20260201T120000Z.zip");
 		params.put(MODULES, "11000220105,1601000220105");
 
 		params.put(REPORT_OUTPUT_TYPES, "S3");
@@ -30,9 +28,7 @@ public class BrowserReleaseStatsGenerator extends SummaryComponentStats {
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(THIS_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE).withMandatory()
-				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(PREV_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE).withMandatory()
-				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(MODULES).withType(JobParameter.Type.STRING)
 				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportConfiguration.ReportOutputType.S3.name())
 				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportConfiguration.ReportFormatType.JSON.name())
@@ -48,16 +44,6 @@ public class BrowserReleaseStatsGenerator extends SummaryComponentStats {
 				.withProductionStatus(Job.ProductionStatus.PROD_READY)
 				.withExpectedDuration(30)
 				.build();
-	}
-
-	@Override
-	protected void loadProjectSnapshot() throws TermServerScriptException {
-		super.loadProjectSnapshotWithDependency();
-	}
-
-	@Override
-	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
-		super.loadCurrentPositionWithDependency(compareTwoSnapshots);
 	}
 
 }

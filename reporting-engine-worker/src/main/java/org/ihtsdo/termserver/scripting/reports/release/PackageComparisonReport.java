@@ -131,9 +131,7 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(THIS_RELEASE).withType(JobParameter.Type.BUILD_ARCHIVE)
-				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(PREV_RELEASE).withType(JobParameter.Type.BUILD_ARCHIVE)
-				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(MODULES).withType(JobParameter.Type.STRING)
 				.build();
 
@@ -146,16 +144,6 @@ public class PackageComparisonReport extends SummaryComponentStats implements Re
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withExpectedDuration(40)
 				.build();
-	}
-
-	@Override
-	protected void loadProjectSnapshot() throws TermServerScriptException {
-		super.loadProjectSnapshotWithDependency();
-	}
-
-	@Override
-	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
-		super.loadCurrentPositionWithDependency(compareTwoSnapshots);
 	}
 
 	@Override

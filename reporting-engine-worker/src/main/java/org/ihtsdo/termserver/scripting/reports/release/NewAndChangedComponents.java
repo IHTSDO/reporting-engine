@@ -131,27 +131,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			super.doDefaultProjectSnapshotLoad(false);
 		} else {
 			loadHistoricallyGeneratedData = true;
-			prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
-			
-			if (StringUtils.isEmpty(prevDependency)) {
-				prevDependency = getProject().getMetadata().getPreviousDependencyPackage();
-				if (StringUtils.isEmpty(prevDependency)) {
-					throw new TermServerScriptException("Previous dependency package not populated in branch metadata for " + getProject().getBranchPath());
-				}
-			}
-			
-			setDependencyArchives(List.of(prevDependency));
-			
-			thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
-			if (StringUtils.isEmpty(thisDependency)) {
-				thisDependency = getProject().getMetadata().getDependencyPackage();
-			}
-			
-			if (!StringUtils.isEmpty(getJobRun().getParamValue(THIS_DEPENDENCY)) 
-					&& StringUtils.isEmpty(getJobRun().getParamValue(MODULES))) {
-				throw new TermServerScriptException("Module filter must be specified when working with published archives");
-			}
-			
+
 			if (StringUtils.isEmpty(getJobRun().getParamValue(MODULES))) {
 				String defaultModule = project.getMetadata().getDefaultModuleId();
 				if (StringUtils.isEmpty(defaultModule)) {
@@ -162,13 +142,6 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			
 			super.loadProjectSnapshot();
 		}
-	}
-
-	@Override
-	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
-		LOGGER.info("Setting dependency archive: {}", thisDependency);
-		setDependencyArchives(List.of(thisDependency));
-		super.loadCurrentPosition(compareTwoSnapshots);
 	}
 
 	@Override
@@ -216,8 +189,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			traceabilityService = new SingleTraceabilityService(jobRun, this);
 		}
 		
-		if (thisDependency != null || 
-				(project.getBranchPath() != null && project.getBranchPath().contains("SNOMEDCT-"))) {
+		if (project.getBranchPath() != null && project.getBranchPath().contains("SNOMEDCT-")) {
 			//If we have a dependency then we're loading an extension so tell traceability
 			//that specific CodeSystem branch
 			String onBranch;
@@ -244,9 +216,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 				.add(ECL).withType(JobParameter.Type.ECL)
 				.add(WORD_MATCHES).withType(JobParameter.Type.STRING)
 				.add(THIS_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE)
-				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(PREV_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE)
-				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(MODULES).withType(JobParameter.Type.STRING)
 				.add(INCLUDE_DETAIL).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
 				.add(UNPROMOTED_CHANGES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)

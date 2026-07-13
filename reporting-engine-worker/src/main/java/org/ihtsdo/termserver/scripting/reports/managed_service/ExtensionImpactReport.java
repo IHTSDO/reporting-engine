@@ -145,14 +145,6 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	}
 
 	@Override
-	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
-		thisDependency = project.getMetadata().getDependencyPackage();
-		LOGGER.info("Setting dependency archive: {}", thisDependency);
-		setDependencyArchives(List.of(thisDependency));
-		super.loadCurrentPosition(false);
-	}
-
-	@Override
 	public void postInit() throws TermServerScriptException {
 		//Need to set the original project back, otherwise it'll get filtered
 		//out by the security of which projects a user can see
