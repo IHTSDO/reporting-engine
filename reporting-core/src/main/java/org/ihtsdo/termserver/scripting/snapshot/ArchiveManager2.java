@@ -11,10 +11,7 @@ import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.FileType;
-import org.snomed.module.storage.CurrentPreviousModuleMetadataPair;
-import org.snomed.module.storage.ModuleMetadata;
-import org.snomed.module.storage.ModuleStorageCoordinator;
-import org.snomed.module.storage.ModuleStorageCoordinatorException;
+import org.snomed.module.storage.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationContext;
@@ -59,7 +56,7 @@ public class ArchiveManager2 {
 	@EventListener(ApplicationReadyEvent.class)
 	public void init(ApplicationReadyEvent event) {
 		LOGGER.info("ArchiveManager2.init: assigning to singleton");
-		singleton = this;
+		ArchiveManager2.singleton = this;
 		appContext = event.getApplicationContext();
 	}
 
@@ -67,7 +64,7 @@ public class ArchiveManager2 {
 		if (archiveDataLoader == null) {
 			if (appContext == null) {
 				LOGGER.info("No ArchiveDataLoader configured, creating one locally...");
-				archiveDataLoader = ArchiveDataLoader.create();
+				archiveDataLoader = ArchiveDataLoader.create(true);
 			} else {
 				archiveDataLoader = appContext.getBean(ArchiveDataLoader.class);
 			}
@@ -129,8 +126,8 @@ public class ArchiveManager2 {
 		//Obtain a delta, pass that to Module Storage Coordinator so it can tell us what we need to load
 		try {
 			File delta = fileHelper.getExportedDelta(ts.getSnapshotConfiguration());
-			CurrentPreviousModuleMetadataPair moduleMetadataPair = getModuleStorageCoordinator(ts).getCurrentAndPreviousMetadata(delta);
-			constructSnapshotInMemory(ts, delta, moduleMetadataPair);
+			CurrentPreviousModuleMetadataPair moduleMetadataPair = getModuleStorageCoordinator(ts).getCurrentAndPreviousMetadata(delta, true);
+			constructSnapshotInMemory(ts, moduleMetadataPair);
 		} catch (ModuleStorageCoordinatorException e) {
 			throw new TermServerScriptException("Unable to obtain delta for " + ts.getSnapshotConfiguration(), e);
 		}
@@ -140,8 +137,8 @@ public class ArchiveManager2 {
 		//In this situation, the MSC call tells us if we also need to load one or more dependencies
 		try {
 			File archive = fileHelper.getPublishedArchive(ts.getSnapshotConfiguration());
-			CurrentPreviousModuleMetadataPair moduleMetadataPair = getModuleStorageCoordinator(ts).getCurrentAndPreviousMetadata(archive);
-			constructSnapshotInMemory(ts, null, moduleMetadataPair);
+			CurrentPreviousModuleMetadataPair moduleMetadataPair = getModuleStorageCoordinator(ts).getCurrentAndPreviousMetadata(archive, true);
+			constructSnapshotInMemory(ts,  moduleMetadataPair);
 		} catch (ModuleStorageCoordinatorException e) {
 			throw new TermServerScriptException("Unable to obtain published archive for " + ts.getSnapshotConfiguration(), e);
 		}
@@ -158,9 +155,9 @@ public class ArchiveManager2 {
 		}
 	}
 
-	private void constructSnapshotInMemory(TermServerScript ts, File delta, CurrentPreviousModuleMetadataPair moduleMetadataPair) throws TermServerScriptException {
+	private void constructSnapshotInMemory(TermServerScript ts, CurrentPreviousModuleMetadataPair moduleMetadataPair) throws TermServerScriptException {
 		ArchiveImporter archiveImporter = new ArchiveImporter(ts.getGraphLoader(), ts.getSnapshotConfiguration());
-		//First, load the previous version dependencies (perhaps none for an Edition package)
+		//First, load the dependencies (perhaps none for an Edition package)
 		for (ModuleMetadata dependency : moduleMetadataPair.getCurrentRelease().getDependencies()) {
 			archiveImporter.loadArchive(dependency.getFile(), FileType.SNAPSHOT, true);
 		}
@@ -168,7 +165,7 @@ public class ArchiveManager2 {
 		archiveImporter.loadArchive(moduleMetadataPair.getPreviousRelease().getFile(), FileType.SNAPSHOT, true);
 
 		//And finally the delta, if provided
-		archiveImporter.loadArchive(delta, FileType.DELTA, false);
+		archiveImporter.loadArchive(moduleMetadataPair.getCurrentRelease().getFile(), FileType.DELTA, false);
 
 		//Now whatever we've loaded, store that in memory
 		currentlyHeldInMemory = ts.getSnapshotConfiguration();
