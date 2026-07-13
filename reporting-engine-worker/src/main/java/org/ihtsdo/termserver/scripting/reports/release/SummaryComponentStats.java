@@ -215,24 +215,6 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		super.postInit(getTabNames(), getColumnHeadings());
 	}
 
-	protected void loadProjectSnapshotWithDependency() throws TermServerScriptException {
-		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
-		if (!StringUtils.isEmpty(prevDependency)) {
-			LOGGER.info("Setting previous dependency archive to {}", prevDependency);
-			setDependencyArchives(List.of(prevDependency));
-		}
-		super.loadProjectSnapshot();
-	}
-
-	protected void loadCurrentPositionWithDependency(boolean compareTwoSnapshots) throws TermServerScriptException {
-		thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
-		if (!StringUtils.isEmpty(thisDependency)) {
-			LOGGER.info("Setting current dependency archive to {}", thisDependency);
-			setDependencyArchives(List.of(thisDependency));
-		}
-		super.loadCurrentPosition(compareTwoSnapshots);
-	}
-
 	public String[] getTabNames() {
 		return tabNames;
 	}

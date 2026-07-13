@@ -29,21 +29,15 @@ public class HistoricDataUser extends TermServerReport {
 	}
 
 	protected static final String RELEASE = "release";
-	protected static final String DEPENDENCY = "dependency";
 
 	public static final String PREV_RELEASE = "Previous Release";
 	public static final String THIS_RELEASE = "This Release";
-
-	public static final String PREV_DEPENDENCY = "Previous Dependency";
-	public static final String THIS_DEPENDENCY = "This Dependency";
 
 	public static final Concept UNKNOWN_CONCEPT = new Concept("54690008", "Unknown");
 
 	public static final boolean DEBUG_TO_FILE = false;
 
 	protected String prevRelease;
-	protected String thisDependency;
-	protected String prevDependency;
 
 	protected String thisEffectiveTime;
 	protected String previousEffectiveTime;
@@ -107,16 +101,6 @@ public class HistoricDataUser extends TermServerReport {
 
 		if (isPublishedReleaseAnalysis) {
 			ensurePrevIsEarlierThanThis(currentPositionProjectKey, prevRelease, RELEASE, RELEASE);
-			if (thisDependency != null) {
-				ensurePrevIsEarlierThanThis(currentPositionProjectKey, thisDependency, RELEASE, DEPENDENCY);
-			}
-		}
-
-		if (prevRelease != null && prevDependency != null) {
-			ensurePrevIsEarlierThanThis(prevRelease, prevDependency, RELEASE, DEPENDENCY);
-			if (thisDependency != null) {
-				ensurePrevIsEarlierThanThis(thisDependency, prevDependency, DEPENDENCY, DEPENDENCY);
-			}
 		}
 
 		getProject().setKey(prevRelease);
@@ -153,10 +137,6 @@ public class HistoricDataUser extends TermServerReport {
 		LOGGER.info("Previous Data Generated, now loading 'current' position");
 		ArchiveManager2 mgr = getArchiveManager();
 		if (compareTwoSnapshots) {
-			if (!StringUtils.isEmpty(thisDependency)) {
-				ensurePrevIsEarlierThanThis(currentPositionProjectKey, thisDependency, RELEASE, DEPENDENCY);
-				ensurePrevIsEarlierThanThis(thisDependency, prevDependency, DEPENDENCY, DEPENDENCY);
-			}
 			setProject(new Project(currentPositionProjectKey));
 			mgr.loadSnapshot(this);
 			thisEffectiveTime = gl.getCurrentEffectiveTime();

@@ -26,7 +26,7 @@ public class ReleasePackageController {
     public Map<String, List<ModuleMetadata>> getAllReleases(
             @RequestParam(value = "page", required = false) String page,
             @RequestParam(value = "size", required = false) String size
-    ) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+    ) throws ModuleStorageCoordinatorException {
         return moduleStorageCoordinator.getAllReleases(asIntegerOrFallback(page, 1), asIntegerOrFallback(size, 6));
     }
 

@@ -9,7 +9,6 @@ import org.snomed.otf.scheduler.domain.*;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @SuppressWarnings("java:S110")
@@ -33,9 +32,7 @@ public class PreReleaseContentValidationExtensions extends PreReleaseContentVali
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(THIS_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE)
-				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(PREV_RELEASE).withType(JobParameter.Type.RELEASE_ARCHIVE)
-				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
 				.add(MODULES).withType(JobParameter.Type.STRING)
 				.build();
 
@@ -51,10 +48,6 @@ public class PreReleaseContentValidationExtensions extends PreReleaseContentVali
 	}
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		// Either specify all values or none of them. Use the XOR indicator.
-		if (XOR(PREV_RELEASE, PREV_DEPENDENCY, THIS_RELEASE, THIS_DEPENDENCY)) {
-			throw new TermServerScriptException ("Either specify ALL [PrevRelease, PrevDependency, ThisRelease, ThisDependency], or NONE of them to run against the in-flight project.");
-		}
 
 		if (!StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE)) && StringUtils.isEmpty(getJobRun().getParamValue(MODULES))) {
 			throw new TermServerScriptException("Module filter must be specified when working with published archives");
@@ -69,22 +62,6 @@ public class PreReleaseContentValidationExtensions extends PreReleaseContentVali
 			throw new TermServerScriptException ("This report cannot be run on MAIN. Use 'Pre-Release Content Validation' instead.");
 		}
 
-		prevDependency = getJobRun().getParamValue(PREV_DEPENDENCY);
-		if (StringUtils.isEmpty(prevDependency)) {
-			prevDependency = getProject().getMetadata().getPreviousDependencyPackage();
-			if (StringUtils.isEmpty(prevDependency)) {
-				throw new TermServerScriptException("Previous dependency package not populated in branch metadata for " + getProject().getBranchPath());
-			}
-		}
-
-		thisDependency = getJobRun().getParamValue(THIS_DEPENDENCY);
-		if (StringUtils.isEmpty(thisDependency)) {
-			thisDependency = getProject().getMetadata().getDependencyPackage();
-			if (StringUtils.isEmpty(thisDependency)) {
-				throw new TermServerScriptException("Dependency package not populated in branch metadata for " + getProject().getBranchPath());
-			}
-		}
-
 		if (StringUtils.isEmpty(getJobRun().getParamValue(MODULES))) {
 			String defaultModule = project.getMetadata().getDefaultModuleId();
 			if (StringUtils.isEmpty(defaultModule)) {
@@ -93,32 +70,6 @@ public class PreReleaseContentValidationExtensions extends PreReleaseContentVali
 			moduleFilter = Collections.singletonList(defaultModule);
 		}
 
-		LOGGER.info("Setting previous dependency archive: {}", prevDependency);
-		setDependencyArchives(List.of(prevDependency));
-
 		super.loadProjectSnapshot();
-	}
-
-	@Override
-	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
-		LOGGER.info("Setting dependency archive: {}", thisDependency);
-		setDependencyArchives(List.of(thisDependency));
-
-		super.loadCurrentPosition(compareTwoSnapshots);
-	}
-
-	private boolean XOR(String... paramValues) {
-		Boolean lastValueSeenPresent = null;
-		for (String paramValue : paramValues) {
-			if (lastValueSeenPresent == null) {
-				lastValueSeenPresent = !StringUtils.isEmpty(jobRun.getParamValue(paramValue));
-			} else {
-				Boolean thisValueSeenPresent = !StringUtils.isEmpty(jobRun.getParamValue(paramValue));
-				if (lastValueSeenPresent != thisValueSeenPresent) {
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 }
