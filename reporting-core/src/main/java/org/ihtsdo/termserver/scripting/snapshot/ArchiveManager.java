@@ -659,7 +659,7 @@ public class ArchiveManager implements ScriptConstants {
 		if (archiveDataLoader == null) {
 			if (appContext == null) {
 				LOGGER.info("No ArchiveDataLoader configured, creating one locally...");
-				archiveDataLoader = ArchiveDataLoader.create();
+				archiveDataLoader = ArchiveDataLoader.create(false);
 			} else {
 				archiveDataLoader = appContext.getBean(ArchiveDataLoader.class);
 			}

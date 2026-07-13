@@ -7,6 +7,7 @@ import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.otf.script.dao.StandAloneResourceConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -19,7 +20,7 @@ public class ArchiveDataLoader implements DataLoader {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveDataLoader.class);
 
-	private ArchiveLoaderConfig archiveLoaderConfig;
+	private StandAloneResourceConfig config;
 
 	@Value("${cloud.aws.region.static}")
 	private String region;
@@ -64,7 +65,7 @@ public class ArchiveDataLoader implements DataLoader {
 					LOGGER.info("Download complete");
 				}
 			} catch (Throwable  t) {
-				final String msg = "Error when trying to download " + archive.getName() + " from S3 via: " +  archiveLoaderConfig;
+				final String msg = "Error when trying to download " + archive.getName() + " from S3 via: " + config;
 				throw new TermServerScriptException(msg, t);
 			}
 		} else {
@@ -73,27 +74,30 @@ public class ArchiveDataLoader implements DataLoader {
 	}
 
 	@Autowired
-	public void setArchiveLoaderConfig(ArchiveLoaderConfig archiveLoaderConfig) {
-		this.archiveLoaderConfig = archiveLoaderConfig;
-		s3Manager = new S3Manager(archiveLoaderConfig, region, awsKey, awsSecretKey);
+	public void setArchiveLoaderConfig(StandAloneResourceConfig config) {
+		this.config = config;
+		s3Manager = new S3Manager(config, region, awsKey, awsSecretKey);
 	}
 
-	public void setArchiveLoaderConfig(ArchiveLoaderConfig archiveLoaderConfig, S3Manager s3Manager) {
-		this.archiveLoaderConfig = archiveLoaderConfig;
+	public void setArchiveLoaderConfig(StandAloneResourceConfig config, S3Manager s3Manager) {
+		this.config = config;
 		this.s3Manager = s3Manager;
 	}
 
-	public static ArchiveDataLoader create() throws TermServerScriptException {
+	public static ArchiveDataLoader create(boolean useModuleStorageCoordinator) throws TermServerScriptException {
 		LOGGER.info("Creating ArchiveDataLoader based on local properties");
 		ArchiveDataLoader loader = new ArchiveDataLoader();
 
-		ArchiveLoaderConfig archiveLoaderConfig = new ArchiveLoaderConfig();
-		s3Manager = new S3Manager(archiveLoaderConfig, getConfigurationPrefix());
-		loader.setArchiveLoaderConfig(archiveLoaderConfig, s3Manager);
+		StandAloneResourceConfig config = useModuleStorageCoordinator? new MSCLoaderConfig() : new ArchiveLoaderConfig();
+		s3Manager = new S3Manager(config, getConfigurationPrefix(useModuleStorageCoordinator));
+		loader.setArchiveLoaderConfig(config, s3Manager);
 		return loader;
 	}
 
-	private static String getConfigurationPrefix() {
+	private static String getConfigurationPrefix(boolean useModuleStorageCoordinator) {
+		if (useModuleStorageCoordinator) {
+			return MSCLoaderConfig.class.getAnnotation(ConfigurationProperties.class).prefix();
+		}
 		return ArchiveLoaderConfig.class.getAnnotation(ConfigurationProperties.class).prefix();
 	}
 

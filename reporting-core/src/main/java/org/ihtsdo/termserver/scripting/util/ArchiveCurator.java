@@ -35,7 +35,7 @@ public class ArchiveCurator extends TermServerReport {
         moduleStorageCoordinator = moduleStorageCoordinator();
     }
 
-    public static void main(String[] args) throws ScriptException, IOException, InterruptedException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.DuplicateResourceException {
+    public static void main(String[] args) throws ScriptException, IOException, InterruptedException, ModuleStorageCoordinatorException {
         ArchiveCurator curator = new ArchiveCurator();
         try {
             ReportSheetManager.setTargetFolderId("13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"); //Technical Specialist
@@ -78,7 +78,7 @@ public class ArchiveCurator extends TermServerReport {
         return potentials;
     }
 
-    private void curateArchives() throws ScriptException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.DuplicateResourceException, IOException {
+    private void curateArchives() throws ScriptException, ModuleStorageCoordinatorException, IOException {
         Set<CodeSystemTuple> tuples = getTuples();
         Set<String> potentialPackages = resourceManagerSource.listFilenamesBySuffix(".zip");
         potentialPackages.removeIf(p -> p.contains("published_build_backup")); // Remove backup packages

@@ -73,7 +73,7 @@ public class ArchiveImporter implements ScriptConstants {
 			if (archive.isDirectory()) {
 				loadArchiveDirectory(archive, fileType, isReleased);
 			} else if (archive.getPath().endsWith(".zip")) {
-				LOGGER.debug("Loading archive file: {}", archive);
+				LOGGER.debug("Loading {} archive file: {}", fileType, archive);
 				loadArchiveZip(archive, fileType, isReleased);
 			} else {
 				throw new TermServerScriptException("Unrecognised archive : " + archive);
@@ -160,7 +160,7 @@ public class ArchiveImporter implements ScriptConstants {
 				return;
 			}
 
-			if (fileName.contains(fileType.name())
+			if (fileName.contains(fileType.getDisplayName())
 					&& !loadContentFile(is, fileName, fileType, isReleased)) {
 				loadReferenceSetFile(is, fileName, fileType, isReleased);
 			}
