@@ -134,10 +134,10 @@ public class HistoricDataUser extends TermServerReport {
 	}
 
 	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
-		LOGGER.info("Previous Data Generated, now loading 'current' position");
+		LOGGER.info("Previous (historic) data generated. Now loading 'current' position: {}", currentPositionProjectKey);
 		ArchiveManager2 mgr = getArchiveManager();
 		if (compareTwoSnapshots) {
-			setProject(new Project(currentPositionProjectKey));
+			getSnapshotConfiguration().setSourceName(currentPositionProjectKey);
 			mgr.loadSnapshot(this);
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
 			LOGGER.info("Detected this effective time as {}", thisEffectiveTime);
@@ -146,7 +146,7 @@ public class HistoricDataUser extends TermServerReport {
 			//the international edition has also been updated.   So recreate the whole snapshot
 			getSnapshotConfiguration().setPopulatePreviousTransitiveClosure(previousTransitiveClosureNeeded );
 			getSnapshotConfiguration().setLoadEditionArchive(false);
-			getProject().setKey(currentPositionProjectKey);
+			getSnapshotConfiguration().setSourceName(currentPositionProjectKey);
 			mgr.loadSnapshot(this);
 		}
 	}

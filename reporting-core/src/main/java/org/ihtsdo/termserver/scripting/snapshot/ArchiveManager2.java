@@ -135,10 +135,24 @@ public class ArchiveManager2 {
 
 	private void loadFromPublishedArchive(TermServerScript ts) throws TermServerScriptException {
 		//In this situation, the MSC call tells us if we also need to load one or more dependencies
+		if (msc == null) {
+			getModuleStorageCoordinator(ts);
+		}
+
 		try {
-			File archive = fileHelper.getPublishedArchive(ts.getSnapshotConfiguration());
-			CurrentPreviousModuleMetadataPair moduleMetadataPair = getModuleStorageCoordinator(ts).getCurrentAndPreviousMetadata(archive, true);
-			constructSnapshotInMemory(ts,  moduleMetadataPair);
+			ModuleMetadata moduleMetadata = null;
+
+			try {
+				//Do we already have this file locally?
+				File archive = fileHelper.getPublishedArchive(ts.getSnapshotConfiguration());
+				moduleMetadata = msc.getMetadata(archive);
+			} catch (TermServerScriptException e) {}
+
+			if (moduleMetadata == null) {
+				moduleMetadata = msc.findPackageOrThrow(ts.getSnapshotConfiguration().getSourceName(), true);
+			}
+
+			constructSnapshotInMemory(ts,  moduleMetadata);
 		} catch (ModuleStorageCoordinatorException e) {
 			throw new TermServerScriptException("Unable to obtain published archive for " + ts.getSnapshotConfiguration(), e);
 		}
@@ -169,6 +183,20 @@ public class ArchiveManager2 {
 
 		//Now whatever we've loaded, store that in memory
 		currentlyHeldInMemory = ts.getSnapshotConfiguration();
+	}
+
+	//Now for a published archive, we don't need the previous release, just the dependencies
+	private void constructSnapshotInMemory(TermServerScript ts, ModuleMetadata moduleMetadata) throws TermServerScriptException, ModuleStorageCoordinatorException {
+		ArchiveImporter archiveImporter = new ArchiveImporter(ts.getGraphLoader(), ts.getSnapshotConfiguration());
+		//First, load the dependencies (perhaps none for an Edition package)
+		for (ModuleMetadata dependency : moduleMetadata.getDependencies()) {
+			if (dependency.getFile() == null) {
+				getModuleStorageCoordinator(ts).addFileLocally(dependency);
+			}
+			archiveImporter.loadArchive(dependency.getFile(), FileType.SNAPSHOT, true);
+		}
+		//Now the previous package
+		archiveImporter.loadArchive(moduleMetadata.getFile(), FileType.SNAPSHOT, true);
 	}
 
 	public String getPreviousBranch() {
