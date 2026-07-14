@@ -120,6 +120,8 @@ public class SnapshotConfiguration implements TermServerLocation {
 
 	public void setSourceName(String sourceName) {
 		this.sourceName = sourceName;
+		//If we change the source name, we need to reset the type
+		snapshotSourceType = null;
 	}
 
 	public void reset() {
