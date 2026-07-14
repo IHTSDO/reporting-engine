@@ -15,14 +15,13 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.script.dao.ReportSheetManager;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * FRI-254 A number of what were originally SQL queries now converted into a user-runnable
  * report
  * */
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class PreReleaseContentValidation extends HistoricDataUser implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(PreReleaseContentValidation.class);
@@ -337,7 +336,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		initialiseSummaryInformation(msg);
 		for (Concept c : allActiveConceptsSorted) {
 			if (!c.getAssociationEntries(ActiveState.ACTIVE, true).isEmpty()) {
-				incrementSummaryInformation(currentPositionProjectKey);
+				incrementSummaryInformation(currentPositionProject.getKey());
 			}
 		}
 
@@ -345,7 +344,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		initialiseSummaryInformation(msg);
 		for (Concept c : allActiveConceptsSorted) {
 			if (!c.getInactivationIndicatorEntries(ActiveState.ACTIVE).isEmpty()) {
-				incrementSummaryInformation(currentPositionProjectKey);
+				incrementSummaryInformation(currentPositionProject.getKey());
 			}
 		}
 	}

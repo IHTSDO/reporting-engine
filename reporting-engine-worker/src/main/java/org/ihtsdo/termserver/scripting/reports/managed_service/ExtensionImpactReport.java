@@ -112,9 +112,10 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 			project.setMetadata(branch.getMetadata());
 			proposedUpgrade = "MAIN";
 		} else {
-			currentPositionProjectKey = getJobRun().getParamValue(INTERNATIONAL_RELEASE);
+			String currentPositionProjectKey = getJobRun().getParamValue(INTERNATIONAL_RELEASE);
 			project.setKey(currentPositionProjectKey);
 			project.setBranchPath(currentPositionProjectKey);
+			currentPositionProject = project.clone();
 			proposedUpgrade = currentPositionProjectKey;
 		}
 
@@ -139,7 +140,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		} catch (TermServerScriptException e) {
 			throw new TermServerScriptException("Historic Data Generation failed due to " + e.getMessage(), e);
 		}
-		currentPositionProjectKey = previousProject.getKey();
+		currentPositionProject = previousProject;
 		project = previousProject;
 		loadCurrentPosition(compareTwoSnapshots);
 	}
