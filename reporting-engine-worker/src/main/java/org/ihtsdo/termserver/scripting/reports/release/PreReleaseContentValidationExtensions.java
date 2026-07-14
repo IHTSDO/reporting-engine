@@ -3,8 +3,6 @@ package org.ihtsdo.termserver.scripting.reports.release;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 
 import java.util.Collections;
@@ -13,8 +11,6 @@ import java.util.Map;
 
 @SuppressWarnings("java:S110")
 public class PreReleaseContentValidationExtensions extends PreReleaseContentValidation {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(PreReleaseContentValidationExtensions.class);
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();

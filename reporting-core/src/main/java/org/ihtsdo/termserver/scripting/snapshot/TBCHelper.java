@@ -24,6 +24,9 @@ public class TBCHelper {
 		try {
 			File delta = File.createTempFile("delta_export-", ".zip");
 			delta.deleteOnExit();
+			if (location.getBranchPath() == null) {
+				throw new TermServerScriptException("Cannot generate delta for null branch path: " + location);
+			}
 			ts.getTSClient().export(location.getBranchPath(), null, TermServerClient.ExportType.UNPUBLISHED, TermServerClient.ExtractType.DELTA, delta, unpromotedChangesOnly);
 			return delta;
 		} catch (TermServerScriptException | IOException e) {

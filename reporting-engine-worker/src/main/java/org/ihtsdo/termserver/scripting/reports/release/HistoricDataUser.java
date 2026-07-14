@@ -44,7 +44,7 @@ public class HistoricDataUser extends TermServerReport {
 
 	boolean isPublishedReleaseAnalysis = false;
 
-	protected String currentPositionProjectKey;
+	protected Project currentPositionProject;
 	protected String origProject;
 	protected Map<String, HistoricData> prevData;
 
@@ -57,7 +57,7 @@ public class HistoricDataUser extends TermServerReport {
 	@Override
 	protected void loadProjectSnapshot() throws TermServerScriptException {
 
-		currentPositionProjectKey = getProject().getKey();
+		currentPositionProject = getProject().clone();
 		LOGGER.info("Historic data being imported, wiping Graph Loader for safety.");
 
 		boolean compareTwoSnapshots = recoverReleaseConfiguration();
@@ -87,8 +87,8 @@ public class HistoricDataUser extends TermServerReport {
 		boolean compareTwoSnapshots = checkReleasePresence();
 
 		if (!StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
-			currentPositionProjectKey = getJobRun().getParamValue(THIS_RELEASE);
-
+			String currentPositionProjectKey = getJobRun().getParamValue(THIS_RELEASE);
+			currentPositionProject = new Project(currentPositionProjectKey);
 			if (currentPositionProjectKey.endsWith(".zip")) {
 				isPublishedReleaseAnalysis = true;
 			}
@@ -100,7 +100,7 @@ public class HistoricDataUser extends TermServerReport {
 		}
 
 		if (isPublishedReleaseAnalysis) {
-			ensurePrevIsEarlierThanThis(currentPositionProjectKey, prevRelease, RELEASE, RELEASE);
+			ensurePrevIsEarlierThanThis(currentPositionProject.getKey(), prevRelease, RELEASE, RELEASE);
 		}
 
 		getProject().setKey(prevRelease);
@@ -134,10 +134,10 @@ public class HistoricDataUser extends TermServerReport {
 	}
 
 	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
-		LOGGER.info("Previous (historic) data generated. Now loading 'current' position: {}", currentPositionProjectKey);
+		LOGGER.info("Previous (historic) data generated. Now loading 'current' position: {}", currentPositionProject);
 		ArchiveManager2 mgr = getArchiveManager();
 		if (compareTwoSnapshots) {
-			getSnapshotConfiguration().setSourceName(currentPositionProjectKey);
+			getSnapshotConfiguration().setSourceName(currentPositionProject.getKey());
 			mgr.loadSnapshot(this);
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
 			LOGGER.info("Detected this effective time as {}", thisEffectiveTime);
@@ -146,7 +146,8 @@ public class HistoricDataUser extends TermServerReport {
 			//the international edition has also been updated.   So recreate the whole snapshot
 			getSnapshotConfiguration().setPopulatePreviousTransitiveClosure(previousTransitiveClosureNeeded );
 			getSnapshotConfiguration().setLoadEditionArchive(false);
-			getSnapshotConfiguration().setSourceName(currentPositionProjectKey);
+			getSnapshotConfiguration().setSourceName(currentPositionProject.getKey());
+			setProject(currentPositionProject);
 			mgr.loadSnapshot(this);
 		}
 	}

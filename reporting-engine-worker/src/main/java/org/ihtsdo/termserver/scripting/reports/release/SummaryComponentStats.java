@@ -273,8 +273,8 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	@Override
 	public String getReportComplexName() {
-		if (currentPositionProjectKey != null && prevRelease != null) {
-			complexName = removeTimeCode(removeZipExtension(currentPositionProjectKey)) + "---" + removeTimeCode(removeZipExtension(prevRelease));
+		if (currentPositionProject != null && prevRelease != null) {
+			complexName = removeTimeCode(removeZipExtension(currentPositionProject.getKey())) + "---" + removeTimeCode(removeZipExtension(prevRelease));
 		} else {
 			complexName = super.getReportComplexName();
 		}
@@ -810,7 +810,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	private void generateReleaseSummaryFile() throws FileNotFoundException, IOException, TermServerScriptException {
 		//What package are we reporting on here? eg SnomedCT_InternationalRF2_PRODUCTION_20220331T120000Z.zip
 		//Pull out "InternationalRF2"
-		String packageName = currentPositionProjectKey.split("_")[1];
+		String packageName = currentPositionProject.getKey().split("_")[1];
 		
 		//Can we find this file in S3?
 		String classShortName = this.getClass().getSimpleName();
