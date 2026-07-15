@@ -6,7 +6,7 @@ import org.snomed.module.storage.ModuleMetadata;
 
 public class SnapshotConfiguration implements TermServerLocation {
 
-	enum SnapshotSourceType { PROJECT, BRANCH_PATH, PUBLISHED_ARCHIVE, CODE_SYSTEM_VERSION}
+	public enum SnapshotSourceType { PROJECT, BRANCH_PATH, PUBLISHED_ARCHIVE, BUILD_ARCHIVE, CODE_SYSTEM_VERSION}
 
 	//Deprecated.  Try to remove these once we've moved over to ArchiveManager2
 	private boolean loadDependencyPlusExtensionArchive = false;
