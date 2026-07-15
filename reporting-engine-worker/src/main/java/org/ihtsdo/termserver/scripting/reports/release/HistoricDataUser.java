@@ -67,6 +67,7 @@ public class HistoricDataUser extends TermServerReport {
 		getJobRun().setTask(null);
 		try {
 			ArchiveManager2 mgr = getArchiveManager();
+			getSnapshotConfiguration().setSourceName(project.getKey());
 			mgr.loadSnapshot(this);
 
 			previousEffectiveTime = gl.getCurrentEffectiveTime();

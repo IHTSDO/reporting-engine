@@ -94,6 +94,7 @@ public class ArchiveManager2 {
 				case PROJECT -> loadFromProject(ts);
 				case BRANCH_PATH -> loadFromBranchPath(ts);
 				case PUBLISHED_ARCHIVE -> loadFromPublishedArchive(ts);
+				case BUILD_ARCHIVE -> loadFromBuildArchive(ts);
 				case CODE_SYSTEM_VERSION -> loadFromCodeSystemVersion(ts);
 			}
 		}
@@ -101,16 +102,15 @@ public class ArchiveManager2 {
 
 	private void determineSourceType(TermServerScript ts) {
 		SnapshotConfiguration config = ts.getSnapshotConfiguration();
-		Project project = ts.getProject();
-		if (project != null) {
-			config.setSourceName(project.getKey());
-			if (project.getKey().startsWith("MAIN")) {
-				config.setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.BRANCH_PATH);
-			} else if (project.getKey().endsWith(".zip")) {
-				config.setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.PUBLISHED_ARCHIVE);
-			} else {
-				config.setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.PROJECT);
-			}
+		if (config.getSourceName() == null) {
+			throw new IllegalArgumentException("Cannot determine snapshotSourceName");
+		}
+		if (config.getSourceName().startsWith("MAIN")) {
+			config.setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.BRANCH_PATH);
+		} else if (config.getSourceName().endsWith(".zip")) {
+			config.setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.PUBLISHED_ARCHIVE);
+		} else {
+			config.setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.PROJECT);
 		}
 	}
 
@@ -134,6 +134,32 @@ public class ArchiveManager2 {
 	}
 
 	private void loadFromPublishedArchive(TermServerScript ts) throws TermServerScriptException {
+		//In this situation, the MSC call tells us if we also need to load one or more dependencies
+		if (msc == null) {
+			getModuleStorageCoordinator(ts);
+		}
+
+		try {
+			ModuleMetadata moduleMetadata = null;
+
+			try {
+				//Do we already have this file locally?
+				File archive = fileHelper.getPublishedArchive(ts.getSnapshotConfiguration());
+				moduleMetadata = msc.getMetadata(archive);
+			} catch (TermServerScriptException e) {}
+
+			if (moduleMetadata == null) {
+				moduleMetadata = msc.findPackageOrThrow(ts.getSnapshotConfiguration().getSourceName(), true);
+			}
+
+			constructSnapshotInMemory(ts,  moduleMetadata);
+		} catch (ModuleStorageCoordinatorException e) {
+			throw new TermServerScriptException("Unable to obtain published archive for " + ts.getSnapshotConfiguration(), e);
+		}
+	}
+
+	// TODO - Copy of loadFromPublishedArchive - need to be re-worked
+	private void loadFromBuildArchive(TermServerScript ts) throws TermServerScriptException {
 		//In this situation, the MSC call tells us if we also need to load one or more dependencies
 		if (msc == null) {
 			getModuleStorageCoordinator(ts);
