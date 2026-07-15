@@ -65,7 +65,7 @@ public class HistoricDataUser extends TermServerReport {
 			previousEffectiveTime = gl.getCurrentEffectiveTime();
 			LOGGER.info("EffectiveTime of previous release detected to be: {}", previousEffectiveTime);
 
-			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
+			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(historicSnapshotConfiguration.getSource());
 			statsGenerator.setModuleFilter(moduleFilter);
 			statsGenerator.runJob();
 			getJobRun().setTask(task);

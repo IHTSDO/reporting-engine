@@ -147,31 +147,28 @@ public class ArchiveManager2 {
 		}
 	}
 
-	// TODO - Copy of loadFromPublishedArchive - need to be re-worked
 	private void loadFromBuildArchive(TermServerScript ts, SnapshotConfiguration config) throws TermServerScriptException {
-		//In this situation, the MSC call tells us if we also need to load one or more dependencies
-		if (msc == null) {
-			getModuleStorageCoordinator(ts);
-		}
-
 		try {
-			ModuleMetadata moduleMetadata = null;
+			//In this situation, the MSC call tells us if we also need to load one or more dependencies
+			if (msc == null) {
+				getModuleStorageCoordinator(ts);
+			}
+
+			File archive;
 
 			try {
 				//Do we already have this file locally?
-				File archive = fileHelper.getPublishedArchive(config);
-				moduleMetadata = msc.getMetadata(archive);
-			} catch (TermServerScriptException e) {}
-
-			if (moduleMetadata == null) {
+				archive = fileHelper.getPublishedArchive(config);
+			} catch (TermServerScriptException e) {
 				getBuildArchiveDataLoader().download(new File(config.getSource()));
-				File archive = fileHelper.getPublishedArchive(config);
-				moduleMetadata = msc.getMetadata(archive);
+				archive = fileHelper.getPublishedArchive(config);
 			}
 
+			ModuleMetadata moduleMetadata = msc.getMetadata(archive, true);
+
 			constructSnapshotInMemory(ts, moduleMetadata);
-		} catch (ModuleStorageCoordinatorException e) {
-			throw new TermServerScriptException("Unable to obtain published archive for " + ts.getSnapshotConfiguration(), e);
+		} catch (TermServerScriptException | ModuleStorageCoordinatorException e) {
+			throw new TermServerScriptException("Unable to obtain build archive for " + ts.getSnapshotConfiguration(), e);
 		}
 	}
 

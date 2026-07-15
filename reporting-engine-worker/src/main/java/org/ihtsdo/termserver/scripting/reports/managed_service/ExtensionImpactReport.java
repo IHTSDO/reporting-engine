@@ -114,7 +114,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		try {
 			ArchiveManager2 mgr = getArchiveManager();
 			mgr.loadSnapshot(this, incomingDataConfig);
-			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
+			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(incomingDataConfig.getSource());
 			statsGenerator.runJob();
 			//Generate a map of historical associations now, since they won't be available in the target location
 			LOGGER.info("Generating map of historical associations");
