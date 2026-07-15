@@ -4,6 +4,7 @@ import org.ihtsdo.otf.exception.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
+import org.ihtsdo.termserver.scripting.dao.buildArchiveDataLoader2;
 import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.domain.CodeSystemVersion;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -36,6 +37,9 @@ public class ArchiveManager2 {
 
 	@Autowired(required = false)
 	private ArchiveDataLoader archiveDataLoader;
+
+	@Autowired(required = false)
+	private buildArchiveDataLoader2 buildArchiveDataLoader;
 
 	private ApplicationContext appContext;
 	private ModuleStorageCoordinator msc;
@@ -70,6 +74,18 @@ public class ArchiveManager2 {
 			}
 		}
 		return archiveDataLoader;
+	}
+
+	private buildArchiveDataLoader2 getBuildArchiveDataLoader() throws TermServerScriptException {
+		if (buildArchiveDataLoader == null) {
+			if (appContext == null) {
+				LOGGER.info("No BuildArchiveDataLoader configured, creating one locally...");
+				buildArchiveDataLoader = buildArchiveDataLoader2.create();
+			} else {
+				buildArchiveDataLoader = appContext.getBean(buildArchiveDataLoader2.class);
+			}
+		}
+		return buildArchiveDataLoader;
 	}
 
 	private ModuleStorageCoordinator getModuleStorageCoordinator(TermServerScript ts) throws TermServerScriptException {
@@ -148,10 +164,12 @@ public class ArchiveManager2 {
 			} catch (TermServerScriptException e) {}
 
 			if (moduleMetadata == null) {
-				moduleMetadata = msc.findPackageOrThrow(ts.getSnapshotConfiguration().getSource(), true);
+				getBuildArchiveDataLoader().download(new File(config.getSource()));
+				File archive = fileHelper.getPublishedArchive(config);
+				moduleMetadata = msc.getMetadata(archive);
 			}
 
-			constructSnapshotInMemory(ts,  moduleMetadata);
+			constructSnapshotInMemory(ts, moduleMetadata);
 		} catch (ModuleStorageCoordinatorException e) {
 			throw new TermServerScriptException("Unable to obtain published archive for " + ts.getSnapshotConfiguration(), e);
 		}
