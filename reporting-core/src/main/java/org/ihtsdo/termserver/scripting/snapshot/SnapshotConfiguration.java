@@ -24,7 +24,8 @@ public class SnapshotConfiguration implements TermServerLocation {
 	private boolean loadOtherReferenceSets = false;
 
 	private SnapshotSourceType snapshotSourceType = null;
-	private String sourceName;
+	private String source;
+	private String key;
 
 	public boolean isAllowStaleData() {
 		return allowStaleData;
@@ -107,6 +108,9 @@ public class SnapshotConfiguration implements TermServerLocation {
 	}
 
 	public SnapshotSourceType getSnapshotSourceType() {
+		if (snapshotSourceType == null) {
+			determineSourceType();
+		}
 		return snapshotSourceType;
 	}
 
@@ -114,12 +118,12 @@ public class SnapshotConfiguration implements TermServerLocation {
 		this.snapshotSourceType = snapshotSource;
 	}
 
-	public String getSourceName() {
-		return sourceName;
+	public String getSource() {
+		return source;
 	}
 
-	public void setSourceName(String sourceName) {
-		this.sourceName = sourceName;
+	public void setSource(String source) {
+		this.source = source;
 		//If we change the source name, we need to reset the type
 		snapshotSourceType = null;
 	}
@@ -135,7 +139,7 @@ public class SnapshotConfiguration implements TermServerLocation {
 
 	public boolean isCompatibleWithExisting(SnapshotConfiguration existing) {
 		//If the source type or name is different, we definitely need to reload
-		if (existing.getSnapshotSourceType() != getSnapshotSourceType() || !existing.getSourceName().equals(getSourceName())) {
+		if (existing.getSnapshotSourceType() != getSnapshotSourceType() || !existing.getSource().equals(getSource())) {
 			return false;
 		}
 
@@ -154,10 +158,35 @@ public class SnapshotConfiguration implements TermServerLocation {
 		if (!snapshotSourceType.equals(SnapshotSourceType.BRANCH_PATH)) {
 			throw new IllegalStateException("SnapshotConfiguration is not configured for a branch path");
 		}
-		return sourceName;
+		return source;
 	}
 
 	public ModuleMetadata getPreviousRelease() {
 		return currentPreviousModuleMetadataPair.getPreviousRelease();
+	}
+
+	public boolean isArchive() {
+		return getSnapshotSourceType().equals(SnapshotSourceType.PUBLISHED_ARCHIVE);
+	}
+
+	public String getKey() {
+		return key;
+	}
+
+	public void setKey(String key) {
+		this.key = key;
+	}
+
+	private void determineSourceType() {
+		if (source == null) {
+			throw new IllegalArgumentException("Cannot determine snapshotSourceName");
+		}
+		if (source.startsWith("MAIN")) {
+			setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.BRANCH_PATH);
+		} else if (getSource().endsWith(".zip")) {
+			setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.PUBLISHED_ARCHIVE);
+		} else {
+			setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.PROJECT);
+		}
 	}
 }

@@ -7,15 +7,14 @@ import java.util.regex.Pattern;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.otf.utils.StringUtils;
-import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.HistoricData;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
 
 import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager2;
+import org.ihtsdo.termserver.scripting.snapshot.SnapshotConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,39 +36,32 @@ public class HistoricDataUser extends TermServerReport {
 
 	public static final boolean DEBUG_TO_FILE = false;
 
-	protected String prevRelease;
-
 	protected String thisEffectiveTime;
 	protected String previousEffectiveTime;
 
 	boolean isPublishedReleaseAnalysis = false;
 
-	protected Project currentPositionProject;
+	SnapshotConfiguration historicSnapshotConfiguration = new SnapshotConfiguration();
 	protected String origProject;
 	protected Map<String, HistoricData> prevData;
 
 	protected boolean previousTransitiveClosureNeeded = true;
 
-	public void doDefaultProjectSnapshotLoad(boolean fsnOnly) throws TermServerScriptException {
+	public void doDefaultProjectSnapshotLoad() throws TermServerScriptException {
 		super.loadProjectSnapshot();
 	}
 
 	@Override
 	protected void loadProjectSnapshot() throws TermServerScriptException {
 
-		currentPositionProject = getProject().clone();
 		LOGGER.info("Historic data being imported, wiping Graph Loader for safety.");
-
 		boolean compareTwoSnapshots = recoverReleaseConfiguration();
 
 		//If we have a task defined, we need to shift that out of the way while we're loading the previous package
 		String task = getJobRun().getTask();
 		getJobRun().setTask(null);
 		try {
-			ArchiveManager2 mgr = getArchiveManager();
-			getSnapshotConfiguration().setSourceName(project.getKey());
-			mgr.loadSnapshot(this);
-
+			getArchiveManager().loadSnapshot(this, historicSnapshotConfiguration);
 			previousEffectiveTime = gl.getCurrentEffectiveTime();
 			LOGGER.info("EffectiveTime of previous release detected to be: {}", previousEffectiveTime);
 
@@ -86,25 +78,21 @@ public class HistoricDataUser extends TermServerReport {
 	private boolean recoverReleaseConfiguration() throws TermServerScriptException {
 
 		boolean compareTwoSnapshots = checkReleasePresence();
-
+		SnapshotConfiguration config = getSnapshotConfiguration();
 		if (!StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
-			String currentPositionProjectKey = getJobRun().getParamValue(THIS_RELEASE);
-			currentPositionProject = new Project(currentPositionProjectKey);
-			if (currentPositionProjectKey.endsWith(".zip")) {
-				isPublishedReleaseAnalysis = true;
-			}
+			config.setSource(getJobRun().getParamValue(THIS_RELEASE));
+			isPublishedReleaseAnalysis = config.isArchive();
 		}
 
-		prevRelease = getJobRun().getParamValue(PREV_RELEASE);
-		if (StringUtils.isEmpty(prevRelease)) {
-			prevRelease = getProject().getMetadata().getPreviousPackage();
+		String historicSource = getJobRun().getParamValue(PREV_RELEASE);
+		if (StringUtils.isEmpty(historicSource)) {
+			historicSource = getProject().getMetadata().getPreviousPackage();
 		}
 
 		if (isPublishedReleaseAnalysis) {
-			ensurePrevIsEarlierThanThis(currentPositionProject.getKey(), prevRelease, RELEASE, RELEASE);
+			ensurePrevIsEarlierThanThis(config.getSource(), historicSource, RELEASE, RELEASE);
 		}
-
-		getProject().setKey(prevRelease);
+		historicSnapshotConfiguration.setSource(historicSource);
 		return compareTwoSnapshots;
 	}
 
@@ -135,33 +123,31 @@ public class HistoricDataUser extends TermServerReport {
 	}
 
 	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
-		LOGGER.info("Previous (historic) data generated. Now loading 'current' position: {}", currentPositionProject);
 		ArchiveManager2 mgr = getArchiveManager();
+		SnapshotConfiguration config = getSnapshotConfiguration();
+		LOGGER.info("Previous (historic) data generated. Now loading 'current' position: {}", config.getSource());
 		if (compareTwoSnapshots) {
-			getSnapshotConfiguration().setSourceName(currentPositionProject.getKey());
-			mgr.loadSnapshot(this);
+			mgr.loadSnapshot(this, config);
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
 			LOGGER.info("Detected this effective time as {}", thisEffectiveTime);
 		} else {
 			//We cannot just add in the project delta because it might be that - for an extension
 			//the international edition has also been updated.   So recreate the whole snapshot
-			getSnapshotConfiguration().setPopulatePreviousTransitiveClosure(previousTransitiveClosureNeeded );
-			getSnapshotConfiguration().setLoadEditionArchive(false);
-			getSnapshotConfiguration().setSourceName(currentPositionProject.getKey());
-			setProject(currentPositionProject);
-			mgr.loadSnapshot(this);
+			config.setPopulatePreviousTransitiveClosure(previousTransitiveClosureNeeded );
+			config.setLoadEditionArchive(false);
+			mgr.loadSnapshot(this, config);
 		}
 	}
 
-	protected Map<String, HistoricData> loadData(String release) throws TermServerScriptException {
-		return loadData(release, false);
+	protected Map<String, HistoricData> loadData(String dataIdentifier) throws TermServerScriptException {
+		return loadData(dataIdentifier, false);
 	}
 
-	protected Map<String, HistoricData> loadData(String release, boolean minimalSet) throws TermServerScriptException {
+	protected Map<String, HistoricData> loadData(String dataIdentifier, boolean minimalSet) throws TermServerScriptException {
 		File dataFile = null;
 		prevData = new HashMap<>();
 		try {
-			dataFile = new File("historic-data/" + release + ".tsv");
+			dataFile = new File("historic-data/" + dataIdentifier + ".tsv");
 			if (!dataFile.exists() || !dataFile.canRead()) {
 				throw new TermServerScriptException("Unable to load historic data: " + dataFile);
 			}
@@ -243,5 +229,15 @@ public class HistoricDataUser extends TermServerReport {
 			return matcher.group();
 		}
 		throw new IllegalArgumentException("Unable to extract date from " + str);
+	}
+
+	protected void checkAndSetModuleFilter() throws TermServerScriptException {
+		if (StringUtils.isEmpty(getJobRun().getParamValue(MODULES))) {
+			String defaultModule = project.getMetadata().getDefaultModuleId();
+			if (StringUtils.isEmpty(defaultModule)) {
+				throw new TermServerScriptException("Unable to recover default moduleId from project: " + project.getKey());
+			}
+			moduleFilter = Collections.singletonList(defaultModule);
+		}
 	}
 }

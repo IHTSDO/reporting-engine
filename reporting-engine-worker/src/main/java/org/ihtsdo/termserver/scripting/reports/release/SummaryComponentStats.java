@@ -247,7 +247,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	@Override
 	public void runJob() throws TermServerScriptException {
 		LOGGER.info("Loading Previous Data");
-		loadData(prevRelease);
+		loadData(historicSnapshotConfiguration.getSource());
 		LOGGER.info("Analysing Data");
 		analyzeConcepts();
 		LOGGER.info("Outputting Results");
@@ -273,8 +273,10 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 
 	@Override
 	public String getReportComplexName() {
-		if (currentPositionProject != null && prevRelease != null) {
-			complexName = removeTimeCode(removeZipExtension(currentPositionProject.getKey())) + "---" + removeTimeCode(removeZipExtension(prevRelease));
+		String sourceName = getSnapshotConfiguration().getSource();
+		String prevRelease = historicSnapshotConfiguration.getSource();
+		if (sourceName != null && prevRelease != null) {
+			complexName = removeTimeCode(removeZipExtension(sourceName)) + "---" + removeTimeCode(removeZipExtension(prevRelease));
 		} else {
 			complexName = super.getReportComplexName();
 		}
@@ -810,7 +812,7 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	private void generateReleaseSummaryFile() throws FileNotFoundException, IOException, TermServerScriptException {
 		//What package are we reporting on here? eg SnomedCT_InternationalRF2_PRODUCTION_20220331T120000Z.zip
 		//Pull out "InternationalRF2"
-		String packageName = currentPositionProject.getKey().split("_")[1];
+		String packageName = getSnapshotConfiguration().getSource().split("_")[1];
 		
 		//Can we find this file in S3?
 		String classShortName = this.getClass().getSimpleName();

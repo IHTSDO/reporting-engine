@@ -126,20 +126,13 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	protected void loadProjectSnapshot() throws TermServerScriptException {
 		//If we're working with zip packages, we'll use the HistoricDataGenerator
 		//Otherwise we'll use the default behaviour
-		prevRelease = getJobRun().getParamValue(PREV_RELEASE);
+		String prevRelease = getJobRun().getParamValue(PREV_RELEASE);
 		if (prevRelease == null) {
-			super.doDefaultProjectSnapshotLoad(false);
+			super.doDefaultProjectSnapshotLoad();
 		} else {
 			loadHistoricallyGeneratedData = true;
-
-			if (StringUtils.isEmpty(getJobRun().getParamValue(MODULES))) {
-				String defaultModule = project.getMetadata().getDefaultModuleId();
-				if (StringUtils.isEmpty(defaultModule)) {
-					throw new TermServerScriptException("Unable to recover default moduleId from project: " + project.getKey());
-				}
-				moduleFilter = Collections.singletonList(defaultModule);
-			}
-			
+			historicSnapshotConfiguration.setSource(prevRelease);
+			checkAndSetModuleFilter();
 			super.loadProjectSnapshot();
 		}
 	}
@@ -238,7 +231,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	public void runJob() throws TermServerScriptException {
 		if (loadHistoricallyGeneratedData) {
 			LOGGER.info("Loading Previous Data");
-			loadData(prevRelease);
+			loadData(historicSnapshotConfiguration.getSource());
 		}
 		examineConcepts();
 		reportConceptsChanged();

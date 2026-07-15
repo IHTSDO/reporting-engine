@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.*;
@@ -15,6 +14,7 @@ import org.ihtsdo.termserver.scripting.reports.release.HistoricDataUser;
 import org.ihtsdo.termserver.scripting.reports.release.HistoricStatsGenerator;
 import org.ihtsdo.termserver.scripting.snapshot.ArchiveImporter;
 import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager2;
+import org.ihtsdo.termserver.scripting.snapshot.SnapshotConfiguration;
 import org.ihtsdo.termserver.scripting.util.DerivativeHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -40,7 +40,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 
 	private static final boolean RUN_INTEGRITY_CHECKS = true;  //Make false locally if required
 
-	private String incomingDataKey;
+//	private String incomingDataKey;
 	private Map<String, HistoricData> incomingData;
 	
 	private Map<Concept, Set<Concept>> usedInStatedModellingMap; 
@@ -49,7 +49,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	private final Map<String, String> fsnToSctIdMap = new HashMap<>();
 
 	private String[][] columnNames;  //Used for both column names, and to track totals
-	private String proposedUpgrade;
+	private SnapshotConfiguration incomingDataConfig;
 	private String ecl;
 	private DerivativeHelper derivativeHelper;
 	private Set<Concept> conceptsOfInterest;
@@ -102,27 +102,18 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		boolean compareTwoSnapshots = false; 
 		previousTransitiveClosureNeeded = false;
 		LOGGER.info("International Release data being imported, wiping Graph Loader for safety.");
-		Project previousProject = project.clone();
 		ArchiveImporter.setSkipSave(true); //This takes a copy of the graph in memory, so avoid for this expensive report.
 
+		incomingDataConfig = new SnapshotConfiguration();
 		if (StringUtils.isEmpty(getJobRun().getParamValue(INTERNATIONAL_RELEASE))) {
-			Branch branch = tsClient.getBranch("MAIN");
-			project.setBranchPath("MAIN");
-			project.setKey("MAIN");
-			project.setMetadata(branch.getMetadata());
-			proposedUpgrade = "MAIN";
+			incomingDataConfig.setSource("MAIN");
 		} else {
-			String currentPositionProjectKey = getJobRun().getParamValue(INTERNATIONAL_RELEASE);
-			project.setKey(currentPositionProjectKey);
-			project.setBranchPath(currentPositionProjectKey);
-			currentPositionProject = project.clone();
-			proposedUpgrade = currentPositionProjectKey;
+			incomingDataConfig.setSource(getJobRun().getParamValue(INTERNATIONAL_RELEASE));
 		}
 
 		try {
-			incomingDataKey = project.getKey();
 			ArchiveManager2 mgr = getArchiveManager();
-			mgr.loadSnapshot(this);
+			mgr.loadSnapshot(this, incomingDataConfig);
 			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
 			statsGenerator.runJob();
 			//Generate a map of historical associations now, since they won't be available in the target location
@@ -140,8 +131,6 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		} catch (TermServerScriptException e) {
 			throw new TermServerScriptException("Historic Data Generation failed due to " + e.getMessage(), e);
 		}
-		currentPositionProject = previousProject;
-		project = previousProject;
 		loadCurrentPosition(compareTwoSnapshots);
 	}
 
@@ -211,7 +200,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		//We've always loaded historic data as 'prev' but in this case, we're looking the release that
 		//we're about to upgrade to.  So we'll give that a more appropriate name
 		LOGGER.info("Loading Previous Data");
-		incomingData = loadData(incomingDataKey, true);
+		incomingData = loadData(incomingDataConfig.getSource(), true);
 		
 		LOGGER.info("Populating map of all concepts used in stated modelling");
 		populateStatedModellingMap();
@@ -735,7 +724,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 
 	@Override
 	protected void recordFinalWords() throws TermServerScriptException {
-		report(PRIMARY_REPORT,"Proposed upgrade to", proposedUpgrade);
+		report(PRIMARY_REPORT,"Proposed upgrade to", incomingDataConfig.getSource());
 		ArchiveImporter.setSkipSave(false); //reset for subsequent reuse
 	}
 

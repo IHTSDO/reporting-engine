@@ -35,7 +35,7 @@ public class TBCHelper {
 	}
 
 	public File getPublishedArchive(SnapshotConfiguration config) throws TermServerScriptException {
-		File archive = new File("releases/" + config.getSourceName());
+		File archive = new File("releases/" + config.getSource());
 		if (!archive.canRead()) {
 			throw new TermServerScriptException("Unable to read " + archive);
 		}
