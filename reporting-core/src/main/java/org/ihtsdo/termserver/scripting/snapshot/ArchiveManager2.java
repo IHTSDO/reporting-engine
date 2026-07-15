@@ -4,7 +4,7 @@ import org.ihtsdo.otf.exception.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
-import org.ihtsdo.termserver.scripting.dao.buildArchiveDataLoader2;
+import org.ihtsdo.termserver.scripting.dao.BuildArchiveDataLoader2;
 import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.domain.CodeSystemVersion;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -39,7 +39,7 @@ public class ArchiveManager2 {
 	private ArchiveDataLoader archiveDataLoader;
 
 	@Autowired(required = false)
-	private buildArchiveDataLoader2 buildArchiveDataLoader;
+	private BuildArchiveDataLoader2 buildArchiveDataLoader;
 
 	private ApplicationContext appContext;
 	private ModuleStorageCoordinator msc;
@@ -76,13 +76,13 @@ public class ArchiveManager2 {
 		return archiveDataLoader;
 	}
 
-	private buildArchiveDataLoader2 getBuildArchiveDataLoader() throws TermServerScriptException {
+	private BuildArchiveDataLoader2 getBuildArchiveDataLoader() throws TermServerScriptException {
 		if (buildArchiveDataLoader == null) {
 			if (appContext == null) {
 				LOGGER.info("No BuildArchiveDataLoader configured, creating one locally...");
-				buildArchiveDataLoader = buildArchiveDataLoader2.create();
+				buildArchiveDataLoader = BuildArchiveDataLoader2.create();
 			} else {
-				buildArchiveDataLoader = appContext.getBean(buildArchiveDataLoader2.class);
+				buildArchiveDataLoader = appContext.getBean(BuildArchiveDataLoader2.class);
 			}
 		}
 		return buildArchiveDataLoader;
