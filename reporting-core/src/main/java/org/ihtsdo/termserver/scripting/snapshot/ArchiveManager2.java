@@ -80,52 +80,25 @@ public class ArchiveManager2 {
 		return msc;
 	}
 
-	public void loadSnapshot(TermServerScript ts) throws TermServerScriptException {
-		SnapshotConfiguration config = ts.getSnapshotConfiguration();
+	public void loadSnapshot(TermServerScript ts, SnapshotConfiguration config) throws TermServerScriptException {
 		fileHelper = new TBCHelper(ts);
 		//Is what I've been asked to load compatible with what I've currently got in memory?
 		if (currentlyHeldInMemory != null && config.isCompatibleWithExisting(currentlyHeldInMemory)) {
 			LOGGER.info("Snapshot currently in memory is compatible with requested snapshot.  No need to load.");
 		} else {
-			if (config.getSnapshotSourceType() == null) {
-				determineSourceType(ts);
-			}
 			switch (config.getSnapshotSourceType()) {
-				case PROJECT -> loadFromProject(ts);
-				case BRANCH_PATH -> loadFromBranchPath(ts);
-				case PUBLISHED_ARCHIVE -> loadFromPublishedArchive(ts);
-				case BUILD_ARCHIVE -> loadFromBuildArchive(ts);
-				case CODE_SYSTEM_VERSION -> loadFromCodeSystemVersion(ts);
+				case PROJECT, BRANCH_PATH -> loadFromBranchPath(ts, config);
+				case PUBLISHED_ARCHIVE -> loadFromPublishedArchive(ts, config);
+				case BUILD_ARCHIVE -> loadFromBuildArchive(ts, config);
+				case CODE_SYSTEM_VERSION -> loadFromCodeSystemVersion(ts, config);
 			}
 		}
 	}
 
-	private void determineSourceType(TermServerScript ts) {
-		SnapshotConfiguration config = ts.getSnapshotConfiguration();
-		if (config.getSourceName() == null) {
-			throw new IllegalArgumentException("Cannot determine snapshotSourceName");
-		}
-		if (config.getSourceName().startsWith("MAIN")) {
-			config.setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.BRANCH_PATH);
-		} else if (config.getSourceName().endsWith(".zip")) {
-			config.setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.PUBLISHED_ARCHIVE);
-		} else {
-			config.setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.PROJECT);
-		}
-	}
-
-	private void loadFromProject(TermServerScript ts) throws TermServerScriptException {
-		//If we've got a project, the TS should already have recovered it, so we can update
-		//the config to load from that branch
-		ts.getSnapshotConfiguration().setSourceName(ts.getProject().getBranchPath());
-		ts.getSnapshotConfiguration().setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.BRANCH_PATH);
-		loadFromBranchPath(ts);
-	}
-
-	private void loadFromBranchPath(TermServerScript ts) throws TermServerScriptException {
+	private void loadFromBranchPath(TermServerScript ts, SnapshotConfiguration config) throws TermServerScriptException {
 		//Obtain a delta, pass that to Module Storage Coordinator so it can tell us what we need to load
 		try {
-			File delta = fileHelper.getExportedDelta(ts.getSnapshotConfiguration());
+			File delta = fileHelper.getExportedDelta(config);
 			CurrentPreviousModuleMetadataPair moduleMetadataPair = getModuleStorageCoordinator(ts).getCurrentAndPreviousMetadata(delta, true);
 			constructSnapshotInMemory(ts, moduleMetadataPair);
 		} catch (ModuleStorageCoordinatorException e) {
@@ -133,7 +106,7 @@ public class ArchiveManager2 {
 		}
 	}
 
-	private void loadFromPublishedArchive(TermServerScript ts) throws TermServerScriptException {
+	private void loadFromPublishedArchive(TermServerScript ts, SnapshotConfiguration config) throws TermServerScriptException {
 		//In this situation, the MSC call tells us if we also need to load one or more dependencies
 		if (msc == null) {
 			getModuleStorageCoordinator(ts);
@@ -144,12 +117,12 @@ public class ArchiveManager2 {
 
 			try {
 				//Do we already have this file locally?
-				File archive = fileHelper.getPublishedArchive(ts.getSnapshotConfiguration());
+				File archive = fileHelper.getPublishedArchive(config);
 				moduleMetadata = msc.getMetadata(archive);
 			} catch (TermServerScriptException e) {}
 
 			if (moduleMetadata == null) {
-				moduleMetadata = msc.findPackageOrThrow(ts.getSnapshotConfiguration().getSourceName(), true);
+				moduleMetadata = msc.findPackageOrThrow(config.getSource(), true);
 			}
 
 			constructSnapshotInMemory(ts,  moduleMetadata);
@@ -159,7 +132,7 @@ public class ArchiveManager2 {
 	}
 
 	// TODO - Copy of loadFromPublishedArchive - need to be re-worked
-	private void loadFromBuildArchive(TermServerScript ts) throws TermServerScriptException {
+	private void loadFromBuildArchive(TermServerScript ts, SnapshotConfiguration config) throws TermServerScriptException {
 		//In this situation, the MSC call tells us if we also need to load one or more dependencies
 		if (msc == null) {
 			getModuleStorageCoordinator(ts);
@@ -170,12 +143,12 @@ public class ArchiveManager2 {
 
 			try {
 				//Do we already have this file locally?
-				File archive = fileHelper.getPublishedArchive(ts.getSnapshotConfiguration());
+				File archive = fileHelper.getPublishedArchive(config);
 				moduleMetadata = msc.getMetadata(archive);
 			} catch (TermServerScriptException e) {}
 
 			if (moduleMetadata == null) {
-				moduleMetadata = msc.findPackageOrThrow(ts.getSnapshotConfiguration().getSourceName(), true);
+				moduleMetadata = msc.findPackageOrThrow(ts.getSnapshotConfiguration().getSource(), true);
 			}
 
 			constructSnapshotInMemory(ts,  moduleMetadata);
@@ -184,9 +157,9 @@ public class ArchiveManager2 {
 		}
 	}
 
-	private void loadFromCodeSystemVersion(TermServerScript ts) throws TermServerScriptException {
+	private void loadFromCodeSystemVersion(TermServerScript ts, SnapshotConfiguration config) throws TermServerScriptException {
 		try {
-			URI codeSystemVersionURI = URI.create(ts.getSnapshotConfiguration().getSourceName());
+			URI codeSystemVersionURI = URI.create(config.getSource());
 			ModuleMetadata moduleMetadata = getModuleStorageCoordinator(ts).getMetadata(codeSystemVersionURI);
 			//constructSnapshotInMemory(ts, null, moduleMetadata);
 			throw new NotImplementedException();

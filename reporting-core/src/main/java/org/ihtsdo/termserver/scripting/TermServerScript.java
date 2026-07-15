@@ -618,6 +618,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			init(jobRun);
 
 			if (scriptRequiresSnomedData) {
+				getSnapshotConfiguration().setSource(project.getBranchPath());
+				getSnapshotConfiguration().setKey(project.getKey());
 				loadProjectSnapshot();
 			}
 
@@ -767,7 +769,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected void loadProjectSnapshot() throws TermServerScriptException {
 		ArchiveManager2 mgr = getArchiveManager();
-		mgr.loadSnapshot(this);
+		mgr.loadSnapshot(this, getSnapshotConfiguration());
 		//Reset the report name to null here as it will have been set by the Snapshot Generator
 		setReportName(null);
 	}
@@ -787,48 +789,16 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
 			}
 			if (runStandAlone) {
-				LOGGER.debug("Loading: " + gl.getConcept(sctid) + " from local store");
+				LOGGER.debug("Loading: {} from local store", gl.getConcept(sctid));
 				return gl.getConcept(sctid).cloneWithIds();
 			}
 		}
-		Concept loadedConcept = loadConcept(tsClient, sctid, branchPath);
-		return loadedConcept;
-	}
-	
-	protected Description loadDescription(String sctId, String branchPath) throws TermServerScriptException {
-		if (dryRun) {
-			//In a dry run situation, the task branch is not created so use the Project instead
-			//But we'll clone it, so the object isn't confused with any local changes
-			
-			//If we're already working at project level, don't modify branchPath
-			//Note that for MS we expect two slashes eg MAIN/SNOMEDCT-SE/SE
-			if (branchPath.contains("SNOMEDCT-") && CharMatcher.is('/').countIn(branchPath) == 2) {
-				//debug ("MS Project detected as branch path: " + branchPath);
-			} else if (branchPath.indexOf("/") != branchPath.lastIndexOf("/")) {
-				branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
-			}
-			if (runStandAlone) {
-				LOGGER.debug("Loading: {} from local store", gl.getDescription(sctId));
-				return gl.getDescription(sctId).clone(null, true);
-			}
-		}
-		try {
-			return tsClient.getDescription(sctId, branchPath);
-		} catch (Exception e) {
-			if (e.getMessage() != null && e.getMessage().contains("[404] Not Found") 
-				|| e.getMessage().contains("404 Not Found")
-				|| e.getMessage().contains("NOT_FOUND")) {
-				LOGGER.debug("Unable to find description {} on branch {}", sctId, branchPath);
-				return null;
-			}
-			String msg =  e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-			throw new TermServerScriptException("Failed to recover description " + sctId + " from TS branch " + branchPath + ", due to: " + msg,e);
-		}
+		return loadConcept(tsClient, sctid, branchPath);
 	}
 	
 	protected Concept loadConcept(Concept concept, String branchPath) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept.getConceptId(), branchPath);
-		//Detect attempt to load a deleted concept
+		//Detect any attempt to load a deleted concept
 		if (loadedConcept == null || StringUtils.isEmpty(loadedConcept.getConceptId())) {
 			return null;
 		}
@@ -2601,6 +2571,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		if (localProps.exists()) {
 			return new FileInputStream(localProps);
 		}
+
 		LOGGER.warn("No application-local.properties found in working directory ({}), falling back to classpath", localProps.getAbsolutePath());
 		return getClass().getClassLoader().getResourceAsStream("application-local.properties");
 	}

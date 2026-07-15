@@ -133,7 +133,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 				.toList();
 
 		LOGGER.info("Loading Previous Data");
-		loadData(prevRelease);
+		loadData(historicSnapshotConfiguration.getSource());
 
 		LOGGER.info("Reporting Top Level Hierarchy Switch");
 		topLevelHierarchySwitch();
@@ -333,10 +333,11 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 
 	private void compileSummaryCounts() {
 		String msg = "Active concepts with active historical associations";
+		String sourceName = getSnapshotConfiguration().getSource();
 		initialiseSummaryInformation(msg);
 		for (Concept c : allActiveConceptsSorted) {
 			if (!c.getAssociationEntries(ActiveState.ACTIVE, true).isEmpty()) {
-				incrementSummaryInformation(currentPositionProject.getKey());
+				incrementSummaryInformation(sourceName);
 			}
 		}
 
@@ -344,7 +345,7 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 		initialiseSummaryInformation(msg);
 		for (Concept c : allActiveConceptsSorted) {
 			if (!c.getInactivationIndicatorEntries(ActiveState.ACTIVE).isEmpty()) {
-				incrementSummaryInformation(currentPositionProject.getKey());
+				incrementSummaryInformation(sourceName);
 			}
 		}
 	}

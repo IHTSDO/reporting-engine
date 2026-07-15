@@ -58,14 +58,7 @@ public class PreReleaseContentValidationExtensions extends PreReleaseContentVali
 			throw new TermServerScriptException ("This report cannot be run on MAIN. Use 'Pre-Release Content Validation' instead.");
 		}
 
-		if (StringUtils.isEmpty(getJobRun().getParamValue(MODULES))) {
-			String defaultModule = project.getMetadata().getDefaultModuleId();
-			if (StringUtils.isEmpty(defaultModule)) {
-				throw new TermServerScriptException("Unable to recover default moduleId from project: " + project.getKey());
-			}
-			moduleFilter = Collections.singletonList(defaultModule);
-		}
-
+		checkAndSetModuleFilter();
 		super.loadProjectSnapshot();
 	}
 }

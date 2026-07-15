@@ -49,15 +49,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 	
 	@Override
 	protected void loadProjectSnapshot() throws TermServerScriptException {
-
-		if (StringUtils.isEmpty(getJobRun().getParamValue(MODULES))) {
-			String defaultModule = project.getMetadata().getDefaultModuleId();
-			if (StringUtils.isEmpty(defaultModule)) {
-				throw new TermServerScriptException("Unable to recover default moduleId from project: " + project.getKey());
-			}
-			moduleFilter = Collections.singletonList(defaultModule);
-		}
-
+		checkAndSetModuleFilter();
 		super.loadProjectSnapshot();
 	}
 
