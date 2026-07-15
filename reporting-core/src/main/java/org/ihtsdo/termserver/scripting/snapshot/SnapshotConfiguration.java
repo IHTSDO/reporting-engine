@@ -184,7 +184,11 @@ public class SnapshotConfiguration implements TermServerLocation {
 		if (source.startsWith("MAIN")) {
 			setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.BRANCH_PATH);
 		} else if (getSource().endsWith(".zip")) {
-			setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.PUBLISHED_ARCHIVE);
+			if (getSource().contains("output-files")) {
+				setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.BUILD_ARCHIVE);
+			} else {
+				setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.PUBLISHED_ARCHIVE);
+			}
 		} else {
 			setSnapshotSourceType(SnapshotConfiguration.SnapshotSourceType.PROJECT);
 		}
