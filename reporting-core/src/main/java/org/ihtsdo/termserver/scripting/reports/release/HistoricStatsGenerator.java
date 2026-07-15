@@ -54,9 +54,10 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	private static final int ACTIVE = 1;
 	private static final int INACTIVE = 0;
 	private Map<String, String> semTagHierarchyMap;
+	private String source;
 
-	public HistoricStatsGenerator(TermServerScript ts) {
-		project = ts.getProject();
+	public HistoricStatsGenerator(String source) {
+		this.source = source;
 	}
 
 	public static void main(String[] args) throws TermServerScriptException {
@@ -88,7 +89,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			//Create the historic-data directory if required
 			ensureHistoricDataDirExistsOrThrow();
 			
-			File f = new File(DATA_DIR + project.getKey() + ".tsv");
+			File f = new File(DATA_DIR + source + ".tsv");
 			//Since the package is published, if this file already exists, we can just reuse it
 			if (!f.exists()) {
 				fw = initialiseHistoricDataFile(f);

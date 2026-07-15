@@ -24,7 +24,7 @@ public class BuildArchiveDataLoader2 implements DataLoader {
 	public BuildArchiveDataLoader2() {
 	}
 
-	public BuildArchiveDataLoader2(BuildArchiveLoaderConfig buildArchiveConfig) {
+	public BuildArchiveDataLoader2(StandAloneResourceConfig buildArchiveConfig) {
 		this.buildArchiveConfig = buildArchiveConfig;
 	}
 
@@ -52,19 +52,19 @@ public class BuildArchiveDataLoader2 implements DataLoader {
 				throw new TermServerScriptException("Error when trying to download " + sourcePath + " from S3 via: " + s3Manager.getStandAloneResourceConfig(), t);
 			}
 		} else {
-			LOGGER.info("ArchiveDataLoader set to local source. Will expect {} to be available.", targetPath);
+			LOGGER.info("BuildArchiveDataLoader set to local source. Will expect {} to be available.", targetPath);
 		}
 	}
 
 	@Autowired
-	public void setConfig(BuildArchiveLoaderConfig buildArchiveConfig) {
+	public void setConfig(StandAloneResourceConfig buildArchiveConfig) {
 		this.buildArchiveConfig = buildArchiveConfig;
 	}
 
 	public static BuildArchiveDataLoader2 create() throws TermServerScriptException {
 		LOGGER.info("Creating BuildArchiveDataLoader based on local properties");
 
-		BuildArchiveLoaderConfig buildArchiveConfig = new BuildArchiveLoaderConfig();
+		StandAloneResourceConfig buildArchiveConfig = new BuildArchiveLoaderConfig();
 		buildArchiveConfig.init(getConfigurationPrefix(BuildArchiveLoaderConfig.class));
 
 		return new BuildArchiveDataLoader2(buildArchiveConfig);
