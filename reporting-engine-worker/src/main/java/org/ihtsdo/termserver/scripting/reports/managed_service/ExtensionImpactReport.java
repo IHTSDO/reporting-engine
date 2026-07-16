@@ -40,10 +40,8 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 
 	private static final boolean RUN_INTEGRITY_CHECKS = true;  //Make false locally if required
 
-//	private String incomingDataKey;
 	private Map<String, HistoricData> incomingData;
-	
-	private Map<Concept, Set<Concept>> usedInStatedModellingMap; 
+	private Map<Concept, Set<Concept>> usedInStatedModellingMap;
 	private Map<Concept, Set<Concept>> usedAsStatedParentMap;
 	private Map<Concept, String> historicalAssociationStrMap;
 	private final Map<String, String> fsnToSctIdMap = new HashMap<>();

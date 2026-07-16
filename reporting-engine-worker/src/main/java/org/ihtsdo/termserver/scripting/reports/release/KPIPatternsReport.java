@@ -9,7 +9,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager2;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -142,12 +141,12 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 			}
 			if (c.isReleased() == null) {
 				String detail = "";
-				if (c.getAxiomEntries() != null && c.getAxiomEntries().size() > 0) {
-					detail = c.getAxiomEntries().get(0).toString();
+				if (c.getAxiomEntries() != null && !c.getAxiomEntries().isEmpty()) {
+					detail = c.getAxiomEntries().getFirst().toString();
 				} else {
 					//We'll have to work through all axioms to find where this came from
 					List<AxiomEntry> axiomsContaining = findAxiomsContaining(c);
-					if (axiomsContaining.size() > 0) {
+					if (!axiomsContaining.isEmpty()) {
 						detail = "In " + axiomsContaining.size() + " axioms eg " + axiomsContaining.iterator().next();
 					} else {
 						if (c.getFSNDescription() == null) {
@@ -164,7 +163,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 			} else if (c.getFsn() == null || c.getFsn().isEmpty()) {
 				report(c, issueStr2);
 				isOK = false;
-			} else if (c.isActive() && c.getAxiomEntries().size() == 0) {
+			} else if (c.isActiveSafely() && c.getAxiomEntries().isEmpty()) {
 				//The Root concept can get away with this
 				if (!c.equals(ROOT_CONCEPT)) {
 					report(c, issueStr3);

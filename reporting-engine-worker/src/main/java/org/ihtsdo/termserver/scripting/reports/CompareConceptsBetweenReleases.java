@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
-import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -106,20 +105,12 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 
 		getProject().setKey(prevRelease);
 		//If we have a task defined, we need to shift that out of the way while we're loading the previous package
-		String task = getJobRun().getTask();
 		getJobRun().setTask(null);
 		try {
 			throw new TermServerScriptException("Historic Data Generation needs revisited");
-			/*ArchiveManager mgr = getArchiveManager();
-			mgr.setLoadEditionArchive(true);
-			mgr.loadSnapshot(fsnOnly);
-			populateConceptState();
-			mgr.reset();
-			getJobRun().setTask(task);*/
 		} catch (TermServerScriptException e) {
 			throw new TermServerScriptException("Historic Data Generation failed due to " + e.getMessage(), e);
 		}
-		//loadCurrentPosition();
 	}
 
 	private void populateConceptState() throws TermServerScriptException {
@@ -129,16 +120,6 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 		}
 		LOGGER.info("Populated 'previous' state of {} concepts", conceptStates.size());
 	}
-
-	/*protected void loadCurrentPosition() throws TermServerScriptException {
-		LOGGER.info("Previous Data Generated, now loading 'current' position");
-		ArchiveManager mgr = getArchiveManager();
-		//We cannot just add in the project delta because it might be that - for an extension
-		//the international edition has also been updated.   So recreate the whole snapshot
-		mgr.setLoadEditionArchive(false);
-		getProject().setKey(projectKey);
-		mgr.loadSnapshot(false);
-	}*/
 
 	@Override
 	public void postInit() throws TermServerScriptException {

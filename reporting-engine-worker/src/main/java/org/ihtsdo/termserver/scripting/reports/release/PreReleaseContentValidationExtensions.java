@@ -5,7 +5,6 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.snomed.otf.scheduler.domain.*;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 

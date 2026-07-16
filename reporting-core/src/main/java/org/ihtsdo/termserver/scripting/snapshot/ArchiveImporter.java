@@ -68,7 +68,7 @@ public class ArchiveImporter implements ScriptConstants {
 
 	public void loadArchive(File archive, FileType fileType, Boolean isReleased) throws TermServerScriptException {
 		try {
-			boolean isDelta = (fileType.equals(DELTA));
+			boolean isDelta = (fileType.equals(FileType.DELTA));
 			//Are we loading an expanded or compressed archive?
 			if (archive.isDirectory()) {
 				loadArchiveDirectory(archive, fileType, isReleased);
@@ -80,7 +80,7 @@ public class ArchiveImporter implements ScriptConstants {
 			}
 
 			//Are we generating the transitive closure?
-			if (fileType.equals(SNAPSHOT) && config.isPopulatePreviousTransitiveClosure()) {
+			if (fileType.equals(FileType.SNAPSHOT) && config.isPopulatePreviousTransitiveClosure()) {
 				gl.populatePreviousTransitiveClosure();
 			}
 

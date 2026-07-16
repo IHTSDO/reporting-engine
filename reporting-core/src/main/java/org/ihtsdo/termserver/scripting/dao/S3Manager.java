@@ -91,15 +91,6 @@ public class S3Manager {
 		return standAloneResourceConfig.isUseCloud();
 	}
 
-	private boolean isConfigurationValid() {
-		if (StringUtils.isEmpty(region) ||
-				StringUtils.isEmpty(awsKey) ||
-				StringUtils.isEmpty(awsSecretKey)) {
-			return false;
-		}
-		return true;
-	}
-
 	private void loadProperties(String configurationPrefix) throws TermServerScriptException {
 		try {
 			LocalProperties properties = new LocalProperties(null);

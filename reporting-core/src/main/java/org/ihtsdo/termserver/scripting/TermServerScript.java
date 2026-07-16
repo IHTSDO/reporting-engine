@@ -217,7 +217,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	public String detectReleaseBranch(String projectKey) {
-		String releaseBranch = projectKey.replace("MAIN/", "").replace("-", "");
+		String releaseBranch = projectKey.replace(MAIN_SLASH, "").replace("-", "");
 		return StringUtils.isNumeric(releaseBranch) ? releaseBranch : null;
 	}
 
@@ -247,7 +247,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 															"https://prod-ms-authoring.ihtsdotools.org/",
 															"https://prod-snowstorm.ihtsdotools.org/"
 	};
-	
+	protected static final int ENV_PROD = 9;
+
 	protected void init(String[] args) throws TermServerScriptException {
 		
 		if (args.length < 2) {

@@ -48,7 +48,7 @@ public class BuildArchiveDataLoader2 implements DataLoader {
 					IOUtils.copy(input, output);
 					LOGGER.info("Download complete");
 				}
-			} catch (Throwable t) {
+			} catch (Exception t) {
 				throw new TermServerScriptException("Error when trying to download " + sourcePath + " from S3 via: " + s3Manager.getStandAloneResourceConfig(), t);
 			}
 		} else {

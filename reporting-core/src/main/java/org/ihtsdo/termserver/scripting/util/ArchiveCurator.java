@@ -15,8 +15,6 @@ import org.snomed.module.storage.ModuleMetadata;
 import org.snomed.module.storage.ModuleStorageCoordinator;
 import org.snomed.module.storage.ModuleStorageCoordinatorException;
 import org.snomed.otf.script.dao.ReportSheetManager;
-import org.snomed.otf.script.dao.StandAloneResourceConfig;
-import org.springframework.core.io.ResourceLoader;
 
 import java.io.*;
 import java.util.*;
@@ -35,7 +33,7 @@ public class ArchiveCurator extends TermServerReport {
         moduleStorageCoordinator = moduleStorageCoordinator();
     }
 
-    public static void main(String[] args) throws ScriptException, IOException, InterruptedException, ModuleStorageCoordinatorException {
+    public static void main(String[] args) throws ScriptException, IOException, ModuleStorageCoordinatorException {
         ArchiveCurator curator = new ArchiveCurator();
         try {
             ReportSheetManager.setTargetFolderId("13XiH3KVll3v0vipVxKwWjjf-wmjzgdDe"); //Technical Specialist
@@ -261,10 +259,6 @@ public class ArchiveCurator extends TermServerReport {
     }
 
     private ResourceManager resourceManagerTarget() {
-       /* StandAloneResourceConfig versionedContentLoaderConfig = new StandAloneResourceConfig();
-        versionedContentLoaderConfig.init("versioned-content", false);
-        ResourceLoader resourceLoader = getArchiveManager().getS3Manager().getResourceLoader();
-        return new ResourceManager(versionedContentLoaderConfig, resourceLoader);*/
         throw new NotImplementedException();
     }
 

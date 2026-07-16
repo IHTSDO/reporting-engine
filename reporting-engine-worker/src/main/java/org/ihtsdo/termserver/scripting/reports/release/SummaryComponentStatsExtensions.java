@@ -3,13 +3,9 @@ package org.ihtsdo.termserver.scripting.reports.release;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * RP-390 Summary Component Stats for Extensions
