@@ -45,6 +45,7 @@ public class ArchiveManager2 {
 	private ModuleStorageCoordinator msc;
 	private TBCHelper fileHelper;
 	private SnapshotConfiguration currentlyHeldInMemory;
+	private static boolean systemInitialised = false;
 
 	private ArchiveManager2() {
 		//Private usage.  Obtain a singleton object via create()
@@ -62,6 +63,15 @@ public class ArchiveManager2 {
 		LOGGER.info("ArchiveManager2.init: assigning to singleton");
 		ArchiveManager2.singleton = this;
 		appContext = event.getApplicationContext();
+		ArchiveManager2.setSystemInitialised();
+	}
+
+	private static void setSystemInitialised() {
+		systemInitialised = true;
+	}
+
+	public static boolean isSystemInitialised() {
+		return systemInitialised;
 	}
 
 	private ArchiveDataLoader getArchiveDataLoader() throws TermServerScriptException {
@@ -129,22 +139,26 @@ public class ArchiveManager2 {
 		}
 
 		try {
-			ModuleMetadata moduleMetadata = null;
-
-			try {
-				//Do we already have this file locally?
-				File archive = fileHelper.getPublishedArchive(config);
-				moduleMetadata = msc.getMetadata(archive);
-			} catch (TermServerScriptException e) {}
+			ModuleMetadata moduleMetadata = getModuleMetadata(config);
 
 			if (moduleMetadata == null) {
 				moduleMetadata = msc.findPackageOrThrow(config.getSource(), true);
 			}
-
 			constructSnapshotInMemory(ts,  moduleMetadata);
 		} catch (ModuleStorageCoordinatorException e) {
 			throw new TermServerScriptException("Unable to obtain published archive for " + ts.getSnapshotConfiguration(), e);
 		}
+	}
+
+	private ModuleMetadata getModuleMetadata(SnapshotConfiguration config) throws ModuleStorageCoordinatorException {
+		try {
+			//Do we already have this file locally?
+			File archive = fileHelper.getPublishedArchive(config);
+			return msc.getMetadata(archive);
+		} catch (TermServerScriptException e) {
+			//We'll allow the to return null and use the fallback
+		}
+		return null;
 	}
 
 	private void loadFromBuildArchive(TermServerScript ts, SnapshotConfiguration config) throws TermServerScriptException {
@@ -154,16 +168,7 @@ public class ArchiveManager2 {
 				getModuleStorageCoordinator(ts);
 			}
 
-			File archive;
-
-			try {
-				//Do we already have this file locally?
-				archive = fileHelper.getPublishedArchive(config);
-			} catch (TermServerScriptException e) {
-				getBuildArchiveDataLoader().download(new File(config.getSource()));
-				archive = fileHelper.getPublishedArchive(config);
-			}
-
+			File archive = getPublishedArchive(config);
 			ModuleMetadata moduleMetadata = msc.getMetadata(archive, true);
 
 			constructSnapshotInMemory(ts, moduleMetadata);
@@ -172,11 +177,23 @@ public class ArchiveManager2 {
 		}
 	}
 
+	private File getPublishedArchive(SnapshotConfiguration config) throws TermServerScriptException {
+		File archive;
+		try {
+			//Do we already have this file locally?
+			archive = fileHelper.getPublishedArchive(config);
+		} catch (TermServerScriptException e) {
+			getBuildArchiveDataLoader().download(new File(config.getSource()));
+			archive = fileHelper.getPublishedArchive(config);
+		}
+		return archive;
+	}
+
 	private void loadFromCodeSystemVersion(TermServerScript ts, SnapshotConfiguration config) throws TermServerScriptException {
 		try {
 			URI codeSystemVersionURI = URI.create(config.getSource());
 			ModuleMetadata moduleMetadata = getModuleStorageCoordinator(ts).getMetadata(codeSystemVersionURI);
-			//constructSnapshotInMemory(ts, null, moduleMetadata);
+			constructSnapshotInMemory(ts, moduleMetadata);
 			throw new NotImplementedException();
 		} catch (ModuleStorageCoordinatorException e) {
 			throw new TermServerScriptException("Unable to obtain code system version for " + ts.getSnapshotConfiguration(), e);
