@@ -5,7 +5,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.otf.script.dao.StandAloneResourceConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
@@ -19,19 +18,12 @@ public class BuildArchiveDataLoader2 implements DataLoader {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(BuildArchiveDataLoader2.class);
 
-	private StandAloneResourceConfig buildArchiveConfig;
-
-	public BuildArchiveDataLoader2() {
-	}
-
-	public BuildArchiveDataLoader2(StandAloneResourceConfig buildArchiveConfig) {
-		this.buildArchiveConfig = buildArchiveConfig;
-	}
+	private BuildArchiveLoaderConfig config;
 
 	@Override
 	public void download (File archive) throws TermServerScriptException {
-		LOGGER.info("Create S3 manager for download of build archive via: {}", buildArchiveConfig);
-		S3Manager s3Manager = new S3Manager(buildArchiveConfig);
+		LOGGER.info("Create S3 manager for download of build archive via: {}", config);
+		S3Manager s3Manager = new S3Manager(config);
 
 		Path sourcePath = archive.toPath();
 		Path targetPath = Path.of(s3Manager.getResourceManager().getCachePath() + '/' + archive.getPath());
@@ -43,7 +35,7 @@ public class BuildArchiveDataLoader2 implements DataLoader {
 				ResourceManager resourceManager = s3Manager.getResourceManager();
 
 				try (InputStream input = resourceManager.readResourceStream(sourcePath.toString());
-					 OutputStream output = new FileOutputStream(targetPath.toString())) {
+				     OutputStream output = new FileOutputStream(targetPath.toString())) {
 					LOGGER.info("Downloading {} from S3", sourcePath);
 					IOUtils.copy(input, output);
 					LOGGER.info("Download complete");
@@ -57,17 +49,19 @@ public class BuildArchiveDataLoader2 implements DataLoader {
 	}
 
 	@Autowired
-	public void setConfig(StandAloneResourceConfig buildArchiveConfig) {
-		this.buildArchiveConfig = buildArchiveConfig;
+	public void setConfig(BuildArchiveLoaderConfig config) {
+		this.config = config;
 	}
 
 	public static BuildArchiveDataLoader2 create() throws TermServerScriptException {
 		LOGGER.info("Creating BuildArchiveDataLoader based on local properties");
+		BuildArchiveDataLoader2 loader = new BuildArchiveDataLoader2();
 
-		StandAloneResourceConfig buildArchiveConfig = new BuildArchiveLoaderConfig();
-		buildArchiveConfig.init(getConfigurationPrefix(BuildArchiveLoaderConfig.class));
+		BuildArchiveLoaderConfig config = new BuildArchiveLoaderConfig();
+		config.init(getConfigurationPrefix(BuildArchiveLoaderConfig.class));
+		loader.setConfig(config);
 
-		return new BuildArchiveDataLoader2(buildArchiveConfig);
+		return loader;
 	}
 
 	private static String getConfigurationPrefix(Class<?> configurationClass) {
