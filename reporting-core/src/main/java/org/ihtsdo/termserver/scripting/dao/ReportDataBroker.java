@@ -7,8 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.DataBroker;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
@@ -17,36 +15,19 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 @Service
-public class ReportDataBroker implements DataBroker {
+public class ReportDataBroker extends AbstractS3Component implements DataBroker {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReportDataBroker.class);
 
-    private ReportDataBrokerConfig reportDataBrokerConfig;
-
-    @Value("${cloud.aws.region.static}")
-    private String region;
-
-    @Value("${aws.key}")
-    private String awsKey;
-
-    @Value("${aws.secretKey}")
-    private String awsSecretKey;
-
-    @Value("${archives.useCloud}")
-    private String useCloudStr;
-
-    private S3Manager s3Manager;
-    
     private Gson gson;
 
     @Autowired
     public void setReportDataBrokerConfig(ReportDataBrokerConfig reportDataBrokerConfig) {
-        this.reportDataBrokerConfig = reportDataBrokerConfig;
-        s3Manager = new S3Manager(reportDataBrokerConfig, region, awsKey, awsSecretKey);
+        initS3Manager(reportDataBrokerConfig);
     }
 
     public String getUploadLocation(String protocol, String domain) {
-        ResourceConfiguration.Cloud cloud  = reportDataBrokerConfig.getCloud();
+        ResourceConfiguration.Cloud cloud = s3Manager.getStandAloneResourceConfig().getCloud();
         return protocol + cloud.getBucketName() + domain + cloud.getPath();
     }
 
@@ -87,13 +68,8 @@ public class ReportDataBroker implements DataBroker {
     public static ReportDataBroker create() throws TermServerScriptException {
         LOGGER.info("Creating ReportDataBroker based on local properties");
         ReportDataBroker broker = new ReportDataBroker();
-        broker.reportDataBrokerConfig = new ReportDataBrokerConfig();
-        broker.s3Manager = new S3Manager(broker.reportDataBrokerConfig, getConfigurationPrefix());
+        broker.initS3Manager(new ReportDataBrokerConfig(), getConfigurationPrefix(ReportDataBrokerConfig.class));
         return broker;
-    }
-
-    private static String getConfigurationPrefix() {
-        return ReportDataBrokerConfig.class.getAnnotation(ConfigurationProperties.class).prefix();
     }
 
 	public boolean exists(File file) throws IOException, TermServerScriptException {
