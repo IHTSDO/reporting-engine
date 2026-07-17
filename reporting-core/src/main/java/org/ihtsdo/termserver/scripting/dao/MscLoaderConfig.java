@@ -8,5 +8,5 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix="module.storage")
 @EnableAutoConfiguration
-public class MSCLoaderConfig extends StandAloneResourceConfig {
+public class MscLoaderConfig extends StandAloneResourceConfig {
 }

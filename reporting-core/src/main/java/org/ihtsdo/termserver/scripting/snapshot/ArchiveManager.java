@@ -3,8 +3,8 @@ package org.ihtsdo.termserver.scripting.snapshot;
 import org.ihtsdo.otf.exception.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
-import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
-import org.ihtsdo.termserver.scripting.dao.BuildArchiveDataLoader2;
+import org.ihtsdo.termserver.scripting.dao.MscDataLoader;
+import org.ihtsdo.termserver.scripting.dao.BuildArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.domain.CodeSystemVersion;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -30,16 +30,16 @@ import java.util.List;
  * is needed.  But if different data is needed, then we'll go to the MSC to obtain the packages we need.
  */
 @Service
-public class ArchiveManager2 {
+public class ArchiveManager {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveManager2.class);
-	private static ArchiveManager2 singleton;
-
-	@Autowired(required = false)
-	private ArchiveDataLoader archiveDataLoader;
+	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveManager.class);
+	private static ArchiveManager singleton;
 
 	@Autowired(required = false)
-	private BuildArchiveDataLoader2 buildArchiveDataLoader;
+	private MscDataLoader archiveDataLoader;
+
+	@Autowired(required = false)
+	private BuildArchiveDataLoader buildArchiveDataLoader;
 
 	private ApplicationContext appContext;
 	private ModuleStorageCoordinator msc;
@@ -47,13 +47,13 @@ public class ArchiveManager2 {
 	private SnapshotConfiguration currentlyHeldInMemory;
 	private static boolean systemInitialised = false;
 
-	private ArchiveManager2() {
+	private ArchiveManager() {
 		//Private usage.  Obtain a singleton object via create()
 	}
 
-	public static ArchiveManager2 create() {
+	public static ArchiveManager create() {
 		if (singleton == null) {
-			singleton = new ArchiveManager2();
+			singleton = new ArchiveManager();
 		}
 		return singleton;
 	}
@@ -61,9 +61,9 @@ public class ArchiveManager2 {
 	@EventListener(ApplicationReadyEvent.class)
 	public void init(ApplicationReadyEvent event) {
 		LOGGER.info("ArchiveManager2.init: assigning to singleton");
-		ArchiveManager2.singleton = this;
+		ArchiveManager.singleton = this;
 		appContext = event.getApplicationContext();
-		ArchiveManager2.setSystemInitialised();
+		ArchiveManager.setSystemInitialised();
 	}
 
 	private static void setSystemInitialised() {
@@ -74,25 +74,25 @@ public class ArchiveManager2 {
 		return systemInitialised;
 	}
 
-	private ArchiveDataLoader getArchiveDataLoader() throws TermServerScriptException {
+	private MscDataLoader getMscDataLoader() throws TermServerScriptException {
 		if (archiveDataLoader == null) {
 			if (appContext == null) {
-				LOGGER.info("No ArchiveDataLoader configured, creating one locally...");
-				archiveDataLoader = ArchiveDataLoader.create(true);
+				LOGGER.info("No MscDataLoader configured, creating one locally...");
+				archiveDataLoader = MscDataLoader.create();
 			} else {
-				archiveDataLoader = appContext.getBean(ArchiveDataLoader.class);
+				archiveDataLoader = appContext.getBean(MscDataLoader.class);
 			}
 		}
 		return archiveDataLoader;
 	}
 
-	private BuildArchiveDataLoader2 getBuildArchiveDataLoader() throws TermServerScriptException {
+	private BuildArchiveDataLoader getBuildArchiveDataLoader() throws TermServerScriptException {
 		if (buildArchiveDataLoader == null) {
 			if (appContext == null) {
 				LOGGER.info("No BuildArchiveDataLoader configured, creating one locally...");
-				buildArchiveDataLoader = BuildArchiveDataLoader2.create();
+				buildArchiveDataLoader = BuildArchiveDataLoader.create();
 			} else {
-				buildArchiveDataLoader = appContext.getBean(BuildArchiveDataLoader2.class);
+				buildArchiveDataLoader = appContext.getBean(BuildArchiveDataLoader.class);
 			}
 		}
 		return buildArchiveDataLoader;
@@ -100,7 +100,7 @@ public class ArchiveManager2 {
 
 	private ModuleStorageCoordinator getModuleStorageCoordinator(TermServerScript ts) throws TermServerScriptException {
 		if (msc == null) {
-			ResourceManager resourceManager = getArchiveDataLoader().getS3Manager().getResourceManager();
+			ResourceManager resourceManager = getMscDataLoader().getS3Manager().getResourceManager();
 			msc = ModuleStorageCoordinator.create(ts.getEnv(), resourceManager);
 		}
 		return msc;

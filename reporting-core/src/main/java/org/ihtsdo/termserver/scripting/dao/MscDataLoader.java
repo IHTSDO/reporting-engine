@@ -16,9 +16,9 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ArchiveDataLoader implements DataLoader {
+public class MscDataLoader implements DataLoader {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveDataLoader.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MscDataLoader.class);
 
 	private StandAloneResourceConfig config;
 
@@ -31,17 +31,17 @@ public class ArchiveDataLoader implements DataLoader {
 	@Value("${aws.secretKey}")
 	private String awsSecretKey;
 
-	private static S3Manager s3Manager;
+	private S3Manager s3Manager;
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void init() {
-		LOGGER.info("ArchiveDataLoader initialised - SpringBoot configuration");
+		LOGGER.info("MscDataLoader initialised - SpringBoot configuration");
 		if (awsKey == null) {
-			LOGGER.info("ArchiveDataLoader - AWS Key missing?");
+			LOGGER.info("MscDataLoader - AWS Key missing?");
 		} else if (awsKey.isEmpty()) {
-			LOGGER.info("ArchiveDataLoader - AWS Key configured through EC2 instance");
+			LOGGER.info("MscDataLoader - AWS Key configured through EC2 instance");
 		} else {
-			LOGGER.info("ArchiveDataLoader using AWS Key: {}", awsKey);
+			LOGGER.info("MscDataLoader using AWS Key: {}", awsKey);
 		}
 	}
 
@@ -74,7 +74,7 @@ public class ArchiveDataLoader implements DataLoader {
 	}
 
 	@Autowired
-	public void setArchiveLoaderConfig(StandAloneResourceConfig config) {
+	public void setArchiveLoaderConfig(MscLoaderConfig config) {
 		this.config = config;
 		s3Manager = new S3Manager(config, region, awsKey, awsSecretKey);
 	}
@@ -84,21 +84,18 @@ public class ArchiveDataLoader implements DataLoader {
 		this.s3Manager = s3Manager;
 	}
 
-	public static ArchiveDataLoader create(boolean useModuleStorageCoordinator) throws TermServerScriptException {
-		LOGGER.info("Creating ArchiveDataLoader based on local properties");
-		ArchiveDataLoader loader = new ArchiveDataLoader();
+	public static MscDataLoader create() throws TermServerScriptException {
+		LOGGER.info("Creating MscDataLoader based on local properties");
+		MscDataLoader loader = new MscDataLoader();
 
-		StandAloneResourceConfig config = useModuleStorageCoordinator? new MSCLoaderConfig() : new ArchiveLoaderConfig();
-		s3Manager = new S3Manager(config, getConfigurationPrefix(useModuleStorageCoordinator));
+		StandAloneResourceConfig config = new MscLoaderConfig();
+		S3Manager s3Manager = new S3Manager(config, getConfigurationPrefix());
 		loader.setArchiveLoaderConfig(config, s3Manager);
 		return loader;
 	}
 
-	private static String getConfigurationPrefix(boolean useModuleStorageCoordinator) {
-		if (useModuleStorageCoordinator) {
-			return MSCLoaderConfig.class.getAnnotation(ConfigurationProperties.class).prefix();
-		}
-		return ArchiveLoaderConfig.class.getAnnotation(ConfigurationProperties.class).prefix();
+	private static String getConfigurationPrefix() {
+		return MscLoaderConfig.class.getAnnotation(ConfigurationProperties.class).prefix();
 	}
 
 	public S3Manager getS3Manager() {

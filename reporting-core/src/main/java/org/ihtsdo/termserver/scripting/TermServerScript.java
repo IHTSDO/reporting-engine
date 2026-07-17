@@ -23,7 +23,7 @@ import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.domain.ConcreteValue;
 import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
-import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager2;
+import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotConfiguration;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
@@ -769,7 +769,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	protected void loadProjectSnapshot() throws TermServerScriptException {
-		ArchiveManager2 mgr = getArchiveManager();
+		ArchiveManager mgr = getArchiveManager();
 		mgr.loadSnapshot(this, getSnapshotConfiguration());
 		//Reset the report name to null here as it will have been set by the Snapshot Generator
 		setReportName(null);
@@ -1786,8 +1786,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		return tsClient;
 	}
 
-	public ArchiveManager2 getArchiveManager() {
-		return ArchiveManager2.create();
+	public ArchiveManager getArchiveManager() {
+		return ArchiveManager.create();
 	}
 
 	public boolean hasInputFile() {

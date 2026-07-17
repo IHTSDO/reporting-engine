@@ -13,7 +13,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.release.HistoricDataUser;
 import org.ihtsdo.termserver.scripting.reports.release.HistoricStatsGenerator;
 import org.ihtsdo.termserver.scripting.snapshot.ArchiveImporter;
-import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager2;
+import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotConfiguration;
 import org.ihtsdo.termserver.scripting.util.DerivativeHelper;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -110,7 +110,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 		}
 
 		try {
-			ArchiveManager2 mgr = getArchiveManager();
+			ArchiveManager mgr = getArchiveManager();
 			mgr.loadSnapshot(this, incomingDataConfig);
 			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(incomingDataConfig.getSource());
 			statsGenerator.runJob();

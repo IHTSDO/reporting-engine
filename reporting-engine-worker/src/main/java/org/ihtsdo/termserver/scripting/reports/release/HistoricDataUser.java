@@ -13,7 +13,7 @@ import org.ihtsdo.termserver.scripting.domain.HistoricData;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
 
-import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager2;
+import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,7 +123,7 @@ public class HistoricDataUser extends TermServerReport {
 	}
 
 	protected void loadCurrentPosition(boolean compareTwoSnapshots) throws TermServerScriptException {
-		ArchiveManager2 mgr = getArchiveManager();
+		ArchiveManager mgr = getArchiveManager();
 		SnapshotConfiguration config = getSnapshotConfiguration();
 		LOGGER.info("Previous (historic) data generated. Now loading 'current' position: {}", config.getSource());
 		if (compareTwoSnapshots) {
