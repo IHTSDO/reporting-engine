@@ -102,8 +102,7 @@ public class S3Manager {
 				standAloneResourceConfig.init(configurationPrefix);
 			}
 		} catch (Exception e) {
-			String message = "Unable to create using local configuration. " +
-					"Check availability of application-local.properties";
+			String message = "Unable to configure S3 connection. Check availability of application-local.properties";
 			throw new TermServerScriptException (message,e);
 		}
 	}

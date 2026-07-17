@@ -321,8 +321,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			restartPosition = 1;
 		}
 		
-		//TODO Make calls through client objects rather than resty direct and remove this member
-		//TODO May then be able to remove otf-common entirely and just use resource-manager
 		if (localClientsRequired) {
 			initialiseSnomedServiceClients();
 		}
@@ -339,7 +337,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		}
 		
 		if (!loadingRelease) {
-			LOGGER.info("Full path for project " + project.getKey() + " determined to be: " + project.getBranchPath());
+			LOGGER.info("Full path for project {} determined to be: {}", project.getKey(), project.getBranchPath());
 			//If we're loading a CodeSystem eg MAIN/SNOMEDCT-SE then we will have to recover the metadata from the branch instead
 			if (project.getMetadata() == null) {
 				Branch branch = tsClient.getBranch(project.getBranchPath());
@@ -793,6 +791,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	protected void loadProjectSnapshot() throws TermServerScriptException {
+		//Watch that this call duplicates what happens in instantiate.  Can we pull these together?
+		getSnapshotConfiguration().setSource(project.getBranchPath());
+		getSnapshotConfiguration().setKey(project.getKey());
 		ArchiveManager mgr = getArchiveManager();
 		mgr.loadSnapshot(this, getSnapshotConfiguration());
 		//Reset the report name to null here as it will have been set by the Snapshot Generator
