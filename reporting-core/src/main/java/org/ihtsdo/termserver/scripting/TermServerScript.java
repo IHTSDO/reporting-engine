@@ -247,6 +247,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 															"https://prod-ms-authoring.ihtsdotools.org/",
 															"https://prod-snowstorm.ihtsdotools.org/"
 	};
+	
 	protected static final int ENV_PROD = 9;
 
 	protected void init(String[] args) throws TermServerScriptException {
@@ -256,7 +257,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			println(" d - dry run");
 			System.exit(-1);
 		}
-	
+		boolean unknownParameterExpected = false;
 		for (int x=0; x< args.length; x++) {
 			String thisArg = args[x];
 			if (thisArg.equals("-p")) {
@@ -296,7 +297,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			} else if (thisArg.equals("-s") || thisArg.equals("--server")) {
 				secondaryServerUrl = args[x+1];
 			} else {
-				LOGGER.warn("Ignoring unknown argument: {}", thisArg);
+				//Some parameters are defined in base classes like deltaGenerator so we can ignore those
+				if (List.of("-iC", "-iD", "-iP").contains(thisArg)) {
+					unknownParameterExpected = true;
+				} else if (unknownParameterExpected) {
+					unknownParameterExpected = false;
+				} else {
+					LOGGER.warn("Ignoring unknown argument: {}", thisArg);
+				}
 			}
 		}
 		
@@ -316,8 +324,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		//TODO Make calls through client objects rather than resty direct and remove this member
 		//TODO May then be able to remove otf-common entirely and just use resource-manager
 		if (localClientsRequired) {
-			scaClient = new AuthoringServicesClient(url, authenticatedCookie);
-			tsClient = createTSClient(this.url, authenticatedCookie);
+			initialiseSnomedServiceClients();
 		}
 
 		//Recover the full project path from authoring services, if not already fully specified
@@ -342,6 +349,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		
 		// Configure the type(s) and locations(s) for processing report output.
 		initialiseReportConfiguration(jobRun);
+	}
+
+	protected void initialiseSnomedServiceClients() throws TermServerScriptException {
+		scaClient = new AuthoringServicesClient(url, authenticatedCookie);
+		tsClient = createTSClient(this.url, authenticatedCookie);
 	}
 
 	public void recoverProjectFromProjectName(String projectName) throws TermServerScriptException {
@@ -374,21 +386,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
-		if (headlessEnvironment != null) {
-			envIndex = headlessEnvironment;
-		} else {
-			println("Select an environment ");
-			for (int i=0; i < environments.length; i++) {
-				println("  " + i + ": " + environments[i]);
-			}
-			
-			print("Choice: ");
-			String choice = STDIN.nextLine().trim();
-			envIndex = Integer.parseInt(choice);
-		}
-
-		url = environments[envIndex];
-		setEnv(envKeys[envIndex]);
+		determineEnvironment(false);
 
 		if (jobRun != null) {
 			//Not sure historically why we have this in two places
@@ -425,6 +423,32 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			}
 		}
 		
+	}
+
+	public void determineEnvironment(boolean needNewCookie) {
+		if (headlessEnvironment != null) {
+			envIndex = headlessEnvironment;
+		} else {
+			println("Select an environment ");
+			for (int i=0; i < environments.length; i++) {
+				println("  " + i + ": " + environments[i]);
+			}
+
+			print("Choice [" + ENV_PROD +"]: ");
+			String choice = STDIN.nextLine().trim();
+			if (choice.isEmpty()) {
+				envIndex = ENV_PROD;
+			}  else {
+				envIndex = Integer.parseInt(choice);
+			}
+		}
+		url = environments[envIndex];
+		setEnv(envKeys[envIndex]);
+
+		if (needNewCookie) {
+			print("New cookie required: ");
+			setAuthenticatedCookie(STDIN.nextLine().trim());
+		}
 	}
 
 	protected void init (JobRun jobRun) throws TermServerScriptException {
@@ -2484,6 +2508,16 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected void setIgnoreInputFileForReportName(boolean b) {
 		ignoreInputFileForReportName = b;
+	}
+
+	public void copyScriptState(TermServerScript clone) {
+		this.setReportManager(clone.getReportManager());
+		this.project = clone.getProject();
+		this.tsClient = clone.getTSClient();
+		this.scaClient = clone.getAuthoringServicesClient();
+		this.dryRun = clone.isDryRun();
+		this.authenticatedCookie =  clone.getAuthenticatedCookie();
+		this.setReportName(clone.getReportName());
 	}
 
 	public enum SUMMARY_SORT_ORDER {

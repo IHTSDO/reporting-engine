@@ -80,8 +80,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private static final String FAILURE_WHILE_READING = "Failure while reading: ";
 	private static final String LOADING = "Loading {} ...";
 	private static final String ITEMS_OF_INTEREST = "Items of Interest";
-
 	private static final String FULL_STOP = ".";
+
 	Set<String> stopWords = new HashSet<>();
 	List<String> wordsOftenTypedInReverse = new ArrayList<>();
 	List<String> wordsOftenTypedTwice = new ArrayList<>();
