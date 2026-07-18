@@ -157,4 +157,8 @@ public class RelationshipTemplate implements IRelationship {
 	public void setDirty() {
 		//Do nothing.  Makes no sense until template is instantiated
 	}
+
+	public void setClean() {
+		//Likewise
+	}
 }

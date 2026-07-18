@@ -157,15 +157,20 @@ public class Axiom extends Expressable implements ScriptConstants {
 	@Override
 	public Collection<Concept> getParents(CharacteristicType charType) {
 		return relationships.stream()
-				.filter(r -> r.isActive())
+				.filter(Component::isActive)
 				.filter(r -> r.getType().equals(IS_A))
-				.map(r -> r.getTarget())
+				.map(Relationship::getTarget)
 				.collect(Collectors.toList());
 	}
 
 	@Override
 	public void setId(String id) {
 		setAxiomId(id);
+	}
+
+	@Override
+	public boolean supportsMutableFieldRetrieval() {
+		return false;
 	}
 
 	@Override

@@ -441,6 +441,8 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 			g.setReleased(axiomEntry.isReleased());
 			//Set the effectiveTime last as changing the other attributes will blank it
 			g.setEffectiveTime(axiomEntry.getEffectiveTime());
+			//Stated Relationships don't get tracked as 'all components', so set clean here
+			g.setClean();
 		}
 	}
 

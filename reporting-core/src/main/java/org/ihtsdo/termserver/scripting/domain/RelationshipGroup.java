@@ -320,9 +320,13 @@ public class RelationshipGroup implements ScriptConstants {
 		}
 	}
 
+	public void setClean() {
+		relationships.forEach(IRelationship::setClean);
+	}
+
 	private Relationship ensureRelationship(IRelationship ir) {
-		if (ir instanceof Relationship) {
-			return (Relationship)ir;
+		if (ir instanceof Relationship r) {
+			return r;
 		}
 		throw new IllegalArgumentException("Expected a Relationship, found " + ir.getClass().getSimpleName() + " " + ir);
 	}

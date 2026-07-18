@@ -638,11 +638,17 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			if (appContext == null) {
 				checkSettingsWithUser(jobRun);
 			}
+
 			init(jobRun);
 
 			if (scriptRequiresSnomedData) {
-				getSnapshotConfiguration().setSource(project.getBranchPath());
-				getSnapshotConfiguration().setKey(project.getKey());
+				//Are we already specified as using an archive?
+				if (project.getKey().endsWith(".zip")) {
+					getSnapshotConfiguration().setSource(project.getKey());
+				} else {
+					getSnapshotConfiguration().setSource(project.getBranchPath());
+					getSnapshotConfiguration().setKey(project.getKey());
+				}
 				loadProjectSnapshot();
 			}
 

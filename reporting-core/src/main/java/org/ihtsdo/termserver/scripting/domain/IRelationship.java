@@ -31,4 +31,6 @@ public interface IRelationship extends RF2Constants {
     Relationship instantiate(Concept source, int groupId);
 
 	void setDirty();
+
+	void setClean();
 }

@@ -30,7 +30,7 @@ public final class ComponentComparisonHelper {
 			Concept left,
 			Concept right,
 			Set<Component.ComponentType> skipForComparison) {
-
+		//In the case of Content PipeLine, the left concept is the existing one
 		List<ComponentComparisonResult> changeSet = new ArrayList<>();
 
 		logCheck(left, right);

@@ -530,6 +530,11 @@ public class Relationship extends Component implements IRelationship, ScriptCons
 	}
 
 	@Override
+	public int getMutableFieldCount() {
+		return 6;
+	}
+
+	@Override
 	public String[] getMutableFields() {
 		String[] mutableFields = super.getMutableFields();
 		int idx = super.getMutableFieldCount();

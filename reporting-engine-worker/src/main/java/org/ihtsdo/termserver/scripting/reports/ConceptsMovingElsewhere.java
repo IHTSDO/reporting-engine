@@ -5,7 +5,6 @@ import java.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -32,7 +31,7 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(THIS_RELEASE, "xSnomedCT_InternationalRF2_BETA_20210731T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20260701T120000Z.zip");
 		TermServerScript.run(ConceptsMovingElsewhere.class, args, params);
 	}
 
@@ -45,8 +44,7 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 		
 		if (!StringUtils.isEmpty(run.getParamValue(THIS_RELEASE))) {
 			loadPublishedPackage = true;
-			String projectKey = run.getParamValue(THIS_RELEASE);
-			setProject(new Project(projectKey));
+			getSnapshotConfiguration().setSource(run.getParamValue(THIS_RELEASE));
 		}
 	}
 
