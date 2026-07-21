@@ -38,7 +38,8 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20260701T120000Z.zip");
+		params.put(MODULES, "900000000000012004, 449080006, 900000000000207008");
 		TermServerScript.run(ReleaseStats.class, args, params);
 	}
 

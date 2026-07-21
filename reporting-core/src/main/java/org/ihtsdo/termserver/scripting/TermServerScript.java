@@ -798,8 +798,12 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected void loadProjectSnapshot() throws TermServerScriptException {
 		//Watch that this call duplicates what happens in instantiate.  Can we pull these together?
-		getSnapshotConfiguration().setSource(project.getBranchPath());
-		getSnapshotConfiguration().setKey(project.getKey());
+		if (project.getKey().endsWith(".zip")) {
+			getSnapshotConfiguration().setSource(project.getKey());
+		} else {
+			getSnapshotConfiguration().setSource(project.getBranchPath());
+			getSnapshotConfiguration().setKey(project.getKey());
+		}
 		ArchiveManager mgr = getArchiveManager();
 		mgr.loadSnapshot(this, getSnapshotConfiguration());
 		//Reset the report name to null here as it will have been set by the Snapshot Generator
