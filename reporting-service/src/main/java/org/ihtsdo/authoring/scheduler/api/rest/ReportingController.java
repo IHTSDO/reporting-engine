@@ -120,8 +120,9 @@ public class ReportingController {
 
 		if (!getAuthData(request).roles.contains(ROLE_SNOWSTORM_SUPPORT)) {
 			return jobCache.get(typeName).stream().filter(jobCategory -> !JobCategory.DEVOPS.equals(jobCategory.getName())).toList();
+		} else {
+			return jobCache.get(typeName).stream().toList();
 		}
-		return jobCache.get(typeName);
 	}
 
 	private JobCategory reverseParameterOptions(JobCategory jobCategory) {
