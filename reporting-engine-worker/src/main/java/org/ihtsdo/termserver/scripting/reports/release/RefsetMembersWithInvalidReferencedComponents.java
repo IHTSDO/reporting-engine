@@ -175,14 +175,11 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 
 		for (Concept concept : sortedListOfConcepts) {
 			for (Component component : SnomedUtils.getAllComponents(concept)) {
-				if (!(component instanceof RefsetMember) ||
-						(!includeLegacyIssues && !isLegacySimple(component))
-				) {
+				if (!(component instanceof RefsetMember refsetMember) || (!includeLegacyIssues && isLegacySimple(component))) {
 					continue;
 				}
 
 				//Are we considering a component belonging to this concept?  Or one of its descriptions?
-				RefsetMember refsetMember = (RefsetMember) component;
 				Concept refset = gl.getConcept(refsetMember.getRefsetId());
 				if (REF_SETS_TO_IGNORE_FOR_INACTIVE_REFERENCE_CONPONENTS.contains(refset.getId())) {
 					continue;
@@ -207,7 +204,6 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 						summaryCounts.merge(refsetStr, 1, Integer::sum);
 						incrementSummaryCount(refset.toString());
 						report(PRIMARY_REPORT, concept,
-								isLegacySimple(component),
 								ISSUE_TITLE,
 								refset,
 								getLegacyIndicator(component),
