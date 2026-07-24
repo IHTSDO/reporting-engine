@@ -36,7 +36,7 @@ public class UnpromotedChangesHelper implements ScriptConstants {
 		//Re-query our current task/project to obtain just those components which haven't been promoted
 		LOGGER.info("Populating map of unpromoted change components");
 		Project project = ts.getProject();
-		boolean loadOtherRefsets = ts.getArchiveManager().getCurrentConfiguration().isLoadOtherReferenceSets();
+		boolean loadOtherRefsets = ts.getSnapshotConfiguration().isLoadOtherReferenceSets();
 		try {
 			TBCHelper fileHelper = new TBCHelper(ts);
 			File delta = fileHelper.getExportedDelta(project, true);

@@ -28,6 +28,7 @@ import org.snomed.otf.script.Script;
 public class GraphLoader implements ScriptConstants, ComponentStore {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GraphLoader.class);
+	public static final int MAX_DEPTH = 1000;
 
 	private static GraphLoader singleton = null;
 	private Map<String, Concept> concepts = new HashMap<>();
@@ -40,24 +41,31 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	private Map<String, Concept> gbptMap = null;
 	private Map<Concept, Map<String, String>> alternateIdentifierMap = new HashMap<>();
 	private Set<String> excludedModules;
-	public static final int MAX_DEPTH = 1000;
+
 	private Set<String> orphanetConceptIds;
 	private AxiomRelationshipConversionService axiomService;
 	
-	private DescendantsCache descendantsCache = DescendantsCache.getDescendantsCache();
-	private DescendantsCache statedDescendantsCache = DescendantsCache.getStatedDescendantsCache();
-	private AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
-	private AncestorsCache statedAncestorsCache = AncestorsCache.getStatedAncestorsCache();
+	private final DescendantsCache descendantsCache = DescendantsCache.getDescendantsCache();
+	private final DescendantsCache statedDescendantsCache = DescendantsCache.getStatedDescendantsCache();
+	private final AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
+	private final AncestorsCache statedAncestorsCache = AncestorsCache.getStatedAncestorsCache();
 	
 	//Watch that this map is of the TARGET of the association, ie all concepts used in a historical association
-	private Map<Concept, List<AssociationEntry>> historicalAssociations =  new HashMap<>();
-	private Map<Concept, Set<DuplicatePair>> duplicateLangRefsetEntriesMap;
+	private Map<Concept, List<AssociationEntry>> historicalAssociations = new HashMap<>();
+	private Map<Concept, Set<DuplicatePair>> duplicateLangRefsetEntriesMap = new HashMap<>();
 	private Set<LangRefsetEntry> duplicateLangRefsetIdsReported = new HashSet<>();
 
 	MRCMAttributeRangeManager mrcmAttributeRangeManager = new MRCMAttributeRangeManager(this);
 	MRCMAttributeDomainManager mrcmAttributeDomainManager = new MRCMAttributeDomainManager(this);
 	MRCMDomainManager mrcmDomainManager = new MRCMDomainManager(this);
 	MRCMModuleScopeManager mrcmModuleScopeManager = new MRCMModuleScopeManager(this);
+
+	private List<List<Object>> integrityWarnings = new ArrayList<>();
+
+	private TransitiveClosure transitiveClosure;
+	private TransitiveClosure previousTransitiveClosure;
+
+	public StringBuilder log = new StringBuilder();
 
 	private boolean detectNoChangeDelta = false;
 	private boolean runIntegrityChecks = true;
@@ -66,15 +74,8 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	private boolean allowIllegalSCTIDs = false;
 	private boolean firstPreviousStateRelationshipWarning = false;
 	
-	protected boolean populateOriginalModuleMap = false;
-	protected Map<Component, String> originalModuleMap = null;
-	
-	public StringBuilder log = new StringBuilder();
-	
-	private TransitiveClosure transitiveClosure;
-	private TransitiveClosure previousTransitiveClosure;
-
-	private List<List<Object>> integrityWarnings;
+	private boolean populateOriginalModuleMap = false;
+	private Map<Component, String> originalModuleMap = new HashMap<>();
 	
 	public static GraphLoader getGraphLoader() {
 		if (singleton == null) {
@@ -130,17 +131,13 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		descriptions = new HashMap<>();
 		allComponents = null;
 		componentOwnerMap = null;
-		fsnMap = null;
 		orphanetConceptIds = null;
-		descendantsCache.reset();
-		statedDescendantsCache.reset();
-		ancestorsCache.reset();
-		statedAncestorsCache.reset();
-		historicalAssociations =  new HashMap<>();
+		historicalAssociations = new HashMap<>();
 		duplicateLangRefsetEntriesMap = new HashMap<>();
 		duplicateLangRefsetIdsReported = new HashSet<>();
 		integrityWarnings = new ArrayList<>();
 		alternateIdentifierMap = new HashMap<>();
+		originalModuleMap = new HashMap<>();
 
 		//We'll reset the ECL cache during TS Init
 		populateKnownConcepts();
@@ -150,14 +147,27 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		fsnMap = null;
 		usptMap = null;
 		gbptMap = null;
-		historicalAssociations =  new HashMap<>();
-		duplicateLangRefsetEntriesMap= null;
-		duplicateLangRefsetIdsReported = new HashSet<>();
+
+		descendantsCache.reset();
+		statedDescendantsCache.reset();
+		ancestorsCache.reset();
+		statedAncestorsCache.reset();
 
 		mrcmAttributeDomainManager.reset();
 		mrcmAttributeRangeManager.reset();
 		mrcmDomainManager.reset();
 		mrcmModuleScopeManager.reset();
+
+		originalModuleMap = new HashMap<>();
+
+		// Reset flags
+		detectNoChangeDelta = false;
+		runIntegrityChecks = true;
+		checkForExcludedModules = false;
+		recordPreviousState = false;
+		allowIllegalSCTIDs = false;
+		firstPreviousStateRelationshipWarning = false;
+		populateOriginalModuleMap = false;
 	}
 
 	private void outputMemoryUsage() {
@@ -1024,9 +1034,6 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	
 	private Set<DuplicatePair> getLangRefsetDuplicates(Description d) throws TermServerScriptException {
 		Concept c = getConcept(d.getConceptId());
-		if (duplicateLangRefsetEntriesMap == null) {
-			duplicateLangRefsetEntriesMap = new HashMap<>();
-		}
 		return duplicateLangRefsetEntriesMap.computeIfAbsent(c, k -> new HashSet<>());
 	}
 
@@ -1887,7 +1894,6 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	
 	public void populateOriginalModuleMap() {
 		LOGGER.info("Populating Original Module Map");
-		originalModuleMap = new HashMap<>();
 		for (Concept c : getAllConcepts()) {
 			for (Component comp : SnomedUtils.getAllComponents(c)) {
 				if (StringUtils.isEmpty(comp.getEffectiveTime())) {
@@ -1906,9 +1912,6 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	}
 
 	public List<List<Object>> getIntegrityWarnings() {
-		if (integrityWarnings == null) {
-			integrityWarnings = new ArrayList<>();
-		}
 		return integrityWarnings;
 	}
 

@@ -44,7 +44,6 @@ public class ArchiveManager {
 	private ApplicationContext appContext;
 	private ModuleStorageCoordinator msc;
 	private TBCHelper fileHelper;
-	private SnapshotConfiguration currentlyHeldInMemory;
 	private static boolean systemInitialised = false;
 
 	private ArchiveManager() {
@@ -108,16 +107,11 @@ public class ArchiveManager {
 
 	public void loadSnapshot(TermServerScript ts, SnapshotConfiguration config) throws TermServerScriptException {
 		fileHelper = new TBCHelper(ts);
-		//Is what I've been asked to load compatible with what I've currently got in memory?
-		if (currentlyHeldInMemory != null && config.isCompatibleWithExisting(currentlyHeldInMemory)) {
-			LOGGER.info("Snapshot currently in memory is compatible with requested snapshot.  No need to load.");
-		} else {
-			switch (config.getSnapshotSourceType()) {
-				case PROJECT, BRANCH_PATH -> loadFromBranchPath(ts, config);
-				case PUBLISHED_ARCHIVE -> loadFromPublishedArchive(ts, config);
-				case BUILD_ARCHIVE -> loadFromBuildArchive(ts, config);
-				case CODE_SYSTEM_VERSION -> loadFromCodeSystemVersion(ts, config);
-			}
+		switch (config.getSnapshotSourceType()) {
+			case PROJECT, BRANCH_PATH -> loadFromBranchPath(ts, config);
+			case PUBLISHED_ARCHIVE -> loadFromPublishedArchive(ts, config);
+			case BUILD_ARCHIVE -> loadFromBuildArchive(ts, config);
+			case CODE_SYSTEM_VERSION -> loadFromCodeSystemVersion(ts, config);
 		}
 	}
 
@@ -211,9 +205,6 @@ public class ArchiveManager {
 
 		//And finally the delta, if provided
 		archiveImporter.loadArchive(moduleMetadataPair.getCurrentRelease().getFile(), FileType.DELTA, false);
-
-		//Now whatever we've loaded, store that in memory
-		currentlyHeldInMemory = ts.getSnapshotConfiguration();
 	}
 
 	//Now for a published archive, we don't need the previous release, just the dependencies
@@ -286,19 +277,6 @@ public class ArchiveManager {
 			}
 		}
 		return codeSystem;
-	}
-
-	public void reset(TermServerScript ts) {
-		LOGGER.info("Resetting ArchiveManager2");
-		currentlyHeldInMemory = null;
-		msc = null;
-		ts.getSnapshotConfiguration().reset();
-		ts.getGraphLoader().reset();
-		ts.getGraphLoader().setRecordPreviousState(false);
-	}
-
-	public SnapshotConfiguration getCurrentConfiguration() {
-		return currentlyHeldInMemory;
 	}
 
 }

@@ -45,7 +45,7 @@ public class HistoryHelper implements ScriptConstants {
 	private void init() throws TermServerScriptException {
 		//Load the full concept file and record the earliest publication date for each concept
 		LOGGER.info("Loading concept full file to determine earliest publication date");
-		ModuleMetadata previousRelease = ts.getArchiveManager().getCurrentConfiguration().getPreviousRelease();
+		ModuleMetadata previousRelease = ts.getSnapshotConfiguration().getPreviousRelease();
 		File previousPackage = previousRelease.getFile();
 		loadArchiveZip(previousPackage);
 		LOGGER.info("Completed import of historical data for {} concepts", orginalPublicationDates.size());

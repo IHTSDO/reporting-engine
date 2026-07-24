@@ -631,6 +631,9 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				this.dependencyArchives = List.of(jobRun.getDependencyPackage());
 			}
 
+			// GraphLoader gl is a singleton, reset its state at the beginning of each report's execution to avoid settings corruption
+			gl.reset();
+
 			//Job Runs generally self determine
 			preInit();
 			

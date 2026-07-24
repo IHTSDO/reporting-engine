@@ -125,7 +125,6 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 									throw new IllegalStateException(e);
 								}
 							}));
-			mgr.reset(this);
 		} catch (TermServerScriptException e) {
 			throw new TermServerScriptException("Historic Data Generation failed due to " + e.getMessage(), e);
 		}

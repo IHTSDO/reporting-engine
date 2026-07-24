@@ -129,12 +129,18 @@ public class SnapshotConfiguration implements TermServerLocation {
 	}
 
 	public void reset() {
+		allowStaleData = false;
 		loadEditionArchive = false;
-		populateReleaseFlag = false;
-		loadDependencyPlusExtensionArchive = false;
+		populateHierarchyDepth = true;
 		populatePreviousTransitiveClosure = false;
-		ensureSnapshotPlusDeltaLoad = false;
+		expectStatedParents = true;
+		populateReleaseFlag = false;
+		runIntegrityChecks = true;
 		loadOtherReferenceSets = false;
+
+		//Deprecated.  Try to remove these once we've moved over to ArchiveManager2
+		loadDependencyPlusExtensionArchive = false;
+		ensureSnapshotPlusDeltaLoad = false;
 	}
 
 	public boolean isCompatibleWithExisting(SnapshotConfiguration existing) {
@@ -166,7 +172,7 @@ public class SnapshotConfiguration implements TermServerLocation {
 	}
 
 	public boolean isArchive() {
-		return getSnapshotSourceType().equals(SnapshotSourceType.PUBLISHED_ARCHIVE);
+		return getSnapshotSourceType().equals(SnapshotSourceType.PUBLISHED_ARCHIVE) || getSnapshotSourceType().equals(SnapshotSourceType.BUILD_ARCHIVE);
 	}
 
 	public String getKey() {
