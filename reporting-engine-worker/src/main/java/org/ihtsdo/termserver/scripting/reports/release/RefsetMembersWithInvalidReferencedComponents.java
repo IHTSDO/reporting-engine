@@ -46,7 +46,7 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 	private static final String REPORT_DESCRIPTION = "A report to check for both inactive and completely invalid SCTID's in refsets - the report can then distinguish whether each record that is failing has done so because it's inactive or invalid.";
 	private static final String[] REPORT_TAB_NAMES = new String[]{"Issues", "Summary"};
 	private static final String REPORT_TAB_ISSUES_COLUMNS = "SCTID, FSN, Semtag, Issue, Refset, Legacy, C/D/R Active, Detail, Additional Detail, Concept Inactivation";
-	private static final String REPORT_TAB_SUMMARY_COLUMNS = "Issue, Count";
+	private static final String REPORT_TAB_SUMMARY_COLUMNS = "Category, Item, Count";
 	private static final String ISSUE_TITLE = "Active refset member for inactive component";
 	private static final String RELEASE_VALIDATION_FOLDER_ID = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ";
 	private static final List<String> REF_SETS_TO_IGNORE_FOR_INACTIVE_REFERENCE_CONPONENTS = List.of("900000000000497000" //CTV3 Map
@@ -54,7 +54,6 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 	private List<Concept> sortedListOfConcepts;
 
 	private Map<Concept, Boolean> refsetsWithChanges = new HashMap<>();
-	private Map<String, Integer> summaryCounts = new HashMap<>();
 
 	/**
 	 * Run the report from the command line, no arguments required for this report.
@@ -149,28 +148,26 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 		int conceptCount = 0;
 		for (Concept concept : sortedListOfConcepts) {
 			for (Component component : SnomedUtils.getAllComponents(concept)) {
-				if (!(component instanceof RefsetMember)) {
+				if (!(component instanceof RefsetMember refsetMember)) {
 					continue;
 				}
-				RefsetMember refsetMember = (RefsetMember) component;
 				Concept refset = gl.getConcept(refsetMember.getRefsetId());
 				//Have we seen this refset before?
 				if (!refsetsWithChanges.containsKey(refset)) {
 					refsetsWithChanges.put(refset, Boolean.FALSE);
 				}
-				if (!refsetsWithChanges.get(refset) &&
-						StringUtils.isEmpty(refsetMember.getEffectiveTime())) {
+				if (!refsetsWithChanges.get(refset) && StringUtils.isEmpty(refsetMember.getEffectiveTime())) {
 					refsetsWithChanges.put(refset, Boolean.TRUE);
 				}
-				if (++conceptCount % 500000 == 0) {
-					LOGGER.info("   ...checked {} concepts", conceptCount);
-				}
+			}
+			if (++conceptCount % 50000 == 0) {
+				LOGGER.info("   ...checked {} concepts", conceptCount);
 			}
 		}
 	}
 
 	private void checkForMembersWithInvalidReferenceComponents() throws TermServerScriptException {
-		LOGGER.info("   Checking: {}", ISSUE_TITLE);
+		LOGGER.info("Checking: {}", ISSUE_TITLE);
 		initialiseSummary(ISSUE_TITLE);
 
 		for (Concept concept : sortedListOfConcepts) {
@@ -191,7 +188,7 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 					if (refsetMember.getComponentType() != Component.ComponentType.HISTORICAL_ASSOCIATION
 							&& refsetMember.getComponentType() != Component.ComponentType.ATTRIBUTE_VALUE
 							&& refsetMember.isActive()) {
-						String refsetStr = refset.toString();
+
 						Component owningComponent = concept;
 						if (!SnomedUtils.isConceptSctid(refsetMember.getReferencedComponentId())) {
 							owningComponent = gl.getDescription(refsetMember.getReferencedComponentId());
@@ -201,8 +198,10 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 							continue;
 						}
 
-						summaryCounts.merge(refsetStr, 1, Integer::sum);
-						incrementSummaryCount(refset.toString());
+						String refsetStr = refset.toString();
+						incrementSummaryCount(refsetStr);
+						incrementSummaryCount(ISSUE_TITLE);
+
 						report(PRIMARY_REPORT, concept,
 								ISSUE_TITLE,
 								refset,
@@ -219,16 +218,13 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 
 	public void populateSummaryTabAndTotal() throws TermServerScriptException {
 		reportSummaryCounts(SECONDARY_REPORT, SUMMARY_SORT_ORDER.COUNT);
-		summaryCounts.entrySet().stream()
-				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely(SECONDARY_REPORT, (Component) null, e.getKey(), e.getValue()));
 
 		reportSafely(SECONDARY_REPORT, "");
 		reportSafely(SECONDARY_REPORT, "");
 
 		refsetsWithChanges.entrySet().stream()
 				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely(SECONDARY_REPORT, (Component) null, e.getKey(), (e.getValue()? "Contains changes" : "Contains no changes")));
+				.forEach(e -> reportSafely(SECONDARY_REPORT, "", e.getKey(), (e.getValue()? "Contains changes" : "Contains no changes")));
 
 	}
 }
