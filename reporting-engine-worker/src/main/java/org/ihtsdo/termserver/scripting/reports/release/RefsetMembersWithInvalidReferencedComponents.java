@@ -153,12 +153,8 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 				}
 				Concept refset = gl.getConcept(refsetMember.getRefsetId());
 				//Have we seen this refset before?
-				if (!refsetsWithChanges.containsKey(refset)) {
-					refsetsWithChanges.put(refset, Boolean.FALSE);
-				}
-				if (!refsetsWithChanges.get(refset) && StringUtils.isEmpty(refsetMember.getEffectiveTime())) {
-					refsetsWithChanges.put(refset, Boolean.TRUE);
-				}
+				refsetsWithChanges.computeIfAbsent(refset, k -> Boolean.FALSE);
+				refsetsWithChanges.computeIfPresent(refset, (k, v) -> v || StringUtils.isEmpty(refsetMember.getEffectiveTime()));
 			}
 			if (++conceptCount % 50000 == 0) {
 				LOGGER.info("   ...checked {} concepts", conceptCount);
@@ -187,14 +183,14 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 					//so we don't need to check those - we're expecting their referenced components to be inactive.
 					if (refsetMember.getComponentType() != Component.ComponentType.HISTORICAL_ASSOCIATION
 							&& refsetMember.getComponentType() != Component.ComponentType.ATTRIBUTE_VALUE
-							&& refsetMember.isActive()) {
+							&& refsetMember.isActiveSafely()) {
 
 						Component owningComponent = concept;
 						if (!SnomedUtils.isConceptSctid(refsetMember.getReferencedComponentId())) {
 							owningComponent = gl.getDescription(refsetMember.getReferencedComponentId());
 						}
 
-						if (owningComponent.isActive()) {
+						if (owningComponent.isActiveSafely()) {
 							continue;
 						}
 
@@ -224,7 +220,7 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 
 		refsetsWithChanges.entrySet().stream()
 				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely(SECONDARY_REPORT, "", e.getKey(), (e.getValue()? "Contains changes" : "Contains no changes")));
+				.forEach(e -> reportSafely(SECONDARY_REPORT, "", e.getKey(), Boolean.TRUE.equals(e.getValue()) ? "Contains changes" : "Contains no changes"));
 
 	}
 }
