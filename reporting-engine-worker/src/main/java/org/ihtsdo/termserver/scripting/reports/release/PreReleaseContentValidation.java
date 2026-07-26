@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.util.*;
-import java.util.stream.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
