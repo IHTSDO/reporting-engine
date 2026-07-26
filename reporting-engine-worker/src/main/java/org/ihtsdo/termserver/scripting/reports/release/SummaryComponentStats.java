@@ -197,8 +197,6 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
-		//Reset this flag for Editions as we might run against the same project so not reset as expected.
-		getSnapshotConfiguration().setLoadDependencyPlusExtensionArchive(false);
 		
 		boolean runIntegrityChecks = Boolean.parseBoolean(run.getParamValue("runIntegrityChecks", "true"));
 		LOGGER.info("Running report with runIntegrityChecks set to {}", runIntegrityChecks);

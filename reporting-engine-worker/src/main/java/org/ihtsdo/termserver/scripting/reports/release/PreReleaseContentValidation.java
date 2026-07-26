@@ -63,32 +63,12 @@ public class PreReleaseContentValidation extends HistoricDataUser implements Rep
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
-
-		getSnapshotConfiguration().setLoadDependencyPlusExtensionArchive(false);
-
-		origProject = run.getProject();
-		if (!StringUtils.isEmpty(run.getParamValue(THIS_RELEASE))) {
-			run.setProject(run.getParamValue(THIS_RELEASE));
-		}
-
-		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
-			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
-					.map(String::trim)
-					.toList();
-		}
-
 		summaryTabIdx = PRIMARY_REPORT;
 		super.init(run);
 	}
 
 	@Override
 	public void postInit() throws TermServerScriptException {
-		//Need to set the original project back, otherwise it'll get filtered
-		//out by the security of which projects a user can see
-		if (getJobRun() != null) {
-			getJobRun().setProject(origProject);
-		}
-
 		String[] columnHeadings = new String[] {
 				"Summary Item, Count",
 				"SCTID, FSN, SemTag, New Hierarchy, Old Hierarchy",

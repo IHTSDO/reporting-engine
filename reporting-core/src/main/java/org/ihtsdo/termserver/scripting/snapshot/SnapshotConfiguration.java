@@ -9,7 +9,6 @@ public class SnapshotConfiguration implements TermServerLocation {
 	public enum SnapshotSourceType { PROJECT, BRANCH_PATH, PUBLISHED_ARCHIVE, BUILD_ARCHIVE, CODE_SYSTEM_VERSION}
 
 	//Deprecated.  Try to remove these once we've moved over to ArchiveManager2
-	private boolean loadDependencyPlusExtensionArchive = false;
 	private boolean ensureSnapshotPlusDeltaLoad = false;
 
 	private CurrentPreviousModuleMetadataPair currentPreviousModuleMetadataPair;
@@ -33,14 +32,6 @@ public class SnapshotConfiguration implements TermServerLocation {
 
 	public void setAllowStaleData(boolean allowStaleData) {
 		this.allowStaleData = allowStaleData;
-	}
-
-	public boolean isLoadDependencyPlusExtensionArchive() {
-		return loadDependencyPlusExtensionArchive;
-	}
-
-	public void setLoadDependencyPlusExtensionArchive(boolean loadDependencyPlusExtensionArchive) {
-		this.loadDependencyPlusExtensionArchive = loadDependencyPlusExtensionArchive;
 	}
 
 	public boolean isLoadEditionArchive() {
@@ -139,7 +130,6 @@ public class SnapshotConfiguration implements TermServerLocation {
 		loadOtherReferenceSets = false;
 
 		//Deprecated.  Try to remove these once we've moved over to ArchiveManager2
-		loadDependencyPlusExtensionArchive = false;
 		ensureSnapshotPlusDeltaLoad = false;
 	}
 

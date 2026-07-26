@@ -872,7 +872,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	private void unexpectedLangCodeMS() throws TermServerScriptException {
 		//We need a branch to be able to run this query
-		if (getSnapshotConfiguration().isLoadDependencyPlusExtensionArchive()) {
+		if (getSnapshotConfiguration().isArchive()) {
 			LOGGER.info("Unable to determine appropriate langCode for LangRefsets when working with archive package");
 			return;
 		}

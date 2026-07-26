@@ -14,11 +14,9 @@ public class PreReleaseContentValidationExtensions extends PreReleaseContentVali
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 
-		//params.put(THIS_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20220531T120000Z.zip");
-		//params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip");
-		//params.put(PREV_RELEASE, "SnomedCT_ManagedServiceSE_PRODUCTION_SE1000052_20200531T120000Z.zip");
-		//params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip");
-		params.put(MODULES, "45991000052106");
+		params.put(THIS_RELEASE, "SnomedCT_ManagedServiceNO_PRODUCTION_NO1000202_20250315T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_ManagedServiceNO_PRODUCTION_NO1000202_20250215T120000Z.zip");
+		params.put(MODULES, "57091000202101,51000202101,57101000202106");
 
 		TermServerScript.run(PreReleaseContentValidationExtensions.class, args, params);
 	}
