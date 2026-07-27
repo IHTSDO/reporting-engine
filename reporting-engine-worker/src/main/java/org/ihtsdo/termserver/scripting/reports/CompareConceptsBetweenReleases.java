@@ -1,10 +1,10 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.snapshot.SnapshotConfiguration;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,16 +24,16 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 	private static final String THIS_RELEASE = "This Release";
 
 	protected String prevRelease;
-	protected String projectKey;
+	protected String thisRelease;
 
-	private Set<String> conceptIdsOfInterest = new HashSet<>();
-	private Map <String, ConceptState> conceptStates = new HashMap<>();
+	private final Set<String> conceptIdsOfInterest = new HashSet<>();
+	private final Map <String, ConceptState> conceptStates = new HashMap<>();
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(CONCEPT_IDS, "22298006,386661006,713427006,44054006,444814009,84757009,195967001,128462008,38341003,233604007");
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z.zip");
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20240901T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20260101T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20260701T120000Z.zip");
 		TermServerScript.run(CompareConceptsBetweenReleases.class, args, params);
 	}
 
@@ -56,69 +56,60 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
-
-		if (!StringUtils.isEmpty(run.getParamValue(CONCEPT_IDS))) {
+		try {
+			prevRelease = run.getMandatoryParamValue(PREV_RELEASE);
+			thisRelease = run.getMandatoryParamValue(THIS_RELEASE);
 			getConceptsOfInterest(run.getMandatoryParamValue(CONCEPT_IDS));
+		} catch (IllegalArgumentException e) {
+			throw new TermServerScriptException("Mandatory parameters are missing: " + e.getMessage(), e);
 		}
 		super.init(run);
 	}
 
 	private void getConceptsOfInterest(String sctIds) {
 		// Regular expression to match numbers before the pipe symbol
-		String regex = "\\d+(?= \\|)";
+		String regex = "^\\d+";
 		Pattern pattern = Pattern.compile(regex);
-		Matcher matcher = pattern.matcher(sctIds);
 
-		// Extract all numbers matching the regex
-		while (matcher.find()) {
-			conceptIdsOfInterest.add(matcher.group());
-		}
+		// Split at comma and extract SCTID
+		Arrays.stream(sctIds.split(",")).forEach(sctId -> {
+			Matcher m = pattern.matcher(sctId);
+			if (m.find()) {
+				conceptIdsOfInterest.add(m.group());
+			}
+		});
 	}
 
 	@Override
 	protected void loadProjectSnapshot() throws TermServerScriptException {
-		projectKey = getProject().getKey();
-		LOGGER.info("Historic data being imported, wiping Graph Loader for safety.");
+		SnapshotConfiguration previousReleaseConfig = new SnapshotConfiguration();
+		previousReleaseConfig.setSource(prevRelease);
 
-		if (!StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE)) &&
-				StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
-			throw new TermServerScriptException("This release must be specified if previous release is.");
-		}
-
-		if (!StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
-			projectKey = getJobRun().getParamValue(THIS_RELEASE);
-			//Have we got what looks like a zip file but someone left the .zip off?
-			if (projectKey.contains("T120000") && !projectKey.endsWith(".zip")) {
-				throw new TermServerScriptException("Suspect release '" + projectKey + "' should end with .zip");
-			}
-			//If this release has been specified, the previous must also be, explicitly
-			if (StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE))) {
-				throw new TermServerScriptException("Previous release must be specified if current release is.");
-			}
-		}
-
-		prevRelease = getJobRun().getParamValue(PREV_RELEASE);
-		if (StringUtils.isEmpty(prevRelease)) {
-			prevRelease = getProject().getMetadata().getPreviousPackage();
-		}
-
-		getProject().setKey(prevRelease);
-		//If we have a task defined, we need to shift that out of the way while we're loading the previous package
-		getJobRun().setTask(null);
+		LOGGER.info("Previous (historic) data is being loaded: {}", previousReleaseConfig.getSource());
 		try {
-			throw new TermServerScriptException("Historic Data Generation needs revisited");
+			getArchiveManager().loadSnapshot(this, previousReleaseConfig);
+			populateConceptState();
+			gl.reset();
 		} catch (TermServerScriptException e) {
-			throw new TermServerScriptException("Historic Data Generation failed due to " + e.getMessage(), e);
+			throw new TermServerScriptException("Previous release data generation failed due to " + e.getMessage(), e);
 		}
+		loadCurrentPosition();
 	}
 
 	private void populateConceptState() throws TermServerScriptException {
-		for (String sctid : conceptIdsOfInterest) {
-			Concept c = gl.getConcept(sctid, false, false);
-			conceptStates.put(sctid, new ConceptState(c));
+		for (String sctId : conceptIdsOfInterest) {
+			Concept c = gl.getConcept(sctId, false, false);
+			conceptStates.put(sctId, new ConceptState(c));
 		}
 		LOGGER.info("Populated 'previous' state of {} concepts", conceptStates.size());
+	}
+
+	protected void loadCurrentPosition() throws TermServerScriptException {
+		SnapshotConfiguration currentReleaseConfig = getSnapshotConfiguration();
+		currentReleaseConfig.setSource(thisRelease);
+
+		LOGGER.info("Previous (historic) data generated. Now loading 'current' position: {}", currentReleaseConfig.getSource());
+		getArchiveManager().loadSnapshot(this, currentReleaseConfig);
 	}
 
 	@Override
@@ -130,7 +121,7 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 		};
 		String[] tabNames = new String[] {
 				getDateFromRelease(prevRelease),
-				getDateFromRelease(projectKey),
+				getDateFromRelease(thisRelease),
 				"Differences"
 		};
 		super.postInit(GFOLDER_QI, tabNames, columnHeadings, false);
@@ -148,7 +139,6 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 		return release;
 	}
 
-
 	@Override
 	public void runJob() throws TermServerScriptException {
 		examineConcepts();
@@ -157,8 +147,8 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 	
 	public void examineConcepts() throws TermServerScriptException { 
 		LOGGER.info("Examining {} concepts of interest", conceptIdsOfInterest.size());
-		for (String sctid : conceptIdsOfInterest) {
-			Concept c = gl.getConcept(sctid, false, false);
+		for (String sctId : conceptIdsOfInterest) {
+			Concept c = gl.getConcept(sctId, false, false);
 			ConceptState previousState = conceptStates.get(c.getConceptId());
 			report(PRIMARY_REPORT, previousState.toReportString());
 			report(SECONDARY_REPORT, new ConceptState(c).toReportString());
@@ -180,7 +170,7 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 		String inferredExpression;
 
 		String[] toReportString() {
-			return new String[] {id, active?"Y":"N", fsn, definitionStatus.toString(), descriptions, statedExpression, inferredExpression};
+			return new String[] {id, active ? "Y" : "N", fsn, exists ? definitionStatus.toString() : "", descriptions, statedExpression, inferredExpression};
 		}
 
 		ConceptState(Concept c) {

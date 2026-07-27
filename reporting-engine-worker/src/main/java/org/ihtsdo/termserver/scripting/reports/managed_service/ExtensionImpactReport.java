@@ -54,7 +54,8 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20260301T120000Z.zip");
+		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20260701T120000Z.zip");
+		params.put(ECL_FILTER, "^ 816080008 |International Patient Summary (foundation metadata concept)|");
 		TermServerScript.run(ExtensionImpactReport.class, args, params);
 	}
 
@@ -125,6 +126,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 									throw new IllegalStateException(e);
 								}
 							}));
+			gl.reset();
 		} catch (TermServerScriptException e) {
 			throw new TermServerScriptException("Historic Data Generation failed due to " + e.getMessage(), e);
 		}

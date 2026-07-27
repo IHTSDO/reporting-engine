@@ -68,6 +68,7 @@ public class HistoricDataUser extends TermServerReport {
 			HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(historicSnapshotConfiguration.getSource());
 			statsGenerator.setModuleFilter(moduleFilter);
 			statsGenerator.runJob();
+			gl.reset();
 			getJobRun().setTask(task);
 		} catch (Exception e) {
 			throw new TermServerScriptException("Historic Data Generation (from previous release) failed due to " + e.getMessage(), e);
