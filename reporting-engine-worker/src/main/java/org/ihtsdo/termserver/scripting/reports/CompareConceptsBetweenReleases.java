@@ -68,11 +68,11 @@ public class CompareConceptsBetweenReleases extends TermServerReport implements 
 
 	private void getConceptsOfInterest(String sctIds) {
 		// Regular expression to match numbers before the pipe symbol
-		String regex = "^\\d+";
+		String regex = "\\d+(?= \\||$)";
 		Pattern pattern = Pattern.compile(regex);
 
 		// Split at comma and extract SCTID
-		Arrays.stream(sctIds.split(",")).forEach(sctId -> {
+		Arrays.stream(sctIds.split(COMMA)).forEach(sctId -> {
 			Matcher m = pattern.matcher(sctId);
 			if (m.find()) {
 				conceptIdsOfInterest.add(m.group());

@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -25,7 +26,7 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 	private List<String> targetWords;
 	private List<String> notWords;
 	private boolean fsnOnly = false;
-	private RelationshipTemplate targetAttribute = new RelationshipTemplate(CharacteristicType.INFERRED_RELATIONSHIP);
+	private final RelationshipTemplate targetAttribute = new RelationshipTemplate(CharacteristicType.INFERRED_RELATIONSHIP);
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
@@ -44,32 +45,37 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 		super.init(run);
 		
 		String targetWordsStr = run.getMandatoryParamValue(WORDS).toLowerCase().trim();
-		targetWords = Arrays.asList(targetWordsStr.split(COMMA)).stream().map(String::trim).toList();
+		targetWords = Arrays.stream(targetWordsStr.split(COMMA)).map(String::trim).toList();
 		
 		if (run.getParamValue(NOT_WORDS) != null) {
 			String notWordsStr = run.getParamValue(NOT_WORDS).toLowerCase().trim();
-			notWords = Arrays.asList(notWordsStr.split(COMMA)).stream().map(String::trim).toList();
+			notWords = Arrays.stream(notWordsStr.split(COMMA)).map(String::trim).toList();
 		}
 		
 		fsnOnly = run.getParameters().getMandatoryBoolean(FSN_ONLY);
-		
 		subsetECL = run.getMandatoryParamValue(ECL);
-		String attribStr = run.getParamValue(ATTRIBUTE_TYPE);
-		if (attribStr != null && !attribStr.isEmpty()) {
+	}
+
+	@Override
+	protected void loadProjectSnapshot() throws TermServerScriptException {
+		super.loadProjectSnapshot();
+
+		String attribType = getJobRun().getParamValue(ATTRIBUTE_TYPE);
+		if (!StringUtils.isEmpty(attribType)) {
 			//Ensure this type is valid before proceeding
-			Concept attribType = gl.getConcept(attribStr, false, true);
-			targetAttribute.setType(attribType);
+			Concept c = gl.getConcept(attribType, false, true);
+			targetAttribute.setType(c);
 		}
-		
-		attribStr = run.getParamValue(ATTRIBUTE_VALUE);
-		if (attribStr != null && !attribStr.isEmpty()) {
+
+		String attribValue = getJobRun().getParamValue(ATTRIBUTE_VALUE);
+		if (!StringUtils.isEmpty(attribValue)) {
 			try {
 				//Ensure this target attribute is valid before proceeding
-				Concept attribValue = gl.getConcept(attribStr, false, true);
-				targetAttribute.setTarget(attribValue);
+				Concept c = gl.getConcept(attribValue, false, true);
+				targetAttribute.setTarget(c);
 			} catch (final IllegalArgumentException e) {
-				//Presumed to be concrete value.
-				targetAttribute.setConcreteValue(new ConcreteValue(attribStr));
+				//Presumed to be concrete value
+				targetAttribute.setConcreteValue(new ConcreteValue(attribValue));
 			}
 		}
 	}
@@ -130,7 +136,7 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 
 		if (containsWord && !containsAttribute) {
 			String descriptions = c.findDescriptionsContaining(targetWords).stream()
-					.map(d -> d.getTerm())
+					.map(Description::getTerm)
 					.collect(Collectors.joining(",\n"));
 			report(PRIMARY_REPORT, c, descriptions, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 			countIssue(c);
