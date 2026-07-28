@@ -596,10 +596,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		for (Concept c : allConceptsSorted) {
-			if (whiteListedConceptIds.contains(c.getId())) {
-				incrementSummaryInformation(WHITE_LISTED_COUNT);
-				continue;
-			}
 			//Only look at concepts that have been in some way edited in this release cycle
 			//Unless we're interested in legacy issues
 			if (c.isActiveSafely() && (includeLegacyIssues || SnomedUtils.hasNewChanges(c))) {
@@ -1110,8 +1106,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (!inScope(c)) {
 				continue;
 			}
-			if (whiteList.contains(c.getId()) || whiteListedConceptIds.contains(c.getId())) {
-				incrementSummaryInformation(WHITE_LISTED_COUNT);
+			if (whiteList.contains(c.getId())) {
 				continue;
 			}
 
@@ -1269,10 +1264,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		nextConcept:
 		for (Concept c : allActiveConceptsSorted) {
 			if (!inScope(c)) {
-				continue;
-			}
-			if (whiteListedConceptIds.contains(c.getId())) {
-				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
 			}
 			if (c.isActiveSafely()) {
