@@ -3,14 +3,14 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.snomed.otf</groupId>
-	<version>8.0.2</version>
+	<version>8.1.0-SNAPSHOT</version>
 	<artifactId>reporting-engine</artifactId>
 	<packaging>pom</packaging>
 
 	<parent>
 		<groupId>org.snomed</groupId>
 		<artifactId>snomed-parent-bom</artifactId>
-		<version>4.0.1</version>
+		<version>4.1.0-SNAPSHOT</version>
 	</parent>
 
 	<modules>
@@ -59,28 +59,4 @@
             </plugins>
         </pluginManagement>
 	</build>
-    <repositories>
-        <repository>
-            <id>ihtsdo-releases</id>
-            <name>ihtsdo-releases</name>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <url>https://nexus3.ihtsdotools.org/repository/maven-releases/</url>
-        </repository>
-        <repository>
-            <id>ihtsdo-snapshots</id>
-            <name>ihtsdo-snapshots</name>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <url>https://nexus3.ihtsdotools.org/repository/maven-snapshots/</url>
-        </repository>
-    </repositories>
 </project>
