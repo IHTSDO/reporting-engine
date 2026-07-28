@@ -597,6 +597,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issue2Str);
 		for (Concept c : allConceptsSorted) {
 			if (whiteListedConceptIds.contains(c.getId())) {
+				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
 			}
 			//Only look at concepts that have been in some way edited in this release cycle
