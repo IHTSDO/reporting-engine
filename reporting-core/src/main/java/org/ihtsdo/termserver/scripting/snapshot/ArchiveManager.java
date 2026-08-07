@@ -200,9 +200,14 @@ public class ArchiveManager {
 		for (ModuleMetadata dependency : moduleMetadataPair.getCurrentRelease().getDependencies()) {
 			archiveImporter.loadArchive(dependency.getFile(), FileType.SNAPSHOT, true);
 		}
-		//Now the previous package
-		archiveImporter.loadArchive(moduleMetadataPair.getPreviousRelease().getFile(), FileType.SNAPSHOT, true);
 
+		//Now the previous package - or warn if it does not exist
+		if (moduleMetadataPair.getPreviousRelease() == null) {
+			LOGGER.warn("No previous release found for {}, assuming first time release", ts.getSnapshotConfiguration().getSource());
+		} else {
+			archiveImporter.loadArchive(moduleMetadataPair.getPreviousRelease().getFile(), FileType.SNAPSHOT, true);
+		}
+		
 		//And finally the delta, if provided
 		archiveImporter.loadArchive(moduleMetadataPair.getCurrentRelease().getFile(), FileType.DELTA, false);
 	}
