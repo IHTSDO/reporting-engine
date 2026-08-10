@@ -131,7 +131,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	 * Job / Execution Context
 	 * ====================================================== */
 	protected JobRun jobRun;
-	protected String url = environments[0];
+	protected String url = getEnvironments()[0];
 	protected int envIndex = NOT_SET;
 	protected String authenticatedCookie;
 	protected Integer headlessEnvironment = null;
@@ -240,24 +240,56 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 
-	protected static String[] envKeys = new String[] {"local","dev","uat","prod","dev","dev","uat", "uat", "prod", "prod"};
+	private static final String ENVIRONMENTS_FILE = "resources/environments.txt";
 
-	protected static String[] environments = new String[] {	"http://localhost:8080/",
-															"https://dev-authoring.ihtsdotools.org/",
-															"https://uat-authoring.ihtsdotools.org/",
-															"https://prod-authoring.ihtsdotools.org/",
-															"https://dev-bb18-ms-authoring.ihtsdotools.org/",
-															"https://dev-snowstorm.ihtsdotools.org/",
-															"https://uat-ms-authoring.ihtsdotools.org/",
-															"https://uat-snowstorm.ihtsdotools.org/",
-															"https://prod-ms-authoring.ihtsdotools.org/",
-															"https://prod-snowstorm.ihtsdotools.org/"
-	};
+	private static String[] envKeys;
+	private static String[] environments;
+	private static int envProd;
 
-	protected static final int ENV_PROD = 9;
+	//Environments are not known publicly, so are loaded on demand from a local, gitignored file
+	//rather than being hard-coded here. See ENVIRONMENTS_FILE.
+	private static synchronized void loadEnvironmentsIfRequired() {
+		if (environments != null) {
+			return;
+		}
+		File environmentsFile = new File(ENVIRONMENTS_FILE);
+		List<String> urls = new ArrayList<>();
+		List<String> keys = new ArrayList<>();
+		try {
+			for (String line : Files.readLines(environmentsFile, StandardCharsets.UTF_8)) {
+				line = line.trim();
+				if (line.isEmpty()) {
+					continue;
+				}
+				String[] parts = line.split("\\s+");
+				urls.add(parts[0]);
+				keys.add(parts[1]);
+			}
+		} catch (IOException e) {
+			throw new IllegalStateException("Unable to read " + environmentsFile.getPath(), e);
+		}
+		environments = urls.toArray(new String[0]);
+		envKeys = keys.toArray(new String[0]);
+		envProd = environments.length - 1;
+	}
+
+	protected static String[] getEnvironments() {
+		loadEnvironmentsIfRequired();
+		return environments;
+	}
+
+	protected static String[] getEnvKeys() {
+		loadEnvironmentsIfRequired();
+		return envKeys;
+	}
+
+	protected static int getEnvProd() {
+		loadEnvironmentsIfRequired();
+		return envProd;
+	}
 
 	protected void init(String[] args) throws TermServerScriptException {
-
+		
 		if (args.length < 2) {
 			println("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] [-f <batch file Location>] [-dp <dependency file(s) - comma separate>] [--config <configuration string>]");
 			println(" d - dry run");
@@ -313,14 +345,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				}
 			}
 		}
-
+		
 		if (headlessEnvironment == null) {
 			checkSettingsWithUser(null);
 		}
-
+		
 		init();
 	}
-
+	
 	private void init() throws TermServerScriptException {
 		if (restartPosition == 0) {
 			LOGGER.info("Restart position given as 0 but line numbering starts from 1.  Starting at line 1.");
@@ -434,20 +466,20 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			envIndex = headlessEnvironment;
 		} else {
 			println("Select an environment ");
-			for (int i=0; i < environments.length; i++) {
-				println("  " + i + ": " + environments[i]);
+			for (int i=0; i < getEnvironments().length; i++) {
+				println("  " + i + ": " + getEnvironments()[i]);
 			}
 
-			print("Choice [" + ENV_PROD +"]: ");
+			print("Choice [" + getEnvProd() +"]: ");
 			String choice = STDIN.nextLine().trim();
 			if (choice.isEmpty()) {
-				envIndex = ENV_PROD;
+				envIndex = getEnvProd();
 			}  else {
 				envIndex = Integer.parseInt(choice);
 			}
 		}
-		url = environments[envIndex];
-		setEnv(envKeys[envIndex]);
+		url = getEnvironments()[envIndex];
+		setEnv(getEnvKeys()[envIndex]);
 
 		if (needNewCookie) {
 			print("New cookie required: ");
@@ -832,7 +864,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			//That said, if we've specified an _existing_ task, then we do want to use that.  So check for a taskKey
 			
 			//If we're already working at project level, don't modify branchPath
-			//Note that for MS we expect two slashes eg MAIN/SNOMEDCT-SE/SE
+			//Note that for MS we expect two slashes eginstantiate( MAIN/SNOMEDCT-SE/SE
 			if (branchPath.contains("SNOMEDCT-") && CharMatcher.is('/').countIn(branchPath) == 2) {
 				//debug ("MS Project detected as branch path: " + branchPath);
 			} else if (branchPath.indexOf("/") != branchPath.lastIndexOf("/")) {
