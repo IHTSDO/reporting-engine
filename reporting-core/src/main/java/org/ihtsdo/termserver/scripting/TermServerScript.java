@@ -19,6 +19,7 @@ import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
+import org.ihtsdo.termserver.scripting.dao.ResourceDataLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.domain.ConcreteValue;
@@ -488,6 +489,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	protected void init (JobRun jobRun) throws TermServerScriptException {
+		ApplicationContext context = getApplicationContext();
+		if (context != null) {
+			ResourceDataLoader resourceDataLoader = context.getBean(ResourceDataLoader.class);
+			LOGGER.debug("ResourceDataLoader {} initialisation complete", resourceDataLoader.getInitalisationConfirmation());
+		}
 		this.url = jobRun.getTerminologyServerUrl();
 		setEnv(getEnv(url));
 		this.jobRun = jobRun;

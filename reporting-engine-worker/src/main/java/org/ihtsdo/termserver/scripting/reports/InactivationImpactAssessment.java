@@ -57,14 +57,6 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	
 	@Override
 	public void init(JobRun run) throws TermServerScriptException {
-		//Are we running in a SpringBoot context?  Get the ResourceDataLoader Service
-		//if so, to ensure that it's finished loading our resources from S3
-		ApplicationContext context = getApplicationContext();
-		if (context != null) {
-			ResourceDataLoader resourceDataLoader = context.getBean(ResourceDataLoader.class);
-			LOGGER.debug("ResourceDataLoader {} initialisation complete", resourceDataLoader.getInitalisationConfirmation());
-		}
-		
 		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		super.init(run);
 	}
