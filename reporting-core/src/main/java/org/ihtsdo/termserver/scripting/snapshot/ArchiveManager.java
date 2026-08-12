@@ -59,7 +59,7 @@ public class ArchiveManager {
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void init(ApplicationReadyEvent event) {
-		LOGGER.info("ArchiveManager2.init: assigning to singleton");
+		LOGGER.info("ArchiveManager.init: assigning to singleton");
 		ArchiveManager.singleton = this;
 		appContext = event.getApplicationContext();
 		ArchiveManager.setSystemInitialised();
