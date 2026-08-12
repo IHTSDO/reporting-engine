@@ -32,7 +32,7 @@ public class ArchiveImporter implements ScriptConstants {
 	private SnapshotConfiguration config;
 	private File cacheSnapshotLocation;
 
-	ArchiveImporter(GraphLoader gl, SnapshotConfiguration config) {
+	public ArchiveImporter(GraphLoader gl, SnapshotConfiguration config) {
 		this.gl = gl;
 		this.config = config;
 		if (!config.isRunIntegrityChecks()) {
