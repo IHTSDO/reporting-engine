@@ -1,4 +1,5 @@
 http://localhost:8080/	local
 https://your.dev.server.org/	dev
+https://your.uat.server.org/	uat
 https://your.prod.server.org/	prod
 
