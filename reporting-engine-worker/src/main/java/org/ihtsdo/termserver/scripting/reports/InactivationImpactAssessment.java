@@ -6,6 +6,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.EclCache;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.dao.ResourceDataLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.mrcm.MRCMAttributeDomain;
 import org.ihtsdo.termserver.scripting.reports.qi.AllKnownTemplates;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 
 /**
  * DEVICES-92, QI-784
@@ -55,6 +57,11 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 	
 	@Override
 	public void init(JobRun run) throws TermServerScriptException {
+		ApplicationContext context = getApplicationContext();
+		if (context != null) {
+			ResourceDataLoader resourceDataLoader = context.getBean(ResourceDataLoader.class);
+			LOGGER.debug("ResourceDataLoader {} initialisation complete", resourceDataLoader.getInitalisationConfirmation());
+		}
 		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		super.init(run);
 	}

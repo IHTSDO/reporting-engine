@@ -19,7 +19,6 @@ import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
-import org.ihtsdo.termserver.scripting.dao.ResourceDataLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.domain.ConcreteValue;
@@ -241,7 +240,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 
-	private static final String ENVIRONMENTS_FILE = "resources/environments.txt";
+	private static final String ENVIRONMENTS_FILE = "environments.txt";
 
 	private static String[] envKeys;
 	private static String[] environments;
@@ -253,21 +252,28 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		if (environments != null) {
 			return;
 		}
-		File environmentsFile = new File(ENVIRONMENTS_FILE);
+
 		List<String> urls = new ArrayList<>();
 		List<String> keys = new ArrayList<>();
-		try {
-			for (String line : Files.readLines(environmentsFile, StandardCharsets.UTF_8)) {
-				line = line.trim();
-				if (line.isEmpty()) {
-					continue;
+
+		try (InputStream is = Project.class.getClassLoader().getResourceAsStream(ENVIRONMENTS_FILE)) {
+			if (is == null) {
+				throw new FileNotFoundException("File not found: " + ENVIRONMENTS_FILE);
+			}
+			try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+				String line;
+				while ((line = br.readLine()) != null) {
+					line = line.trim();
+					if (line.isEmpty()) {
+						continue;
+					}
+					String[] parts = line.split("\\s+");
+					urls.add(parts[0]);
+					keys.add(parts[1]);
 				}
-				String[] parts = line.split("\\s+");
-				urls.add(parts[0]);
-				keys.add(parts[1]);
 			}
 		} catch (IOException e) {
-			throw new IllegalStateException("Unable to read " + environmentsFile.getPath(), e);
+			throw new IllegalStateException("Unable to read " + ENVIRONMENTS_FILE, e);
 		}
 		environments = urls.toArray(new String[0]);
 		envKeys = keys.toArray(new String[0]);
@@ -489,11 +495,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	protected void init (JobRun jobRun) throws TermServerScriptException {
-		ApplicationContext context = getApplicationContext();
-		if (context != null) {
-			ResourceDataLoader resourceDataLoader = context.getBean(ResourceDataLoader.class);
-			LOGGER.debug("ResourceDataLoader {} initialisation complete", resourceDataLoader.getInitalisationConfirmation());
-		}
 		this.url = jobRun.getTerminologyServerUrl();
 		setEnv(getEnv(url));
 		this.jobRun = jobRun;
