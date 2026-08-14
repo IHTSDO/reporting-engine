@@ -911,7 +911,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 
 	//Are we adding or replacing this entry?  Returns true if the incoming row should be skipped entirely,
 	//eg because we already hold a newer published version of it.
-	private boolean reconcileExistingLangRefsetEntry(Description d, LangRefsetEntry langRefsetEntry, String[] lineItems, Boolean isReleased) {
+	private boolean reconcileExistingLangRefsetEntry(Description d, LangRefsetEntry langRefsetEntry, String[] lineItems, boolean isReleased) {
 		if (!d.getLangRefsetEntries().contains(langRefsetEntry)) {
 			return false;
 		}
@@ -929,7 +929,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		//If we've already received a newer version of this component, say
 		//by loading INT first and a published MS 2nd, then skip
 		if (!StringUtils.isEmpty(original.getEffectiveTime())
-				&& (isReleased != null && isReleased)
+				&& isReleased
 				&& (original.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
 			return true;
 		}
@@ -942,12 +942,14 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		//then there are two copies of this langrefset entry in a delta
 		//We don't have to worry about this when loading a pre-created snapshot as the duplicates
 		//will already have been removed.
-		if (isReleased != null && !isReleased && StringUtils.isEmpty(original.getEffectiveTime())) {
+		if (!isReleased && StringUtils.isEmpty(original.getEffectiveTime())) {
 			//Have we already reported this duplicate?
 			if (duplicateLangRefsetIdsReported.contains(original)) {
 				LOGGER.warn("Seeing additional duplication for {}", original.getId());
 			} else {
-				LOGGER.warn("Seeing duplicate langrefset entry in a delta: \n" + original.toString(true) + "\n" + langRefsetEntry.toString(true));
+				String origLangRefsetStr = original.toString(true);
+				String thisLangRefsetStr = langRefsetEntry.toString(true);
+				LOGGER.warn("Seeing duplicate langrefset entry in a delta: \n{}\n{}", origLangRefsetStr, thisLangRefsetStr);
 				duplicateLangRefsetIdsReported.add(original);
 			}
 		}
