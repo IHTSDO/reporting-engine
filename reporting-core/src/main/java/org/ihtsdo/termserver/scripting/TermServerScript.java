@@ -247,7 +247,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	private static int envProd;
 
 	//Environments are not known publicly, so are loaded on demand from a local, gitignored file
-	//rather than being hard-coded here. See ENVIRONMENTS_FILE.
+	//rather than being hard-coded here. See resources/environments.txt.
 	private static synchronized void loadEnvironmentsIfRequired() {
 		if (environments != null) {
 			return;
@@ -256,10 +256,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		List<String> urls = new ArrayList<>();
 		List<String> keys = new ArrayList<>();
 
-		try (InputStream is = Project.class.getClassLoader().getResourceAsStream(ENVIRONMENTS_FILE)) {
-			if (is == null) {
-				throw new FileNotFoundException("File not found: " + ENVIRONMENTS_FILE);
-			}
+		try (InputStream is = getEnvironmentsInputStream()) {
 			try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
 				String line;
 				while ((line = br.readLine()) != null) {
@@ -280,6 +277,22 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		envProd = environments.length - 1;
 	}
 
+	//When run from script-library, the jar doesn't bundle reporting-core's src/main/resources,
+	//so fall back to a copy sitting alongside the working directory.
+	private static InputStream getEnvironmentsInputStream() throws FileNotFoundException {
+		InputStream is = Project.class.getClassLoader().getResourceAsStream(ENVIRONMENTS_FILE);
+		if (is != null) {
+			return is;
+		}
+
+		File fallback = new File("resources", ENVIRONMENTS_FILE);
+		if (fallback.canRead()) {
+			return new FileInputStream(fallback);
+		}
+
+		throw new FileNotFoundException("File not found: " + ENVIRONMENTS_FILE + " (checked classpath and " + fallback.getPath() + ")");
+	}
+
 	protected static String[] getEnvironments() {
 		loadEnvironmentsIfRequired();
 		return environments;
@@ -296,71 +309,88 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	protected void init(String[] args) throws TermServerScriptException {
-		
 		if (args.length < 2) {
 			println("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] [-f <batch file Location>] [-dp <dependency file(s) - comma separate>] [--config <configuration string>]");
 			println(" d - dry run");
 			System.exit(-1);
 		}
-		boolean unknownParameterExpected = false;
-		for (int x=0; x< args.length; x++) {
-			String thisArg = args[x];
-			if (thisArg.equals("-p")) {
-				projectName = args[x+1];
-			} else if (thisArg.equals("-c")) {
-				authenticatedCookie = args[x+1];
-			} else if (thisArg.equals("-d")) {
-				dryRun = args[x+1].equalsIgnoreCase("Y");
-				if (!dryRun) {
-					this.runStandAlone = false;
-				}
-			} else if (thisArg.startsWith("-f")) {
-				int fileIdx = 0;
-				if (thisArg.length() > 2) {
-					//If we don't have a number, skip this argument
-					if (!StringUtils.isNumeric(thisArg.substring(2))) {
-						continue;
-					}
-					fileIdx = Integer.parseInt(thisArg.substring(2));
-				}
-				x++;
-				File thisFile = new File(args[x]);
-				setInputFile(fileIdx, thisFile);
-				if (!getInputFile(fileIdx).canRead()) {
-					if (!getInputFile(fileIdx).getName().toLowerCase().contains("dummy")) {
-						throw new TermServerScriptException("Unable to read input file: " + thisFile);
-					}
-				} else {
-					LOGGER.info("Reading data (fileIdx {}) from {}", fileIdx, thisFile.getAbsolutePath());
-				}
-			} else if (thisArg.equals("-r")) {
-				restartPosition = Integer.parseInt(args[x+1]);
-			} else if (thisArg.equals("-dp")) {
-				String dependencyArchiveStr = args[x+1];
-				dependencyArchives = List.of(dependencyArchiveStr.split(","));
-			} else if (thisArg.equals("-task") || thisArg.equals("--task")) {
-				taskKey = args[x+1];
-			} else if (thisArg.equals("-s") || thisArg.equals("--server")) {
-				secondaryServerUrl = args[x+1];
-			} else {
-				//Some parameters are defined in base classes like deltaGenerator so we can ignore those
-				if (List.of("-iC", "-iD", "-iR").contains(thisArg)) {
-					unknownParameterExpected = true;
-				} else if (unknownParameterExpected) {
-					unknownParameterExpected = false;
-				} else {
-					LOGGER.warn("Ignoring unknown argument: {}", thisArg);
-				}
-			}
+		boolean[] unknownParameterExpected = { false };
+		int x = 0;
+		while (x < args.length) {
+			x += parseArg(args, x, unknownParameterExpected);
 		}
-		
+
 		if (headlessEnvironment == null) {
 			checkSettingsWithUser(null);
 		}
 		
 		init();
 	}
-	
+
+	//Parses the argument at args[x], applying it to this script's settings, and returns the number
+	//of array slots consumed (1 for a standalone flag, 2 for a flag that takes a value) so the caller
+	//knows how far to advance - a value consumed here must never be looked at again as though it were a flag.
+	private int parseArg(String[] args, int x, boolean[] unknownParameterExpected) throws TermServerScriptException {
+		String thisArg = args[x];
+		if (thisArg.equals("-p")) {
+			projectName = args[x+1];
+		} else if (thisArg.equals("-c")) {
+			authenticatedCookie = args[x+1];
+		} else if (thisArg.equals("-d")) {
+			dryRun = args[x+1].equalsIgnoreCase("Y");
+			if (!dryRun) {
+				this.runStandAlone = false;
+			}
+		} else if (thisArg.startsWith("-f")) {
+			return parseFileArg(args, x, thisArg);
+		} else if (thisArg.equals("-r")) {
+			restartPosition = Integer.parseInt(args[x+1]);
+		} else if (thisArg.equals("-dp")) {
+			String dependencyArchiveStr = args[x+1];
+			dependencyArchives = List.of(dependencyArchiveStr.split(","));
+		} else if (thisArg.equals("-task") || thisArg.equals("--task")) {
+			taskKey = args[x+1];
+		} else if (thisArg.equals("-s") || thisArg.equals("--server")) {
+			secondaryServerUrl = args[x+1];
+		} else {
+			return parseUnknownArg(thisArg, unknownParameterExpected);
+		}
+		return 2;
+	}
+
+	private int parseFileArg(String[] args, int x, String thisArg) throws TermServerScriptException {
+		int fileIdx = 0;
+		if (thisArg.length() > 2) {
+			//If we don't have a number, skip this argument
+			if (!StringUtils.isNumeric(thisArg.substring(2))) {
+				return 1;
+			}
+			fileIdx = Integer.parseInt(thisArg.substring(2));
+		}
+		File thisFile = new File(args[x+1]);
+		setInputFile(fileIdx, thisFile);
+		if (!getInputFile(fileIdx).canRead()) {
+			if (!getInputFile(fileIdx).getName().toLowerCase().contains("dummy")) {
+				throw new TermServerScriptException("Unable to read input file: " + thisFile);
+			}
+		} else {
+			LOGGER.info("Reading data (fileIdx {}) from {}", fileIdx, thisFile.getAbsolutePath());
+		}
+		return 2;
+	}
+
+	private int parseUnknownArg(String thisArg, boolean[] unknownParameterExpected) {
+		//Some parameters are defined in base classes like deltaGenerator so we can ignore those
+		if (List.of("-iC", "-iD", "-iR").contains(thisArg)) {
+			unknownParameterExpected[0] = true;
+		} else if (unknownParameterExpected[0]) {
+			unknownParameterExpected[0] = false;
+		} else {
+			LOGGER.warn("Ignoring unknown argument: {}", thisArg);
+		}
+		return 1;
+	}
+
 	private void init() throws TermServerScriptException {
 		if (restartPosition == 0) {
 			LOGGER.info("Restart position given as 0 but line numbering starts from 1.  Starting at line 1.");
