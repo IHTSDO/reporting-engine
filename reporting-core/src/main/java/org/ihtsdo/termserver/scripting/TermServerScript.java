@@ -323,7 +323,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					}
 					fileIdx = Integer.parseInt(thisArg.substring(2));
 				}
-				File thisFile = new File(args[x+1]);
+				x++;
+				File thisFile = new File(args[x]);
 				setInputFile(fileIdx, thisFile);
 				if (!getInputFile(fileIdx).canRead()) {
 					if (!getInputFile(fileIdx).getName().toLowerCase().contains("dummy")) {
@@ -343,7 +344,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				secondaryServerUrl = args[x+1];
 			} else {
 				//Some parameters are defined in base classes like deltaGenerator so we can ignore those
-				if (List.of("-iC", "-iD", "-iP").contains(thisArg)) {
+				if (List.of("-iC", "-iD", "-iR").contains(thisArg)) {
 					unknownParameterExpected = true;
 				} else if (unknownParameterExpected) {
 					unknownParameterExpected = false;
