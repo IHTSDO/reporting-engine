@@ -353,7 +353,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 
 		LOGGER.info("...Nested brackets check");
-		nestedBracketCheck();
+		bracketCheck();
 
 		LOGGER.info("...Modelling rules check");
 		validateAttributeDomainModellingRules();
@@ -1515,27 +1515,49 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		return reported;
 	}
 
-	private void nestedBracketCheck() throws TermServerScriptException {
-		String issueStr = "Active description on inactive concept contains nested brackets";
-		initialiseSummary(issueStr);
-		Character[][] bracketPairs = new Character[][]{{'(', ')'},
-				{'[', ']'}};
+	//RP-1139 Active descriptions on active concepts must not contain nested brackets of the same
+	//type at all, eg "(foo (bar))" - and where different bracket types are mixed, they must still be
+	//correctly paired and nested, eg [{foo}] is fine, but [{bar]} is not, despite having matched pairs of each type
+	private static final Character[][] SAME_TYPE_BRACKET_PAIRS = new Character[][]{{'(', ')'}, {'[', ']'}};
+	private static final Map<Character, Character> BRACKET_PAIRS = Map.of(')', '(', ']', '[', '}', '{');
+
+	private void bracketCheck() throws TermServerScriptException {
+		String nestedSameTypeIssueStr = "Active description contains nested brackets";
+		String incorrectNestingIssueStr = "Brackets are not correctly paired and nested";
+		initialiseSummary(nestedSameTypeIssueStr);
+		initialiseSummary(incorrectNestingIssueStr);
 
 		nextConcept:
 		for (Concept c : allActiveConceptsSorted) {
-			if (!c.isActiveSafely()) {
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (inScope(d)) {
-						for (Character[] bracketPair : bracketPairs) {
-							if (containsNestedBracket(c, d, bracketPair)) {
-								reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, getLegacyIndicator(c), isActive(c, d), d);
-								continue nextConcept;
-							}
-						}
-					}
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				if (inScope(d) && reportBracketIssue(c, d, nestedSameTypeIssueStr, incorrectNestingIssueStr)) {
+					continue nextConcept;
 				}
 			}
 		}
+	}
+
+	private boolean reportBracketIssue(Concept c, Description d, String nestedSameTypeIssueStr, String incorrectNestingIssueStr) throws TermServerScriptException {
+		if (containsNestedBracketOfSameType(c, d)) {
+			reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), nestedSameTypeIssueStr, getLegacyIndicator(d), isActive(c, d), d);
+			return true;
+		}
+
+		if (!bracketsCorrectlyNested(d.getTerm())) {
+			reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), incorrectNestingIssueStr, getLegacyIndicator(d), isActive(c, d), d);
+			return true;
+		}
+
+		return false;
+	}
+
+	private boolean containsNestedBracketOfSameType(Concept c, Description d) throws TermServerScriptException {
+		for (Character[] bracketPair : SAME_TYPE_BRACKET_PAIRS) {
+			if (containsNestedBracket(c, d, bracketPair)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private boolean containsNestedBracket(Concept c, Description d, Character[] bracketPair) throws TermServerScriptException {
@@ -1548,13 +1570,25 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 			} else if (ch.equals(bracketPair[1])) {  //Closing bracket
 				if (brackets.isEmpty()) {
-					reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), "Closing bracket found without matching opening", getLegacyIndicator(c), isActive(c, d), d);
+					reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), "Closing bracket found without matching opening", getLegacyIndicator(d), isActive(c, d), d);
 				} else {
 					brackets.pop();
 				}
 			}
 		}
 		return false;
+	}
+
+	private boolean bracketsCorrectlyNested(String term) {
+		Deque<Character> openBrackets = new ArrayDeque<>();
+		for (char ch : term.toCharArray()) {
+			if (ch == '(' || ch == '[' || ch == '{') {
+				openBrackets.push(ch);
+			} else if (BRACKET_PAIRS.containsKey(ch) && (openBrackets.isEmpty() || !openBrackets.pop().equals(BRACKET_PAIRS.get(ch)))) {
+				return false;
+			}
+		}
+		return openBrackets.isEmpty();
 	}
 
 
