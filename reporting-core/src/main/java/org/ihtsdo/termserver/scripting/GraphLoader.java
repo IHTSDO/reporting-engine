@@ -884,127 +884,165 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		String line;
 		int attemptPublishedRemovals = 0;
 		while ((line = br.readLine()) != null) {
-			if (!isHeaderLine) {
-				String[] lineItems = line.split(FIELD_DELIMITER);
-
-				if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
-					continue;
-				}
-				Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
-				LangRefsetEntry langRefsetEntry = LangRefsetEntry.fromRf2(lineItems);
-
-				//Are we adding or replacing this entry?
-				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
-					LangRefsetEntry original = d.getLangRefsetEntry(langRefsetEntry.getId());
-
-					if (isRecordPreviousState() && original != null && !isReleased) {
-						langRefsetEntry.setPreviousState(original.getMutableFields());
-					}
-
-					//If we've already received a newer version of this component, say
-					//by loading INT first and a published MS 2nd, then skip
-					if (original != null && !StringUtils.isEmpty(original.getEffectiveTime())
-							&& (isReleased != null && isReleased)
-							&& (original.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
-						//Skipping incoming published langrefset row, older than that held
-						continue;
-					}
-
-					//Set Released Flag if our existing entry has it
-					if (original.isReleasedSafely()) {
-						langRefsetEntry.setReleased(true);
-					}
-					//If we're working with not-released data and we already have a not-released entry
-					//then there's two copies of this langrefset entry in a delta
-					//We don't have to worry about this when loading a pre-created snapshot as the duplicates
-					//will already have been removed.
-					if (isReleased != null && !isReleased && StringUtils.isEmpty(original.getEffectiveTime())) {
-						//Have we already reported this duplicate?
-						if (duplicateLangRefsetIdsReported.contains(original)) {
-							LOGGER.warn("Seeing additional duplication for {}", original.getId());
-						} else {
-							LOGGER.warn("Seeing duplicate langrefset entry in a delta: \n" + original.toString(true) + "\n" + langRefsetEntry.toString(true));
-							duplicateLangRefsetIdsReported.add(original);
-						}
-					}
-					d.getLangRefsetEntries().remove(original);
-				}
-
-				if (langRefsetEntry.isReleased() == null) {
-					langRefsetEntry.setReleased(isReleased);
-				}
-
-				//Complexity here that we've historically had language refset entries
-				//for the same description which attempt to cancel each other out using
-				//different UUIDs.  Therefore, if we get a later entry inactivating a given
-				//dialect, then allow that to overwrite an earlier value with a different UUID
-
-				//Do we have an existing entry for this description & dialect that is later and inactive?
-				boolean okToSetOverallDescriptionAcceptability = true;
-				List<LangRefsetEntry> allExisting = d.getLangRefsetEntries(ActiveState.BOTH, langRefsetEntry.getRefsetId());
-				for (LangRefsetEntry existing : allExisting) {
-					//If we have two active for the same description, and neither has an effectiveTime delete the one that hasn't been published
-					//Only if we're loading a delta, otherwise it's published
-					if (isReleased != null && !isReleased) {
-						checkForActiveDuplication(d, existing, langRefsetEntry);
-					}
-
-
-					if (existing.getEffectiveTime().compareTo(langRefsetEntry.getEffectiveTime()) < 0) {
-						//If the existing langrefset is later than this new row, don't add the new row
-						okToSetOverallDescriptionAcceptability = false;
-					} else if (existing.getEffectiveTime().equals(langRefsetEntry.getEffectiveTime())) {
-						//As long as they have different UUIDs, it's OK to have the same effective time
-						//But we'll ignore the inactivation, since there's still an active row
-						if (!langRefsetEntry.isActiveSafely()) {
-							okToSetOverallDescriptionAcceptability = false;
-						}
-					} else if (existing.getEffectiveTime() != null
-							&& SnomedUtils.isEmpty(langRefsetEntry)
-							&& !existing.getId().equals(langRefsetEntry.getId()) &&
-							existing.isActiveSafely() && !langRefsetEntry.isActiveSafely()) {
-						//The existing entry is older than the new entry, which has no effective time, but
-						//the older one remains effective, so we're not going to modify the overall setting of the description
-						okToSetOverallDescriptionAcceptability = false;
-					} else {
-						//New entry is later or same effective time as one we already know about
-						if (!SnomedUtils.isEmpty(existing.getEffectiveTime()) && !existing.getId().equals(langRefsetEntry.getId())) {
-							attemptPublishedRemovals++;
-							if (attemptPublishedRemovals < 5) {
-								String existingStr = existing.toStringWithModule();
-								String newStr = langRefsetEntry.toStringWithModule();
-								LOGGER.error("Attempt to remove published entry: {} by {}", existingStr, newStr);
-							}
-							//In the case of having two entries with different Ids, then if _either_ says the description is
-							//preferred, then we'll take that as an overall preferred. Otherwise ignore.
-							if (langRefsetEntry.getAcceptabilityId().equals(SCTID_ACCEPTABLE_TERM)) {
-								okToSetOverallDescriptionAcceptability = false;
-							}
-						} else {
-							d.getLangRefsetEntries().remove(existing);
-						}
-					}
-				}
-
-				//INFRA-5274 We're going to add the entry in all cases so we can detect duplicates,
-				//but we'll only set the acceptability on the description if the above code decided it was safe
-				d.getLangRefsetEntries().add(langRefsetEntry);
-
-				if (okToSetOverallDescriptionAcceptability) {
-					if (lineItems[LANG_IDX_ACTIVE].equals("1")) {
-						Acceptability a = SnomedUtils.translateAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
-						d.setAcceptability(lineItems[LANG_IDX_REFSETID], a, true);
-					} else {
-						d.removeAcceptability(lineItems[LANG_IDX_REFSETID], true);
-					}
-				}
-			} else {
+			if (isHeaderLine) {
 				isHeaderLine = false;
+				continue;
 			}
+
+			String[] lineItems = line.split(FIELD_DELIMITER);
+			if (checkForExcludedModules && isExcluded(lineItems[IDX_MODULEID])) {
+				continue;
+			}
+
+			Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
+			LangRefsetEntry langRefsetEntry = LangRefsetEntry.fromRf2(lineItems);
+
+			if (reconcileExistingLangRefsetEntry(d, langRefsetEntry, lineItems, isReleased)) {
+				//Skipping incoming published langrefset row, older than that held
+				continue;
+			}
+
+			attemptPublishedRemovals = applyLangRefsetEntry(d, langRefsetEntry, lineItems, isReleased, attemptPublishedRemovals);
 		}
 		if (attemptPublishedRemovals > 0)  {
 			LOGGER.error("Attempted to remove {} published entries in total", attemptPublishedRemovals);
 		}
+	}
+
+	//Are we adding or replacing this entry?  Returns true if the incoming row should be skipped entirely,
+	//eg because we already hold a newer published version of it.
+	private boolean reconcileExistingLangRefsetEntry(Description d, LangRefsetEntry langRefsetEntry, String[] lineItems, Boolean isReleased) {
+		if (!d.getLangRefsetEntries().contains(langRefsetEntry)) {
+			return false;
+		}
+
+		LangRefsetEntry original = d.getLangRefsetEntry(langRefsetEntry.getId());
+		if (original == null) {
+			//Contains() found an equal entry, but not one with this exact id - nothing to reconcile against
+			return false;
+		}
+
+		if (isRecordPreviousState() && !isReleased) {
+			langRefsetEntry.setPreviousState(original.getMutableFields());
+		}
+
+		//If we've already received a newer version of this component, say
+		//by loading INT first and a published MS 2nd, then skip
+		if (!StringUtils.isEmpty(original.getEffectiveTime())
+				&& (isReleased != null && isReleased)
+				&& (original.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
+			return true;
+		}
+
+		//Set Released Flag if our existing entry has it
+		if (original.isReleasedSafely()) {
+			langRefsetEntry.setReleased(true);
+		}
+		//If we're working with not-released data, and we already have a not-released entry
+		//then there are two copies of this langrefset entry in a delta
+		//We don't have to worry about this when loading a pre-created snapshot as the duplicates
+		//will already have been removed.
+		if (isReleased != null && !isReleased && StringUtils.isEmpty(original.getEffectiveTime())) {
+			//Have we already reported this duplicate?
+			if (duplicateLangRefsetIdsReported.contains(original)) {
+				LOGGER.warn("Seeing additional duplication for {}", original.getId());
+			} else {
+				LOGGER.warn("Seeing duplicate langrefset entry in a delta: \n" + original.toString(true) + "\n" + langRefsetEntry.toString(true));
+				duplicateLangRefsetIdsReported.add(original);
+			}
+		}
+		d.getLangRefsetEntries().remove(original);
+		return false;
+	}
+
+	//Merges langRefsetEntry into the description's full set of langrefset entries, reconciling it against
+	//any other entries for the same description & dialect, then updates the description's overall
+	//acceptability if that reconciliation decided it was safe to do so.
+	//Returns the running total of attempted removals of published entries, for threshold-limited logging.
+	private int applyLangRefsetEntry(Description d, LangRefsetEntry langRefsetEntry, String[] lineItems, Boolean isReleased, int attemptedRemovalsSoFar) throws TermServerScriptException {
+		if (langRefsetEntry.isReleased() == null) {
+			langRefsetEntry.setReleased(isReleased);
+		}
+
+		//Complexity here that we've historically had language refset entries
+		//for the same description which attempt to cancel each other out using
+		//different UUIDs.  Therefore, if we get a later entry inactivating a given
+		//dialect, then allow that to overwrite an earlier value with a different UUID
+
+		//Do we have an existing entry for this description & dialect that is later and inactive?
+		boolean okToSetOverallDescriptionAcceptability = true;
+		int[] attemptedRemovals = { attemptedRemovalsSoFar };
+		List<LangRefsetEntry> allExisting = d.getLangRefsetEntries(ActiveState.BOTH, langRefsetEntry.getRefsetId());
+		for (LangRefsetEntry existing : allExisting) {
+			//If we have two active for the same description, and neither has an effectiveTime delete the one that hasn't been published
+			//Only if we're loading a delta, otherwise it's published
+			if (isReleased != null && !isReleased) {
+				checkForActiveDuplication(d, existing, langRefsetEntry);
+			}
+			//Once one existing entry says it's not safe to overwrite, it stays not-safe regardless of later entries
+			okToSetOverallDescriptionAcceptability &= reconcileAgainstExistingLangRefsetEntry(d, existing, langRefsetEntry, attemptedRemovals);
+		}
+
+		//INFRA-5274 We're going to add the entry in all cases so we can detect duplicates,
+		//but we'll only set the acceptability on the description if the above code decided it was safe
+		d.getLangRefsetEntries().add(langRefsetEntry);
+
+		if (okToSetOverallDescriptionAcceptability) {
+			if (lineItems[LANG_IDX_ACTIVE].equals("1")) {
+				try {
+					Acceptability a = SnomedUtils.translateAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
+					d.setAcceptability(lineItems[LANG_IDX_REFSETID], a, true);
+				} catch (TermServerScriptException e) {
+					throw new TermServerScriptException("Failed to import langrefset member " + lineItems[IDX_ID], e);
+				}
+			} else {
+				d.removeAcceptability(lineItems[LANG_IDX_REFSETID], true);
+			}
+		}
+
+		return attemptedRemovals[0];
+	}
+
+	//Checks langRefsetEntry against one existing entry for the same description & dialect, removing the
+	//existing entry if it's a stale duplicate. Returns false if this existing entry means it's not safe to
+	//overwrite the description's overall acceptability with langRefsetEntry; attemptedRemovals[0] is
+	//incremented (and logged, up to a threshold) whenever this looks like an attempt to remove a published row.
+	private boolean reconcileAgainstExistingLangRefsetEntry(Description d, LangRefsetEntry existing, LangRefsetEntry langRefsetEntry, int[] attemptedRemovals) {
+		if (existing.getEffectiveTime().compareTo(langRefsetEntry.getEffectiveTime()) < 0) {
+			//If the existing langrefset is later than this new row, don't add the new row
+			return false;
+		}
+
+		if (existing.getEffectiveTime().equals(langRefsetEntry.getEffectiveTime())) {
+			//As long as they have different UUIDs, it's OK to have the same effective time
+			//But we'll ignore the inactivation, since there's still an active row
+			return langRefsetEntry.isActiveSafely();
+		}
+
+		if (existing.getEffectiveTime() != null
+				&& SnomedUtils.isEmpty(langRefsetEntry)
+				&& !existing.getId().equals(langRefsetEntry.getId())
+				&& existing.isActiveSafely() && !langRefsetEntry.isActiveSafely()) {
+			//The existing entry is older than the new entry, which has no effective time, but
+			//the older one remains effective, so we're not going to modify the overall setting of the description
+			return false;
+		}
+
+		//New entry is later or same effective time as one we already know about
+		if (!SnomedUtils.isEmpty(existing.getEffectiveTime()) && !existing.getId().equals(langRefsetEntry.getId())) {
+			attemptedRemovals[0]++;
+			if (attemptedRemovals[0] < 5) {
+				String existingStr = existing.toStringWithModule();
+				String newStr = langRefsetEntry.toStringWithModule();
+				LOGGER.error("Attempt to remove published entry: {} by {}", existingStr, newStr);
+			}
+			//In the case of having two entries with different Ids, then if _either_ says the description is
+			//preferred, then we'll take that as an overall preferred. Otherwise ignore.
+			return !langRefsetEntry.getAcceptabilityId().equals(SCTID_ACCEPTABLE_TERM);
+		}
+
+		d.getLangRefsetEntries().remove(existing);
+		return true;
 	}
 
 
