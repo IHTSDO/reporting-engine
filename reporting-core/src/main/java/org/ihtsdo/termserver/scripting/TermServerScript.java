@@ -2138,9 +2138,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	public List<Component> getConceptsInReview() throws TermServerScriptException {
-		LOGGER.info("Recovering list of review concepts from " + project.getBranchPath());
+		LOGGER.info("Recovering list of review concepts from {}", project.getBranchPath());
 		Review review = tsClient.getReview(project.getBranchPath());
-		if (true);
 		return review.getChangedConcepts().stream()
 				.map(s -> gl.getConceptSafely(s.toString()))
 				.collect(Collectors.toList());
