@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.dao.ReportDataBroker;
@@ -91,6 +92,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	private static final String DUE_TO_STR = " due to ";
 	private static final String DELETING = "Deleting {}";
 	private static final String DRY_DELETING = "Dry run deleting {}";
+
+	private static final List<String> integrityCheckIgnoreList = List.of(
+			"21000241105", // |Common French language reference set|
+			"763158003" // |Medicinal product (product)| Gets created as a constant, but does exist before 20180731
+	);
 
 	/* ======================================================
 	 * Public Static Fields
@@ -247,11 +253,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 															"https://prod-ms-authoring.ihtsdotools.org/",
 															"https://prod-snowstorm.ihtsdotools.org/"
 	};
-	
+
 	protected static final int ENV_PROD = 9;
 
 	protected void init(String[] args) throws TermServerScriptException {
-		
+
 		if (args.length < 2) {
 			println("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] [-f <batch file Location>] [-dp <dependency file(s) - comma separate>] [--config <configuration string>]");
 			println(" d - dry run");
@@ -307,14 +313,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				}
 			}
 		}
-		
+
 		if (headlessEnvironment == null) {
 			checkSettingsWithUser(null);
 		}
-		
+
 		init();
 	}
-	
+
 	private void init() throws TermServerScriptException {
 		if (restartPosition == 0) {
 			LOGGER.info("Restart position given as 0 but line numbering starts from 1.  Starting at line 1.");
@@ -807,8 +813,13 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			getSnapshotConfiguration().setSource(project.getBranchPath());
 			getSnapshotConfiguration().setKey(project.getKey());
 		}
-		ArchiveManager mgr = getArchiveManager();
-		mgr.loadSnapshot(this, getSnapshotConfiguration());
+
+		getArchiveManager().loadSnapshot(this, getSnapshotConfiguration());
+
+		if (getSnapshotConfiguration().isRunIntegrityChecks()) {
+			LOGGER.info("Running snapshot integrity checks");
+			runIntegrityChecks(true);
+		}
 		//Reset the report name to null here as it will have been set by the Snapshot Generator
 		setReportName(null);
 	}
@@ -2635,5 +2646,248 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	public SnapshotConfiguration getSnapshotConfiguration() {
 		return snapshotConfiguration;
+	}
+
+	public String getSecondaryServerUrl() {
+		return secondaryServerUrl;
+	}
+
+	protected void runIntegrityChecks(boolean fsnOnly) throws TermServerScriptException {
+		StringBuilder integrityFailureMessage = new StringBuilder();
+
+		//Ensure that every active parent other than root has at least one parent in both views
+		LOGGER.info("Ensuring all concepts have parents and depth if required.");
+
+		//We need a separate copy of all concepts because we might modify it in passing if we encounter a phantom concept
+		for (Concept c : new ArrayList<>(gl.getAllConcepts())) {
+			if (integrityCheckIgnoreList.contains(c.getId()) || isPhantomConcept(c, integrityFailureMessage)) {
+				continue;
+			}
+
+			if (c.isActiveSafely() && !c.equals(ROOT_CONCEPT)) {
+				checkActiveConceptIntegrity(c, integrityFailureMessage);
+			} else if (!c.isActiveSafely()) {
+				checkInactiveConceptIntegrity(c, integrityFailureMessage);
+			}
+
+			checkConceptDepth(c, integrityFailureMessage);
+		}
+
+		if (!integrityFailureMessage.isEmpty()) {
+			throw new UnrecoverableTermServerScriptException(integrityFailureMessage.toString());
+		}
+
+		if (!fsnOnly) {
+			checkFirst100Descriptions();
+		}
+
+		LOGGER.info("Integrity check passed.  All concepts have at least one stated and one inferred active parent");
+	}
+
+	private void checkFirst100Descriptions() throws TermServerScriptException {
+		//Check that we've got some descriptions to be sure we've not been given
+		//a malformed, or classification style archive.
+		LOGGER.debug("Checking first 100 concepts for integrity");
+		List<Description> first100Descriptions = gl.getAllConcepts()
+				.stream()
+				.limit(100)
+				.flatMap(c -> c.getDescriptions().stream())
+				.toList();
+		if (first100Descriptions.size() < 100) {
+			throw new TermServerScriptException("Failed to find sufficient number of descriptions - classification archive used? Deleting snapshot, please retry.");
+		}
+	}
+
+	private void checkActiveConceptIntegrity(Concept c, StringBuilder integrityFailureMessage) {
+		checkParentalIntegrity(c, RF2Constants.CharacteristicType.INFERRED_RELATIONSHIP, integrityFailureMessage);
+		if (snapshotConfiguration.isExpectStatedParents()) {
+			checkParentalIntegrity(c, RF2Constants.CharacteristicType.STATED_RELATIONSHIP, integrityFailureMessage);
+		}
+	}
+
+	private void checkInactiveConceptIntegrity(Concept c, StringBuilder integrityFailureMessage) {
+		if (!c.getParents(RF2Constants.CharacteristicType.INFERRED_RELATIONSHIP).isEmpty()) {
+			integrityFailureMessage.append(c).append(" is inactive but has inferred parents.");
+		}
+
+		if (!c.getChildren(RF2Constants.CharacteristicType.INFERRED_RELATIONSHIP).isEmpty()) {
+			integrityFailureMessage.append(c).append(" is inactive but has inferred children.");
+		}
+	}
+
+	private void checkConceptDepth(Concept c, StringBuilder integrityFailureMessage) throws TermServerScriptException {
+		if (snapshotConfiguration.isPopulateHierarchyDepth() && c.isActiveSafely() && c.getDepth() == NOT_SET) {
+			if (!integrityFailureMessage.isEmpty()) {
+				integrityFailureMessage.append(",\n");
+			}
+			integrityFailureMessage.append(c).append(" failed to populate depth");
+			String ancestorStr = c.getAncestors(NOT_SET).stream().map(Concept::toString).collect(Collectors.joining(","));
+			LOGGER.warn("{} ancestors are : {}", c, ancestorStr);
+		}
+	}
+
+	private void checkParentalIntegrity(Concept c, RF2Constants.CharacteristicType charType, StringBuilder integrityFailureMessage) {
+		Set<Concept> parents = c.getParents(charType);
+		checkParentsExist(c, parents, charType, integrityFailureMessage);
+		checkParentsNotPhantomOrInactive(c, parents, charType, integrityFailureMessage);
+		int parentRelCount = checkParentsRelationships(c, parents, charType, integrityFailureMessage);
+		checkParentsRelationshipsCount(c, parents, parentRelCount, charType, integrityFailureMessage);
+	}
+
+	private void checkParentsExist(Concept c, Set<Concept> parents, RF2Constants.CharacteristicType charType, StringBuilder integrityFailureMessage) {
+		if (parents.isEmpty()) {
+			if (!integrityFailureMessage.isEmpty()) {
+				integrityFailureMessage.append(",\n");
+			}
+			integrityFailureMessage.append(c).append(" has no ").append(charType).append(" parents.");
+		}
+	}
+
+	private void checkParentsNotPhantomOrInactive(Concept c, Set<Concept> parents, RF2Constants.CharacteristicType charType, StringBuilder integrityFailureMessage) {
+		for (Concept parent : parents) {
+			isPhantomConcept(parent, integrityFailureMessage);
+			if (!parent.isActiveSafely()) {
+				if (!integrityFailureMessage.isEmpty()) {
+					integrityFailureMessage.append(",\n");
+				}
+				integrityFailureMessage.append(c).append(" has inactive ").append(charType).append(" parent: ").append(parent);
+			}
+		}
+	}
+
+	private int checkParentsRelationships(Concept c, Set<Concept> parents, RF2Constants.CharacteristicType charType, StringBuilder integrityFailureMessage) {
+		//Check that we've captured those parents correctly
+		//Looping through existing objects rather than calling getRelationships so we're
+		//not creating new collections.   getRelationships does all the looping anyway, so no cheaper.
+		int parentRelCount = 0;
+		for (Relationship r : c.getRelationships()) {
+			if (r.isActiveSafely() && r.getCharacteristicType().equals(charType) && r.getType().equals(IS_A)) {
+				parentRelCount++;
+				if (!parents.contains(r.getTarget())) {
+					if (!integrityFailureMessage.isEmpty()) {
+						integrityFailureMessage.append(",\n");
+					}
+					integrityFailureMessage.append(c).append(" has internal ").append(charType).append(" inconsistency between parents and parental relationship for parent ").append(r.getTarget());
+				}
+			}
+		}
+		return parentRelCount;
+	}
+
+	private void checkParentsRelationshipsCount(Concept c, Set<Concept> parents, int parentRelCount, RF2Constants.CharacteristicType charType, StringBuilder integrityFailureMessage) {
+		if (parentRelCount != parents.size())	{
+			//Trying for minimal memory allocations here, so only check for duplicate targets between
+			//axioms if we detect a problem
+			Set<Concept> parentsFromRels = SnomedUtils.getTargets(c, new Concept[]{IS_A}, charType);
+			if (parentsFromRels.size() != parents.size()) {
+				if (!integrityFailureMessage.isEmpty()) {
+					integrityFailureMessage.append(",\n");
+				}
+				integrityFailureMessage.append(c).append(" has internal ").append(charType).append(" inconsistency between parents (").append(parents.size()).append(") and parental relationship count (").append(parentsFromRels.size()).append(").");
+			}
+		}
+	}
+
+	private boolean isPhantomConcept(Concept c, StringBuilder integrityFailureMessage) {
+		if (c.getActive() != null) {
+			return false;
+		}
+
+		//Now SOMETHING had a reference to this concept, so let's try and work out what and
+		//report that, rather than talk about a concept that doesn't exist
+
+		//If this reference has come from some 'other' refset, then we can just record and later report
+		//that without having the whole report bomb out
+		if (phantomConceptReferencedByOtherRefsetOnly(c)) {
+			return true;
+		}
+
+		String msg = determineSourceOfPhantomConcept(c);
+		if (getDependencyArchives() != null) {
+			msg += ". Check dependency is appropriate - " + getDependencyArchives();
+		}
+		//Now if we've imported all reference sets and we've got a phantom concept that's coming from an
+		//inactive reference set member, then we're just going to report that as a "final word" rather than
+		//bomb out the entire report
+		if (snapshotConfiguration.isLoadOtherReferenceSets() && msg.contains("*RM")) {
+			LOGGER.warn("Recording final words rather than throwing exception: {}", msg);
+			addFinalWords(msg);
+			//And we're going to remove this concept so that we don't trip over it again
+			gl.removeConcept(c);
+		} else {
+			if (!integrityFailureMessage.isEmpty()) {
+				integrityFailureMessage.append(",\n");
+			}
+			integrityFailureMessage.append(msg);
+		}
+		return true;
+	}
+
+	private boolean phantomConceptReferencedByOtherRefsetOnly(Concept c) {
+		Set<RefsetMember> otherRefsetMembers = c.getOtherRefsetMembers();
+		Collection<Component> components = SnomedUtils.getAllComponents(c);
+		components.removeAll(otherRefsetMembers);
+		components.removeIf(Concept.class::isInstance);
+		if (otherRefsetMembers.isEmpty() || !components.isEmpty()) {
+			return false;
+		}
+
+		//record the refset members that reference this concept for later reporting
+		for (RefsetMember rm : otherRefsetMembers) {
+			gl.addIntegrityWarning(List.of(
+					c.getId(),
+					"does not appear in this extension, but is referenced by refset member in refset",
+					gl.getConceptSafely(rm.getRefsetId()),
+					rm));
+		}
+		//Remove this concept from the graph so we don't attempt to sort it, or cache to disk
+		//Actually, block caching to disk, else these issues will disappear
+		gl.removeConcept(c);
+
+		return true;
+	}
+
+	private String determineSourceOfPhantomConcept(Concept c) {
+		//Which components referenced this concept?
+		Collection<Component> components = SnomedUtils.getAllComponents(c);
+		if (components.isEmpty()) {
+			return "Integrity concern: concept" + c.getId() + " does not appear in concept file and is not referenced by any components.  Could have come in via WhiteListing?";
+		}
+		//Reduce the count by 1 because the concept itself gets counted, and that's a phantom.
+		int refCount = components.size()-1;
+
+		//If the concept is not referenced by any of its own components, then we'll see what other concepts reference it.
+		if (refCount == 0) {
+			//Find Inferred Relationship References
+			List<Relationship> inferredReferences = getInferredReferences(c);
+			if (!inferredReferences.isEmpty()) {
+				return "Integrity concern: concept " + c.getId() + " does not appear in concept file.  It is, however, referenced by " + inferredReferences.size() + " inferred relationship(s), eg: " + inferredReferences.iterator().next().toLongString();
+			}
+		}
+		return "Integrity concern: concept " + c.getId() + " does not appear in concept file.  It is, however, referenced by " + refCount + " component(s), eg: " + getFirstNonConceptComponent(components);
+	}
+
+	private List<Relationship> getInferredReferences(Concept phantomConcept) {
+		List<Relationship> inferredReferences = new ArrayList<>();
+		for (Concept c : gl.getAllConcepts()) {
+			if (phantomConcept.equals(c)) {
+				continue;
+			}
+			for (Relationship r : c.getRelationships(RF2Constants.CharacteristicType.INFERRED_RELATIONSHIP, RF2Constants.ActiveState.BOTH)) {
+				if (!r.isConcrete() && r.getTarget().equals(phantomConcept) || r.getType().equals(phantomConcept)) {
+					inferredReferences.add(r);
+				}
+			}
+		}
+		return inferredReferences;
+	}
+
+	private String getFirstNonConceptComponent(Collection<Component> components) {
+		for (Component c : components) {
+			if (!(c instanceof Concept)) {
+				return c.toString();
+			}
+		}
+		return "No non-concept components found";
 	}
 }

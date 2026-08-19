@@ -1916,9 +1916,8 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 	}
 
 	public void addIntegrityWarning(List<Object> warning) {
-		getIntegrityWarnings().add(warning);
+		integrityWarnings.add(warning);
 	}
-
 
 	public Map<String, String> getSchemaMap(Concept scheme) {
 		return alternateIdentifierMap.computeIfAbsent(scheme, k -> new HashMap<>());
