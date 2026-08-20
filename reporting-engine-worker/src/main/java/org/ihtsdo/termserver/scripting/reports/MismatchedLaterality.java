@@ -13,6 +13,7 @@ import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * RP-403 Report concepts that have laterality in their attributes but not in their
@@ -39,7 +40,7 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
+		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc
 		super.init(run);
 	}
 	

@@ -62,7 +62,6 @@ public class InactivationImpactAssessment extends AllKnownTemplates implements R
 			ResourceDataLoader resourceDataLoader = context.getBean(ResourceDataLoader.class);
 			LOGGER.debug("ResourceDataLoader {} initialisation complete", resourceDataLoader.getInitalisationConfirmation());
 		}
-		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		super.init(run);
 	}
 

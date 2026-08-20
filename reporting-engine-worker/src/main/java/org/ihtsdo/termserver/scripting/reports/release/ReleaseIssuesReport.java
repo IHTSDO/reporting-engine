@@ -122,7 +122,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		cache = gl.getDescendantsCache();
 		includeSecondaryCounts = true;
 
-		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		getSnapshotConfiguration().setLoadOtherReferenceSets(true);
 		gl.setRecordPreviousState(true);  //Needed to check for module jumpers
 
