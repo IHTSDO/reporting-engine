@@ -49,7 +49,6 @@ public class LostAndFoundDescendantsReport extends TermServerReport implements R
 		ReportSheetManager.setTargetFolderId(GFOLDER_RELEASE_QA);
 		super.init(run);
 		runStandAlone = false; //We need to load previous previous for real
-		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		if (!StringUtils.isNumeric(project.getKey())) {
 			getSnapshotConfiguration().setPopulatePreviousTransitiveClosure(true);
 		}

@@ -48,7 +48,6 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release QA
 		super.init(run);
 		runStandAlone = false; //We need to load previous previous for real
-		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		if (!StringUtils.isNumeric(project.getKey())) {
 			getSnapshotConfiguration().setPopulatePreviousTransitiveClosure(true);
 			try {

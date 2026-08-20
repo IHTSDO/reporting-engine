@@ -35,7 +35,6 @@ public class RoleGroupCrossoversReport extends TermServerReport implements Repor
 		ReportSheetManager.setTargetFolderId("11i7XQyb46P2xXNBwlCOd3ssMNhLOx1m1"); //QI / Misc Analysis
 		super.init(run);
 		runStandAlone = false; //We need to load previous previous for real
-		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 	}
 
 	@Override

@@ -101,7 +101,6 @@ public class ReportMissingDrugConcepts extends TermServerReport implements Scrip
 
 	@Override
 	protected void preInit() {
-		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		JobRun jobRun = getJobRun();
 		newConceptsOnly = jobRun.getParamBoolean(NEW_CONCEPTS_ONLY);
 	}

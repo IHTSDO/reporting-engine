@@ -24,7 +24,6 @@ public class NewAndChangedMRCM extends TermServerReport implements ReportClass {
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		getSnapshotConfiguration().setPopulateReleaseFlag(true);
 		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
 		super.init(run);
