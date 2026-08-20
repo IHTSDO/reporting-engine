@@ -114,7 +114,6 @@ public class RefsetMembersWithInvalidReferencedComponents extends TermServerRepo
 		}
 		super.init(run);
 		getSnapshotConfiguration().setLoadOtherReferenceSets(true);
-		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 	}
 
 	@Override

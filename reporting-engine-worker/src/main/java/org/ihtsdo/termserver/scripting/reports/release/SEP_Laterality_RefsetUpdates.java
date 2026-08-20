@@ -27,7 +27,6 @@ public class SEP_Laterality_RefsetUpdates extends TermServerReport implements Re
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true);
 		ReportSheetManager.setTargetFolderId("1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"); //Release Stats
 		summaryTabIdx = PRIMARY_REPORT;
 		super.init(run);

@@ -8,9 +8,6 @@ public class SnapshotConfiguration implements TermServerLocation {
 
 	public enum SnapshotSourceType { PROJECT, BRANCH_PATH, PUBLISHED_ARCHIVE, BUILD_ARCHIVE, CODE_SYSTEM_VERSION}
 
-	//Deprecated.  Try to remove these once we've moved over to ArchiveManager2
-	private boolean ensureSnapshotPlusDeltaLoad = false;
-
 	private CurrentPreviousModuleMetadataPair currentPreviousModuleMetadataPair;
 
 	private boolean allowStaleData = false;
@@ -48,14 +45,6 @@ public class SnapshotConfiguration implements TermServerLocation {
 
 	public void setPopulateHierarchyDepth(boolean populateHierarchyDepth) {
 		this.populateHierarchyDepth = populateHierarchyDepth;
-	}
-
-	public boolean isEnsureSnapshotPlusDeltaLoad() {
-		return ensureSnapshotPlusDeltaLoad;
-	}
-
-	public void setEnsureSnapshotPlusDeltaLoad(boolean ensureSnapshotPlusDeltaLoad) {
-		this.ensureSnapshotPlusDeltaLoad = ensureSnapshotPlusDeltaLoad;
 	}
 
 	public boolean isPopulatePreviousTransitiveClosure() {
@@ -128,24 +117,6 @@ public class SnapshotConfiguration implements TermServerLocation {
 		populateReleaseFlag = false;
 		runIntegrityChecks = true;
 		loadOtherReferenceSets = false;
-
-		//Deprecated.  Try to remove these once we've moved over to ArchiveManager2
-		ensureSnapshotPlusDeltaLoad = false;
-	}
-
-	public boolean isCompatibleWithExisting(SnapshotConfiguration existing) {
-		//If the source type or name is different, we definitely need to reload
-		if (existing.getSnapshotSourceType() != getSnapshotSourceType() || !existing.getSource().equals(getSource())) {
-			return false;
-		}
-
-		//If we need the release populated and we don't have it, then we need to reload
-		if (isPopulateReleaseFlag() && !existing.isPopulateReleaseFlag()) {
-			return false;
-		}
-
-		//Similarly, if we need a Snapshot+Delta load and we don't have it, then we need to reload
-		return !isEnsureSnapshotPlusDeltaLoad() || existing.isEnsureSnapshotPlusDeltaLoad();
 	}
 
 	@Override

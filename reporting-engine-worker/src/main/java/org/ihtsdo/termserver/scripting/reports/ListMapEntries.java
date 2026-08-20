@@ -45,7 +45,6 @@ public class ListMapEntries extends TermServerReport implements ReportClass {
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
 		getSnapshotConfiguration().setLoadOtherReferenceSets(true);
-		getSnapshotConfiguration().setEnsureSnapshotPlusDeltaLoad(true); //This forces a delta import - needed because we don't yet save 'Other' refset members to disk.
 		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc Reports
 		super.init(run);
 	}
