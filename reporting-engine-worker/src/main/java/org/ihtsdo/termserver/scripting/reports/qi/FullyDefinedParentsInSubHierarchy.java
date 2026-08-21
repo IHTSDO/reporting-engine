@@ -32,7 +32,7 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 
 	@Override
 	public void init (JobRun run) throws TermServerScriptException {
-		additionalReportColumns = "FSN, SemTag, Stated Parents, Stated Parents' Module, Calculated PPPs";
+		additionalReportColumns = "FSN, SemTag, EffectiveTime, Stated Parents, Stated Parents' Module, Calculated PPPs";
 		ReportSheetManager.setTargetFolderId(GFOLDER_QI);
 		super.init(run);
 	}
@@ -83,7 +83,7 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 		String proxPrimParentsStr = proximalPrimitiveParents.stream()
 				.map(Concept::toString)
 				.collect(Collectors.joining(", \n"));
-		report(c, parentStr, parentModStr, proxPrimParentsStr);
+		report(c, c.getEffectiveTime(), parentStr, parentModStr, proxPrimParentsStr);
 		countIssue(c);
 	}
 
