@@ -84,7 +84,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public static final String TEMPLATE2 = "Template 2";
 	public static final String TEMPLATE_NAME = "TemplateName";
 	public static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted Changes Only";
-	public static final String WHITE_LISTED_COUNT = "White Listed Count";
+	public static final String WHITE_LISTED_COUNT = "Exception Listed Count";
 
 	/* ======================================================
 	 * Private Static Fields

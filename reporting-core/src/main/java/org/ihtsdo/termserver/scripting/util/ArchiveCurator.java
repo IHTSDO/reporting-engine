@@ -206,7 +206,7 @@ public class ArchiveCurator extends TermServerReport {
             }
 
             if (shortName.endsWith("AU")) {
-                report(0, shortName, "SKIPPED", "Whitelisted");
+                report(0, shortName, "SKIPPED", "Exception listed");
                 continue;
             }
 
