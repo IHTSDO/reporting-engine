@@ -224,7 +224,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	@Override
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[]{
-				"Category, Item, Count, Whitelisted",
+				"Category, Item, Count, Exception Listed",
 				"SCTID, FSN, Semtag, Issue, Legacy, C/D/R Active, Detail, Additional Detail, Further Detail",
 				"SCTID, FSN, Semtag, Item of Interest, Legacy, C/D/R Active, Detail, Additional Detail, Further Detail",
 		};
