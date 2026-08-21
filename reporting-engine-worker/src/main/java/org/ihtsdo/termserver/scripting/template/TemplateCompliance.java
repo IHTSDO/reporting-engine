@@ -457,7 +457,7 @@ public class TemplateCompliance extends TemplateReport implements ReportClass {
 		for (Concept c : potentiallyMisaligned) {
 			if (whiteListedConceptIds.contains(c.getId()) && !alreadyReportedExcluded.contains(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
-				report(QUINARY_REPORT, c, "White listed");
+				report(QUINARY_REPORT, c, "Exception listed");
 				ignoredConcepts.add(c);
 				alreadyReportedExcluded.add(c);
 				continue;
