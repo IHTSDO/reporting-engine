@@ -281,8 +281,8 @@ public abstract class TemplateReport extends TermServerReport {
 		//These hierarchies have been excluded
 		if (exclusions.contains(c)) {
 			if (exclusionReport != null) {
-				incrementSummaryInformation("Concepts excluded due to hierarchial exclusion");
-				report(exclusionReport, c, "Hierarchial exclusion", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+				incrementSummaryInformation("Concepts excluded due to hierarchical exclusion");
+				report(exclusionReport, c, "Hierarchical exclusion", c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 			}
 			return true;
 		}
