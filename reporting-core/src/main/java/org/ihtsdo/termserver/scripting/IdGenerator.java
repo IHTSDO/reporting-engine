@@ -93,12 +93,14 @@ public class IdGenerator implements ScriptConstants{
 				String[] lineItems = line.split(TAB);
 				if (lineItems[0].equals(idGen.partitionIdentifier.toString())) {
 					idGen.runForwardCount = Integer.parseInt(lineItems[1]);
-					LOGGER.warn("{} running forward by {}", idGen.partitionIdentifier, idGen.runForwardCount);
+					LOGGER.warn("{} running forward by {} as per {}", idGen.partitionIdentifier, idGen.runForwardCount, generatorProgressTrackerName);
 					for (int i=0; i<idGen.runForwardCount; i++) {
 						idGen.availableSctIds.readLine();
 					}
 				}
 			}
+		} else {
+			LOGGER.info("No 'runFoward' file (expected name {}) found for {}", generatorProgressTrackerName, idGen.partitionIdentifier);
 		}
 	}
 	
