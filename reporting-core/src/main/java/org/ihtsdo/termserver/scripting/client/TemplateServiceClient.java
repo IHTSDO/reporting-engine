@@ -9,14 +9,16 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.snomed.authoringtemplate.domain.*;
 import org.snomed.authoringtemplate.domain.logical.*;
 import org.snomed.authoringtemplate.service.LogicalTemplateParserService;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.http.client.*;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.databind.*;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Client can either load a template from the template service, or from a local resource
@@ -29,7 +31,11 @@ public class TemplateServiceClient {
 	private final RestTemplate restTemplate;
 	private String templateServiceUrl;
 	LogicalTemplateParserService service  = new LogicalTemplateParserService();
-	ObjectMapper mapper = new ObjectMapper();
+	// Jackson 3 mappers are immutable, so the lenient parsing this client relies on
+	// has to be set when the mapper is built rather than configured afterwards.
+	ObjectMapper mapper = JsonMapper.builder()
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.build();
 	private static final String CONTENT_TYPE = "application/json";
 	
 	public ConceptTemplate loadLocalConceptTemplate (String templateName) throws TermServerScriptException {
@@ -40,7 +46,6 @@ public class TemplateServiceClient {
 		if (templateStream == null) {
 			throw new RuntimeException ("Failed to load template file - not found: " + templateName);
 		}
-		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		return loadLocalConceptTemplate(templateName, templateStream);
 	}
 	
@@ -72,7 +77,7 @@ public class TemplateServiceClient {
 		headers.add("Accept", CONTENT_TYPE);
 		
 		restTemplate = new RestTemplateBuilder()
-				.rootUri(templateServiceUrl)
+				.uriTemplateHandler(ClientUriFactory.forRootUri(templateServiceUrl))
 				.additionalMessageConverters(new GsonHttpMessageConverter())
 				.errorHandler(new ExpressiveErrorHandler())
 				.build();

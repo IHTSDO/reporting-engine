@@ -129,8 +129,8 @@ public class ReportingServiceImpl implements ReportingService {
 		jobRun.setRequestTime(new Date());
 		jobRun.setStatus(JobStatus.Scheduled);
 		jobRun.setTerminologyServerUrl(terminologyServerUrl);
-		jobRun.setWhiteList(job.getWhiteListConcepts(jobRun.getcodeSystemShortname()));
-		LOGGER.info("Whitelisting {} concepts for {} in codeSystem {}", jobRun.getWhiteList().size(), jobRun.getJobName(), jobRun.getcodeSystemShortname());
+		jobRun.setWhiteList(job.getWhiteListConcepts(jobRun.getCodeSystemShortname()));
+		LOGGER.info("Whitelisting {} concepts for {} in codeSystem {}", jobRun.getWhiteList().size(), jobRun.getJobName(), jobRun.getCodeSystemShortname());
 		populateAuthenticationDetails(jobRun);
 		
 		//We protect the json from having parent links and redundant keys, 

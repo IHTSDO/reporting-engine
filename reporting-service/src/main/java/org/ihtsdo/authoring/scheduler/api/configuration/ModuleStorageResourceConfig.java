@@ -7,5 +7,5 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix="module.storage")
 public class ModuleStorageResourceConfig extends ResourceConfiguration {
-	
+
 }

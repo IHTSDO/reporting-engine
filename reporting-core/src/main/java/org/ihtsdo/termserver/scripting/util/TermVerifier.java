@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.util;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,6 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 /**
@@ -56,7 +56,7 @@ public class TermVerifier implements ScriptConstants {
 		}
 		LOGGER.info("Loading term file {}", inputFile.getAbsolutePath());
 		try {
-			List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
+			List<String> lines = Files.readLines(inputFile, StandardCharsets.UTF_8);
 			lines = StringUtils.removeBlankLines(lines);
 			for (int lineNum = 0; lineNum < lines.size(); lineNum++) {
 				if (lineNum == 0) {

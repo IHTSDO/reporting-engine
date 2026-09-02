@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.termserver.scripting.domain.WhitelistItem;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.http.*;
 import org.springframework.http.client.*;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
@@ -39,7 +39,7 @@ public class AuthoringAcceptanceGatewayClient {
 		}
 		
 		restTemplate = new RestTemplateBuilder()
-				.rootUri(serverUrl)
+				.uriTemplateHandler(ClientUriFactory.forRootUri(serverUrl))
 				.additionalMessageConverters(new GsonHttpMessageConverter())
 				.errorHandler(new ExpressiveErrorHandler())
 				.build();
