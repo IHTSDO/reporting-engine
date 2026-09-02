@@ -48,12 +48,12 @@ public class BrowserClient {
 			boolean success = false;
 			while (attempts < 3 && !success) {
 				try {
-					String url = serverUrl + "?query=" + searchTerms + 
+					String url = serverUrl + "?query=" + searchTerms +
 							"&limit=" + limit +
-							"&&searchMode=partialMatching&lang=english&statusFilter=activeOnly&skipTo=0" +
+							"&searchMode=partialMatching&lang=english&statusFilter=activeOnly&skipTo=0" +
 							"&returnLimit=100" +
-							(semTagFilter==null ? "" : ("semanticFilter=" + semTagFilter)) +
-							"normalize=true&groupByConcept=1";
+							(semTagFilter == null ? "" : ("&semanticFilter=" + semTagFilter)) +
+							"&normalize=true&groupByConcept=1";
 					LOGGER.debug("Browser search: {}", url);
 					BrowserMatch matches = restTemplate.getForObject(url, BrowserMatch.class);
 					return matches.get();
