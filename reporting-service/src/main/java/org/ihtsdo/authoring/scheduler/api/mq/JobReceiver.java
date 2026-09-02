@@ -1,6 +1,6 @@
 package org.ihtsdo.authoring.scheduler.api.mq;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.ihtsdo.authoring.scheduler.api.service.ReportingService;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.springframework.beans.factory.annotation.Autowired;

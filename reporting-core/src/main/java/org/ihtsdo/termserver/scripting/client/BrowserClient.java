@@ -7,7 +7,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
@@ -36,7 +36,7 @@ public class BrowserClient {
 	public BrowserClient(String serverUrl) {
 		this.serverUrl = serverUrl;
 		restTemplate = new RestTemplateBuilder()
-				.rootUri(this.serverUrl)
+				.uriTemplateHandler(ClientUriFactory.forRootUri(this.serverUrl))
 				.additionalMessageConverters(new GsonHttpMessageConverter())
 				.errorHandler(new ExpressiveErrorHandler())
 				.build();

@@ -1,9 +1,5 @@
 package org.ihtsdo.authoring.scheduler.api;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.google.gdata.util.common.base.StringUtil;
 
 import org.apache.commons.lang3.StringUtils;
@@ -15,19 +11,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.jms.annotation.EnableJms;
-import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
+import org.springframework.jms.support.converter.JacksonJsonMessageConverter;
 import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.jms.support.converter.MessageType;
+
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
-import java.util.TimeZone;
 
 @SpringBootApplication
 @ImportResource("classpath:services-context.xml")
@@ -35,20 +33,19 @@ import java.util.TimeZone;
 @EnableJms
 public class Application {
 
-	@Bean
-	public ObjectMapper objectMapper() {
-		final ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-		final StdDateFormat df = new StdDateFormat();
-		df.setTimeZone(TimeZone.getTimeZone("UTC"));
-		objectMapper.setDateFormat(df);
-		objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-		return objectMapper;
-	}
-
 	@Bean // Serialize message content to json using TextMessage
 	public MessageConverter jacksonJmsMessageConverter() {
-		MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
+		// Jackson 3 changes several serialisation defaults - ISO-8601 dates instead of epoch
+		// millis, and alphabetical instead of declaration property order. Kept in step with
+		// reporting-engine-worker, which reproduces Jackson 2's defaults for the externally
+		// consumed service-alert queue.
+		// FAIL_ON_UNKNOWN_PROPERTIES must stay off: it is a Jackson library default that
+		// MappingJackson2MessageConverter disabled, and re-enabling it would send any message
+		// carrying a field this side does not know yet - a newer peer mid-rollout - to the DLQ.
+		JsonMapper jsonMapper = JsonMapper.builderWithJackson2Defaults()
+				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+				.build();
+		JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter(jsonMapper);
 		converter.setTargetType(MessageType.TEXT);
 		converter.setTypeIdPropertyName("_type");
 		return converter;

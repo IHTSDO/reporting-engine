@@ -4,7 +4,7 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.ActiveMQPrefetchPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.jms.activemq.ActiveMQConnectionFactoryCustomizer;
+import org.springframework.boot.activemq.autoconfigure.ActiveMQConnectionFactoryCustomizer;
 
 public class ActiveMQConnectionFactoryForAutoscaling implements ActiveMQConnectionFactoryCustomizer {
 

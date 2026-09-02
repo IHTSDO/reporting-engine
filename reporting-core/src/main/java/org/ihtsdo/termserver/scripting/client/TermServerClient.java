@@ -25,7 +25,7 @@ import org.ihtsdo.termserver.scripting.domain.CodeSystemVersion;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
@@ -108,7 +108,7 @@ public class TermServerClient {
 		HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
 
 		restTemplate = new RestTemplateBuilder()
-				.rootUri(this.serverUrl)
+				.uriTemplateHandler(ClientUriFactory.forRootUri(this.serverUrl))
 				.additionalMessageConverters(new GsonHttpMessageConverter(gson))
 				.additionalMessageConverters(new FormHttpMessageConverter())
 				.errorHandler(new ExpressiveErrorHandler())
