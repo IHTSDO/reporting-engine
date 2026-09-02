@@ -13,6 +13,11 @@
 	<packaging>jar</packaging>
 
 	<dependencies>
+		<!-- Boot 4 moved RestTemplateBuilder out of spring-boot into this module -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-restclient</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
