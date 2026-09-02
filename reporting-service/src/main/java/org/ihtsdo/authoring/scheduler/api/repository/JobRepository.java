@@ -2,10 +2,10 @@ package org.ihtsdo.authoring.scheduler.api.repository;
 
 import java.util.List;
 
+import org.jspecify.annotations.NonNull;
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
-import reactor.util.annotation.NonNull;
 
 public interface JobRepository extends CrudRepository<Job, Long> {
 
