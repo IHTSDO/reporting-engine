@@ -277,20 +277,20 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		envProd = environments.length - 1;
 	}
 
-	//When run from script-library, the jar doesn't bundle reporting-core's src/main/resources,
-	//so fall back to a copy sitting alongside the working directory.
+	//The copy bundled in the jar (src/main/resources) only holds dummy values,
+	//so prefer a local override sitting alongside the working directory, falling back to the classpath default.
 	private static InputStream getEnvironmentsInputStream() throws FileNotFoundException {
-		InputStream is = Project.class.getClassLoader().getResourceAsStream(ENVIRONMENTS_FILE);
-		if (is != null) {
-			return is;
+		File localOverride = new File("resources", ENVIRONMENTS_FILE);
+		if (localOverride.canRead()) {
+			return new FileInputStream(localOverride);
 		}
 
-		File fallback = new File("resources", ENVIRONMENTS_FILE);
-		if (fallback.canRead()) {
-			return new FileInputStream(fallback);
+		InputStream defaultStream = Project.class.getClassLoader().getResourceAsStream(ENVIRONMENTS_FILE);
+		if (defaultStream != null) {
+			return defaultStream;
 		}
 
-		throw new FileNotFoundException("File not found: " + ENVIRONMENTS_FILE + " (checked classpath and " + fallback.getPath() + ")");
+		throw new FileNotFoundException("File not found: " + ENVIRONMENTS_FILE + " (checked " + localOverride.getPath() + " and classpath)");
 	}
 
 	protected static String[] getEnvironments() {
