@@ -32,13 +32,9 @@ public class Application {
 
 	@Bean // Serialize message content to json using TextMessage
 	public MessageConverter jacksonJmsMessageConverter() {
-		// Jackson 3 changes several serialisation defaults - ISO-8601 dates instead of epoch
-		// millis, and alphabetical instead of declaration property order. Kept in step with
-		// reporting-engine-worker, which reproduces Jackson 2's defaults for the externally
-		// consumed service-alert queue.
-		// FAIL_ON_UNKNOWN_PROPERTIES must stay off: it is a Jackson library default that
-		// MappingJackson2MessageConverter disabled, and re-enabling it would send any message
-		// carrying a field this side does not know yet - a newer peer mid-rollout - to the DLQ.
+		// Must stay in step with the identical converter in reporting-engine-worker's
+		// Application, which carries the rationale for the Jackson 2 defaults and for leaving
+		// FAIL_ON_UNKNOWN_PROPERTIES disabled. Change both or neither.
 		JsonMapper jsonMapper = JsonMapper.builderWithJackson2Defaults()
 				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 				.build();
