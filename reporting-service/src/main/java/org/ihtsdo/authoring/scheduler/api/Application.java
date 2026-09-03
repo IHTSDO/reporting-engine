@@ -2,7 +2,6 @@ package org.ihtsdo.authoring.scheduler.api;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.authoring.scheduler.api.configuration.ModuleStorageResourceConfig;
-import org.ihtsdo.authoring.scheduler.api.mq.ActiveMQConnectionFactoryForAutoscaling;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.snomed.module.storage.ModuleStorageCoordinator;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,12 +12,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.jms.annotation.EnableJms;
-import org.springframework.jms.support.converter.JacksonJsonMessageConverter;
-import org.springframework.jms.support.converter.MessageConverter;
-import org.springframework.jms.support.converter.MessageType;
-
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -29,25 +22,6 @@ import java.util.Objects;
 @EntityScan(basePackages="org.snomed.otf.scheduler.domain")
 @EnableJms
 public class Application {
-
-	@Bean // Serialize message content to json using TextMessage
-	public MessageConverter jacksonJmsMessageConverter() {
-		// Must stay in step with the identical converter in reporting-engine-worker's
-		// Application, which carries the rationale for the Jackson 2 defaults and for leaving
-		// FAIL_ON_UNKNOWN_PROPERTIES disabled. Change both or neither.
-		JsonMapper jsonMapper = JsonMapper.builderWithJackson2Defaults()
-				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-				.build();
-		JacksonJsonMessageConverter converter = new JacksonJsonMessageConverter(jsonMapper);
-		converter.setTargetType(MessageType.TEXT);
-		converter.setTypeIdPropertyName("_type");
-		return converter;
-	}
-	
-	@Bean
-	public ActiveMQConnectionFactoryForAutoscaling autoScalingFactory() {
-		return new ActiveMQConnectionFactoryForAutoscaling();
-	}
 
 	@Bean
 	public ResourceManager resourceManager(ModuleStorageResourceConfig resourceConfiguration, ResourceLoader cloudResourceLoader) {
