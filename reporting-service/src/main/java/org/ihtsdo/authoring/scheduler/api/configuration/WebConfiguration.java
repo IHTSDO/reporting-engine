@@ -40,10 +40,12 @@ public class WebConfiguration {
 	}
 
 	private static void logTrailingSlashRequest(HttpServletRequest request) {
-		LOGGER.debug("Trailing slash rewritten: {} {} (from {}, user-agent {})",
-				request.getMethod(),
-				request.getRequestURI(),
-				request.getRemoteAddr(),
-				request.getHeader("User-Agent"));
-	}
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Trailing slash rewritten: {} {} (from {}, user-agent {})",
+                    request.getMethod(),
+                    request.getRequestURI(),
+                    request.getRemoteAddr(),
+                    request.getHeader("User-Agent"));
+        }
+    }
 }
