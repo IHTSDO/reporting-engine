@@ -1,13 +1,10 @@
 package org.ihtsdo.authoring.scheduler.api;
 
-import com.google.gdata.util.common.base.StringUtil;
-
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.authoring.scheduler.api.configuration.ModuleStorageResourceConfig;
 import org.ihtsdo.authoring.scheduler.api.mq.ActiveMQConnectionFactoryForAutoscaling;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.snomed.module.storage.ModuleStorageCoordinator;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -57,12 +54,12 @@ public class Application {
 	}
 
 	@Bean
-	public ResourceManager resourceManager(@Autowired ModuleStorageResourceConfig resourceConfiguration, @Autowired ResourceLoader cloudResourceLoader) {
+	public ResourceManager resourceManager(ModuleStorageResourceConfig resourceConfiguration, ResourceLoader cloudResourceLoader) {
 		return new ResourceManager(resourceConfiguration, cloudResourceLoader);
 	}
 
 	@Bean
-	public ModuleStorageCoordinator moduleStorageCoordinator(@Autowired ResourceManager resourceManager, @Value("${reporting.service.terminology.server.uri}") final String terminologyServerUrl) {
+	public ModuleStorageCoordinator moduleStorageCoordinator(ResourceManager resourceManager, @Value("${reporting.service.terminology.server.uri}") final String terminologyServerUrl) {
 		if (StringUtils.isEmpty(terminologyServerUrl)) {
 			throw new IllegalArgumentException("No value supplied for reporting.service.terminology.server.uri in application.properties file (or Consul)");
 		}
@@ -81,27 +78,12 @@ public class Application {
 			uri = new URI(terminologyServerUrl);
 		} catch (URISyntaxException e) {
 			System.out.println("Failed to detect environment. Error message: " + e.getMessage());
-			return StringUtil.EMPTY_STRING;
+			return StringUtils.EMPTY;
 		}
 		String domain = uri.getHost();
 		domain = domain.startsWith("www.") ? domain.substring(4) : domain;
 		return (domain.contains("-") ? domain.substring(0, domain.indexOf("-")) : domain.substring(0, domain.indexOf("."))).toLowerCase();
 	}
-
-/*	@Bean
-	public HttpMessageConverters customConverters() {
-		final StringHttpMessageConverter stringConverter = new StringHttpMessageConverter(Charsets.UTF_8);
-		stringConverter.setWriteAcceptCharset(false);
-
-		final MappingJackson2HttpMessageConverter jacksonConverter = new MappingJackson2HttpMessageConverter();
-		jacksonConverter.setObjectMapper(objectMapper());
-
-		return new HttpMessageConverters(
-				stringConverter,
-				new ByteArrayHttpMessageConverter(),
-				new ResourceHttpMessageConverter(),
-				jacksonConverter);
-	}*/
 
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
