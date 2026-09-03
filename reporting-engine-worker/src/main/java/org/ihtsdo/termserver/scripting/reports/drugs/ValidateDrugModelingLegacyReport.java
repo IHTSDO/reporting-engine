@@ -29,7 +29,7 @@ public class ValidateDrugModelingLegacyReport extends DrugsReport {
 	@Override
 	public void runJob() throws TermServerScriptException {
 		runAllDrugValidations();
-		reportSummaryCounts(SECONDARY_REPORT);
+		reportSummaryCounts(SECONDARY_REPORT, SUMMARY_SORT_ORDER.COUNT);
 		LOGGER.info("Summary tab complete, all done.");
 	}
 

@@ -983,8 +983,8 @@ public class DrugsModelingAndTerming extends DrugsReport {
 
 	private int getTagLevel(Concept c) throws TermServerScriptException {
 		String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
-		for (int i=0; i < semTagHiearchy.length; i++) {
-			if (semTagHiearchy[i].equals(semTag)) {
+		for (int i = 0; i < semTagHierarchy.length; i++) {
+			if (semTagHierarchy[i].equals(semTag)) {
 				return i;
 			}
 		}

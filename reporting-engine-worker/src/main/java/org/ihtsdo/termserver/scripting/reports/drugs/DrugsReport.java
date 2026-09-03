@@ -41,7 +41,7 @@ public abstract class DrugsReport extends TermServerReport implements ReportClas
 
 	protected final Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
 	protected final Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
-	protected final String[] semTagHiearchy = new String[] { SEMTAG_PRODUCT, "(medicinal product)", "(medicinal product form)", "(clinical drug)" };
+	protected final String[] semTagHierarchy = new String[] { SEMTAG_PRODUCT, "(medicinal product)", "(medicinal product form)", "(clinical drug)" };
 
 	protected static final String[] badWords = new String[] { "preparation", "agent", "+"};
 
@@ -78,8 +78,9 @@ public abstract class DrugsReport extends TermServerReport implements ReportClas
 
 	@Override
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details, Further Details", "Issue, Count"};
-		String[] tabNames = new String[] {	"Issues", "Summary"};
+		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details, Further Details",
+				"Category,Issue, Count"};
+		String[] tabNames = new String[] { "Issues", "Summary"};
 		postInit(tabNames, columnHeadings);
 	}
 
@@ -108,6 +109,9 @@ public abstract class DrugsReport extends TermServerReport implements ReportClas
 		if (jobRun.getParamBoolean(RECENT_CHANGES_ONLY)) {
 			isRecentlyTouchedConceptsOnly = true;
 			recentlyTouchedConcepts = SnomedUtils.getRecentlyTouchedConcepts(gl.getAllConcepts());
+			LOGGER.info("Identified {} concepts as having been recently touched", recentlyTouchedConcepts.size());
+		} else {
+			LOGGER.info("Recent Changes Only : NOT SELECTED");
 		}
 
 		bannedMpParents = new ArrayList<>();
@@ -126,6 +130,8 @@ public abstract class DrugsReport extends TermServerReport implements ReportClas
 		this.termGenerator = drugsReport.termGenerator;
 		this.doseFormHelper = drugsReport.doseFormHelper;
 		this.summaryDetails = drugsReport.summaryDetails;
+		this.isRecentlyTouchedConceptsOnly = drugsReport.isRecentlyTouchedConceptsOnly;
+		this.recentlyTouchedConcepts = drugsReport.recentlyTouchedConcepts;
 	}
 
 	private void populateGrouperSubstances() throws TermServerScriptException {
