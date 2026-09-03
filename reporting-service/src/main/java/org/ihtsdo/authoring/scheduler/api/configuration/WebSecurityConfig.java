@@ -32,7 +32,11 @@ public class WebSecurityConfig {
 			"/version",
 			// Swagger API Docs:
 			"/swagger-ui/**",
-			"/v3/api-docs/**"
+			"/v3/api-docs/**",
+			// Health check, so load balancers and container probes can reach it unauthenticated.
+			// Only this path is opened up: every other /actuator endpoint stays behind the
+			// authorisation rules below.
+			"/actuator/health"
 	};
 
 	@Bean
