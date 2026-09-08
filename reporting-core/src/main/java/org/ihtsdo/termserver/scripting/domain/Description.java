@@ -709,11 +709,29 @@ public class Description extends Component implements ScriptConstants, Serializa
 		//Replace any indicators with the same UUID
 		getInactivationIndicatorEntries().remove(i);
 		getInactivationIndicatorEntries().add(i);
-		if (i.isActiveSafely()) {
+		if (isOverallDeterminantOfInactivationReason(i) && i.isActiveSafely()) {
 			setInactivationIndicator(SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId()));
 		}
 	}
-	
+
+	private boolean isOverallDeterminantOfInactivationReason(InactivationIndicatorEntry i) {
+		//Is this the newest entry of all the inactivation indicators we have for this description?
+		//An empty effective time indicates an unpublished change, which is always the newest.
+		if (StringUtils.isEmpty(i.getEffectiveTime())) {
+			return true;
+		}
+		for (InactivationIndicatorEntry other : getInactivationIndicatorEntries()) {
+			if (other.equals(i)) {
+				continue;
+			}
+			if (StringUtils.isEmpty(other.getEffectiveTime())
+					|| other.getEffectiveTime().compareTo(i.getEffectiveTime()) > 0) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	public List<InactivationIndicatorEntry> getInactivationIndicatorEntries(ActiveState activeState) {
 		if (activeState.equals(ActiveState.BOTH)) {
 			return getInactivationIndicatorEntries();
