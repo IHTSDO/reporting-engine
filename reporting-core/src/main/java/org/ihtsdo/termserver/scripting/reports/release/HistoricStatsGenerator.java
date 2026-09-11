@@ -129,12 +129,11 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 
 	private FileWriter initialiseHistoricDataFile(File f) throws TermServerScriptException {
 		try {
-			LOGGER.info("Creating dataFile: {}", f.getAbsolutePath());
+			LOGGER.info("Initialising dataFile: {}", f.getAbsolutePath());
 			Files.createDirectories(f.toPath().getParent());
 			if (!f.createNewFile()) {
 				throw new TermServerScriptException(FAILED_TO_CREATE + f.getAbsolutePath());
 			}
-			LOGGER.debug("Outputting Data to {}", f.getAbsolutePath());
 			return new FileWriter(f);
 		} catch (IOException e) {
 			throw new TermServerScriptException(FAILED_TO_CREATE + f.getAbsolutePath(), e);
