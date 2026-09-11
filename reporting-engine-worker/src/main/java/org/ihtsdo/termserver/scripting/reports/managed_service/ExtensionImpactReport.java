@@ -54,8 +54,8 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20260701T120000Z.zip");
-		params.put(ECL_FILTER, "^ 816080008 |International Patient Summary (foundation metadata concept)|");
+		params.put(INTERNATIONAL_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20260901T120000Z.zip");
+		params.put(ECL_FILTER, "^816080008 OR ^1157358007");
 		TermServerScript.run(ExtensionImpactReport.class, args, params);
 	}
 
@@ -206,6 +206,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 
 		if (!StringUtils.isEmpty(ecl)) {
 			LOGGER.info("Finding concepts matching ECL: {}", ecl);
+			addSummaryInformation("ECL selection used", ecl);
 			findConceptsOfInterest(ecl);
 		} else {
 			LOGGER.info("No ECL specified, all concepts in scope will be considered");
@@ -636,6 +637,7 @@ public class ExtensionImpactReport extends HistoricDataUser implements ReportCla
 				conceptsOfInterest.addAll(eclCache.findConcepts(ecl));
 			}
 		}
+		addSummaryInformation("Concepts selected via ECL filter", conceptsOfInterest.size());
 	}
 
 	private void populateStatedModellingMap() {
