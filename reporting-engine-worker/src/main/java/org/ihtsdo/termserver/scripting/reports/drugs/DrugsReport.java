@@ -124,6 +124,7 @@ public abstract class DrugsReport extends TermServerReport implements ReportClas
 	protected void linkReport(DrugsReport drugsReport) {
 		//Link this report to an existing running report, so they write to the same structures
 		this.setSummaryCountsByCategoryMap(drugsReport.getSummaryCountsByCategoryMap());
+		this.gl = drugsReport.gl;
 		this.allDrugs = drugsReport.allDrugs;
 		this.baseMDFMap = drugsReport.baseMDFMap;
 		this.reportManager = drugsReport.reportManager;
