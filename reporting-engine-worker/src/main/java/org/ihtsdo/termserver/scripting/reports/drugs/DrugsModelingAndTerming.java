@@ -27,6 +27,9 @@ public class DrugsModelingAndTerming extends DrugsReport {
 	private static final String ISSUE_MULTI_STRENGTH = "Group contains > 1 presentation/concentration strength";
 	private static final String ISSUE_INVALID_MODEL = "Invalid drugs model";
 
+	private final Set<Concept> doseFormWithTimedDelivery = new HashSet<>();
+	private final Set<Concept> timeUnits = new HashSet<>();
+
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
 		params.put(RECENT_CHANGES_ONLY, "true");
@@ -41,6 +44,8 @@ public class DrugsModelingAndTerming extends DrugsReport {
 
 	@Override
 	public void runJob() throws TermServerScriptException {
+		doseFormWithTimedDelivery.add(gl.getConcept("385114002 |Prolonged-release transdermal patch (dose form)|"));
+		timeUnits.add(gl.getConcept("258702006 |hour (qualifier value)|"));
 		validateDrugsModeling();
 		validateTherapeuticRole();
 		reportSummaryCounts(SECONDARY_REPORT, SUMMARY_SORT_ORDER.COUNT);
@@ -207,7 +212,6 @@ public class DrugsModelingAndTerming extends DrugsReport {
 	*	Has concentration strength denominator unit (attribute) cannot be 732936001|Tablet (unit of presentation)
 	*	Has presentation strength denominator unit (attribute) cannot be 258684004|milligram (qualifier value)
 	*	Has concentration strength numerator unit (attribute) cannot be 258727004|milliequivalent (qualifier value)
-	 * @throws TermServerScriptException 
 	*/
 	private void validateCdModellingRules(Concept c) throws TermServerScriptException {
 		String issue4Str = "CD with multiple inferred parents";
@@ -397,7 +401,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 		}
 		
 		if (unitIdx != -1) {
-			Double strength = Double.parseDouble(strengthStr);
+			double strength = Double.parseDouble(strengthStr);
 			if (strength > 1000 || strength < 1) {
 				report(c, issueStr, strengthStr + " " + unit.getPreferredSynonym());
 			}
@@ -405,7 +409,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 		
 		//767525000 |Unit (qualifier value)|
 		if (unit.getConceptId().equals("767525000")) {
-			Double strength = Double.parseDouble(strengthStr);
+			double strength = Double.parseDouble(strengthStr);
 			if (strength >= 1000000) {
 				report(c, issueStr2, strengthStr + " " + unit.getPreferredSynonym());
 			}
@@ -882,21 +886,33 @@ public class DrugsModelingAndTerming extends DrugsReport {
 			report(c, issueStr1);
 		} else if (unitsOfPres.size() == 1) {
 			Concept unitOfPres = unitsOfPres.iterator().next().getTarget();
-			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
-				if (!g.isGrouped() || g.size() == 1) {
-					continue;
-				}
-				Set<Relationship> presDenomUnits = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRES_STRENGTH_DENOM_UNIT, g.getGroupId());
-				if (presDenomUnits.size() != 1) {
-					report(c, issueStr2, g);
-				} else if (!unitOfPres.equals(presDenomUnits.iterator().next().getTarget())) {
-					report(c, issueStr3, unitOfPres, g);
-				}
-				incrementSummaryInformation("CD groups checked for presentation unit consistency");
-			}
+			checkCdGroupForUnitConsistency(c, unitOfPres, issueStr2, issueStr3);
 		}
 	}
-	
+
+	private void checkCdGroupForUnitConsistency(Concept c, Concept unitOfPres, String issueStr2, String issueStr3) throws TermServerScriptException {
+		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+			if (!g.isGrouped() || g.size() == 1) {
+				continue;
+			}
+			Set<Relationship> presDenomUnits = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRES_STRENGTH_DENOM_UNIT, g.getGroupId());
+			if (presDenomUnits.size() != 1) {
+				report(c, issueStr2, g);
+			} else {
+				//We'll allow a time based unit for timed release dose forms
+				Concept denomUnit = presDenomUnits.iterator().next().getTarget();
+				if (!unitOfPres.equals(denomUnit) && !isTimedReleaseWithTimeUnit(c, denomUnit)) {
+					report(c, issueStr3, unitOfPres, g);
+				}
+			}
+			incrementSummaryInformation("CD groups checked for presentation unit consistency");
+		}
+	}
+
+	private boolean isTimedReleaseWithTimeUnit(Concept c, Concept denomUnit) throws TermServerScriptException {
+		return doseFormWithTimedDelivery.contains(getDoseForm(c)) && timeUnits.contains(denomUnit);
+	}
+
 
 	/** Identify Clinical drug concepts that have the same BoSS/PAI/strength but for which one the dose form contains 
 	 * "injection" and the other "infusion" and for which there is not an inferred parent that has the same BoSS/PAI/strength 
