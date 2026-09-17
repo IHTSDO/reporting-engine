@@ -64,7 +64,9 @@ public class DrugsModelingAndTerming extends DrugsReport {
 			if (conceptsConsidered % 4000 == 0) {
 				LOGGER.info("Percentage Complete {}", (int) percComplete);
 			}
-			validateDrug(c);
+			if (!shouldSkipForVaccineMode(c)) {
+				validateDrug(c);
+			}
 		}
 		LOGGER.info("Drugs validation complete");
 	}
@@ -82,11 +84,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 	}
 
 	private void validateDrug(Concept c) throws TermServerScriptException {
-		if (shouldSkipForVaccineMode(c)) {
-			return;
-		}
-
-		//INFRA-4159 Seeing impossible situation of no stated parents.  Also DRUGS-895
+		//INFRA-4159 Seeing the impossible situation of no stated parents.  Also DRUGS-895
 		if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).isEmpty()) {
 			String issueStr = "Concept appears to have no stated parents";
 			initialiseSummaryInformation(issueStr);
