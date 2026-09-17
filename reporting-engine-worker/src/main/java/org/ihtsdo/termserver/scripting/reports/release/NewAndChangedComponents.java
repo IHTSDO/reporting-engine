@@ -141,10 +141,10 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		String[] columnHeadings = new String[] {
 				"Component, New, Changed, Inactivated",
 				"Id, FSN, SemTag, EffectiveTime, Active, isNew, DefStatusChanged, Languages, Author, Task, Date",
-				"Id, FSN, SemTag, EffectiveTime, Active, newWithNewConcept, hasNewInferredRelationships, hasLostInferredRelationships",
-				"Id, FSN, SemTag, EffectiveTime, Active, newWithNewConcept, hasNewAxioms, hasChangedAxioms, hasLostAxioms, Author, Task, Date",
-				"Id, FSN, SemTag, EffectiveTime, Active, newWithNewConcept, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Date",
-				"Id, FSN, SemTag, EffectiveTime, Active, newWithNewConcept, hasNewTextDefn, hasChangedTextDefn, hasLostTextDefn, hasChangedAcceptability, Author, Task, Date",
+				"Id, FSN, SemTag, EffectiveTime, Active, isNew, hasNewInferredRelationships, hasLostInferredRelationships",
+				"Id, FSN, SemTag, EffectiveTime, Active, isNew, hasNewAxioms, hasChangedAxioms, hasLostAxioms, Author, Task, Date",
+				"Id, FSN, SemTag, EffectiveTime, Active, isNew, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Date",
+				"Id, FSN, SemTag, EffectiveTime, Active, isNew, hasNewTextDefn, hasChangedTextDefn, hasLostTextDefn, hasChangedAcceptability, Author, Task, Date",
 				"Id, FSN, SemTag, EffectiveTime, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Date",
 				"Id, FSN, SemTag, EffectiveTime, Active, isTargetOfNewInferredRelationship, wasTargetOfLostInferredRelationship",
 				"Id, FSN, SemTag, EffectiveTime, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability, Description Type",
@@ -171,16 +171,22 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			changesFromET = previousEffectiveTime;
 		}
 		
+		initTraceabilityService(columnHeadings);
+		
+		super.postInit(tabNames, columnHeadings);
+	}
+
+	private void initTraceabilityService(String[] columnHeadings) throws TermServerScriptException {
 		if (loadHistoricallyGeneratedData && ! forceTraceabilityPopulation) {
 			traceabilityService = new PassThroughTraceability();
-			for (int i=0; i<columnHeadings.length; i++) {
+			for (int i = 0; i < columnHeadings.length; i++) {
 				//We're not going to populate traceability for published releases
 				columnHeadings[i] = columnHeadings[i].replace(", Author, Task, Date", "");
 			}
 		} else {
 			traceabilityService = new SingleTraceabilityService(jobRun, this);
 		}
-		
+
 		if (project.getBranchPath() != null && project.getBranchPath().contains("SNOMEDCT-")) {
 			//If we have a dependency then we're loading an extension so tell traceability
 			//that specific CodeSystem branch
@@ -198,8 +204,6 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		} else {
 			traceabilityService.setBranchPath(project.getBranchPath());
 		}
-		
-		super.postInit(tabNames, columnHeadings);
 	}
 
 	@Override
@@ -614,15 +618,14 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 
 		LOGGER.debug("Creating text defn report for {} concepts", superSet.size());
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			String newWithNewConcept = (hasNewTextDefn.contains(c) && newConcepts.contains(c)) ? "Y":"N";
 			populateTraceabilityAndReport(SENARY_REPORT, c,
 					c.getEffectiveTime(),
 					reportBoolean(c.isActiveSafely()),
-					newWithNewConcept,
-					reportMembership(hasNewTextDefn,c),
-					reportMembership(hasChangedTextDefn,c),
-					reportMembership(hasLostTextDefn,c),
-					reportMembership(hasChangedAcceptabilityTextDefn,c));
+					reportMembership(newConcepts, c),
+					reportMembership(hasNewTextDefn, c),
+					reportMembership(hasChangedTextDefn, c),
+					reportMembership(hasLostTextDefn, c),
+					reportMembership(hasChangedAcceptabilityTextDefn, c));
 		}
 		getSummaryCount(CONCEPTS_WITH_TEXT_DEFN).isNew = hasNewTextDefn.size();
 		getSummaryCount(CONCEPTS_WITH_TEXT_DEFN).isChanged = hasChangedTextDefn.size();
@@ -653,12 +656,11 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 	}
 
 	private void produceDescriptionReportForConcept(Concept c, boolean includeTraceability) throws TermServerScriptException {
-		String newWithNewConcept = (hasNewDescriptions.contains(c) && newConcepts.contains(c)) ? "Y":"N";
 		if (includeTraceability) {
 			populateTraceabilityAndReport(QUINARY_REPORT, c,
 					c.getEffectiveTime(),
 					reportBoolean(c.isActiveSafely()),
-					newWithNewConcept,
+					reportMembership(newConcepts, c),
 					reportMembership(hasNewDescriptions, c),
 					reportMembership(hasChangedDescriptions, c),
 					reportMembership(hasLostDescriptions, c),
@@ -667,7 +669,7 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 			report(QUINARY_REPORT, c,
 					c.getEffectiveTime(),
 					reportBoolean(c.isActiveSafely()),
-					newWithNewConcept,
+					reportMembership(newConcepts, c),
 					reportMembership(hasNewDescriptions, c),
 					reportMembership(hasChangedDescriptions, c),
 					reportMembership(hasLostDescriptions, c),
@@ -690,11 +692,10 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		superSet.addAll(hasLostAxioms);
 		LOGGER.debug("Creating axiom report for {} concepts", superSet.size());
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			String newWithNewConcept = hasNewAxioms.contains(c) && newConcepts.contains(c) ? "Y":"N";
 			populateTraceabilityAndReport(QUATERNARY_REPORT, c,
 					c.getEffectiveTime(),
 					reportBoolean(c.isActiveSafely()),
-					newWithNewConcept,
+					reportMembership(newConcepts, c),
 					reportMembership(hasNewAxioms, c),
 					reportMembership(hasChangedAxioms, c),
 					reportMembership(hasLostAxioms, c));
@@ -707,11 +708,10 @@ public class NewAndChangedComponents extends HistoricDataUser implements ReportC
 		superSet.addAll(hasLostInferredRelationships);
 		LOGGER.debug("Creating relationship report for {} concepts", superSet.size());
 		for (Concept c : SnomedUtils.sort(superSet)) {
-			String newWithNewConcept = hasNewInferredRelationships.contains(c) && newConcepts.contains(c) ? "Y":"N";
 			report(TERTIARY_REPORT, c,
 					c.getEffectiveTime(),
 					reportBoolean(c.isActiveSafely()),
-					newWithNewConcept,
+					reportMembership(newConcepts, c),
 					reportMembership(hasNewInferredRelationships, c),
 					reportMembership(hasLostInferredRelationships, c));
 		}
