@@ -17,13 +17,14 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 
 	private static final String BROWSER_URL = "https://snomedbrowser.org/snowstorm/snomed-ct";
 	private static final String SNOMEDCT = "SNOMEDCT";
+	private static final String ERROR = "ERROR";
 
 	private List<CodeSystem> codeSystems;
 	private List<String> internationalModules;
 
 	public static void main(String[] args) throws TermServerScriptException {
 		Map<String, String> params = new HashMap<>();
-		params.put(ECL, "< 71388002 |Procedure (procedure)| : 424876005 |Surgical approach (attribute)| = *");
+		params.put(ECL, "*:860781008 |Has product characteristic (attribute)| = *");
 		TermServerScript.run(FindConceptsAcrossAllExtensions.class, args, params);
 	}
 	
@@ -53,18 +54,19 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 	
 	@Override
 	public void postInit() throws TermServerScriptException {
-		List<String> tabList = codeSystems.stream()
-				.map(CodeSystem::getShortName)
-				.map(sn -> sn.replace(SNOMEDCT + "-", ""))
-				.map(sn -> sn.replace(SNOMEDCT, "INT"))
-				.collect(Collectors.toList());
+		List<String> tabList = new ArrayList<>();
+		tabList.add("Summary");
 
-		tabList.add(0, "Summary");
+		codeSystems.forEach(cs -> {
+			String shortName = cs.getShortName().replace(SNOMEDCT + "-", "").replace(SNOMEDCT, "INT");
+			String version = cs.getLatestVersion() == null ? "" : "-" + cs.getLatestVersion().getVersion();
+			tabList.add(shortName + version);
+		});
 
 		String[] columnHeadings = IntStream.rangeClosed(1, tabList.size())
-				.mapToObj(i -> "SCTID, FSN, SemTag,")
+				.mapToObj(i -> "SCTID, FSN, SemTag, EffectiveTime")
 				.toArray(String[]::new);
-		columnHeadings[0] = "Extension, count";
+		columnHeadings[0] = ", Extension, Count";
 		postInit(tabList.toArray(String[]::new), columnHeadings);
 	}
 	
@@ -99,25 +101,25 @@ public class FindConceptsAcrossAllExtensions extends TermServerReport implements
 			tabIdx++;
 
 			if (cs.getLatestVersion() == null) {
-				report(tabIdx, null, "No version found for " + cs.getShortName());
+				report(tabIdx, ERROR, "No version found for " + cs.getShortName());
 				continue;
 			} else if (cs.getLatestVersion().getBranchPath() == null) {
-				report(tabIdx, null, "No branch path found for " + cs.getShortName());
+				report(tabIdx, ERROR, "No branch path found for " + cs.getShortName());
 				continue;
 			}
 			overrideEclBranch = cs.getLatestVersion().getBranchPath();
 			String eclForExtensionModules = addModuleFilter(subsetECL, cs);
-			report(tabIdx, null,eclForExtensionModules);
+			report(tabIdx, "", eclForExtensionModules);
 			try {
 				for (Concept c : findConcepts(eclForExtensionModules)) {
-					report(tabIdx, c);
+					report(tabIdx, c, c.getEffectiveTime());
 					incrementSummaryCount(cs.getName());
 					if (!cs.getShortName().equals(SNOMEDCT)) {
 						countIssue(c);
 					}
 				}
 			} catch (Exception e) {
-				report(tabIdx, null, "Failed to find concepts for " + cs.getShortName() + " due to " + e.getMessage());
+				report(tabIdx, ERROR, "Failed to find concepts for " + cs.getShortName() + " due to " + e.getMessage());
 			}
 		}
 		reportSummaryCounts(PRIMARY_REPORT, SUMMARY_SORT_ORDER.COUNT);
