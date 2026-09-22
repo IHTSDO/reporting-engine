@@ -92,6 +92,7 @@ public class HistoricDataUser extends TermServerReport {
 
 		if (isPublishedReleaseAnalysis) {
 			ensurePrevIsEarlierThanThis(config.getSource(), historicSource, RELEASE, RELEASE);
+			project.setBranchPath(null);
 		}
 		historicSnapshotConfiguration.setSource(historicSource);
 		return compareTwoSnapshots;
