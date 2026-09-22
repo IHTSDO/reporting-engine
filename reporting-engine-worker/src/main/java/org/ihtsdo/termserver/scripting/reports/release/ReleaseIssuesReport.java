@@ -1731,7 +1731,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	private void checkMRCMTerms(String partName, Collection<? extends RefsetMember> refsetMembers) throws TermServerScriptException {
 		for (RefsetMember rm : refsetMembers) {
-			if (rm.isActiveSafely()) {
+			//RP-1046 Don't validate MRCM rows that belong to a module outside this extension's scope,
+			//eg International MRCM content loaded as a base layer for an Edition/Extension package
+			if (rm.isActiveSafely() && inScope(rm)) {
 				Concept c = gl.getConcept(rm.getReferencedComponentId());
 				for (String additionalField : rm.getAdditionalFieldNames()) {
 					validateTermsInField(partName, c, rm, additionalField);
