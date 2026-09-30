@@ -1214,7 +1214,7 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 				if (existing != null) {
 					componentAnnotationEntry.setReleased(existing.getReleased());
 					if (isRecordPreviousState() && !isReleased) {
-						componentAnnotationEntry.setPreviousState(existing.getPreviousState());
+						componentAnnotationEntry.setPreviousState(existing.getMutableFields());
 					}
 				}
 
