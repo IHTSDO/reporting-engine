@@ -215,19 +215,18 @@ public class DrugsModelingAndTerming extends DrugsReport {
 	private void validateCdModellingRules(Concept c) throws TermServerScriptException {
 		String issue4Str = "CD with multiple inferred parents";
 		String issue5Str = "CD missing Has Unit of Presentation attribute";
-		String issue6Str = "CD >1 x Has Unit of Presentation attribute";
 
 		initialiseSummary(ISSUE_MULTI_STRENGTH);
 		initialiseSummary(ISSUE_INVALID_MODEL);
 		initialiseSummary(issue4Str);
 		initialiseSummary(issue5Str);
-		initialiseSummary(issue6Str);
 
-		Set<Relationship> unitsOfPresentation = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE);
-		if (unitsOfPresentation.isEmpty()) {
+		//Only discrete dose forms (modelled with presentation strength) take a unit of presentation.
+		//More than one unit of presentation is reported by checkCdUnitConsistency
+		boolean hasPresentationStrength = !c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRES_STRENGTH_VALUE, ActiveState.ACTIVE).isEmpty();
+		if (hasPresentationStrength
+				&& c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE).isEmpty()) {
 			report(c, issue5Str);
-		} else if (unitsOfPresentation.size() > 1) {
-			report(c, issue6Str);
 		}
 
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
