@@ -14,6 +14,9 @@ public class Branch {
 	@Expose
 	@JsonAdapter(MetadataDeserializer.class)
 	private BranchMetadata metadata;
+	@SerializedName("creationTimestamp")
+	@Expose
+	private Long creationTimestamp;
 	@SerializedName("baseTimestamp")
 	@Expose
 	private Long baseTimestamp;
@@ -79,6 +82,10 @@ public class Branch {
 			return path.substring(cutPoint + 1);
 		}
 		return path;
+	}
+
+	public Long getCreationTimestamp() {
+		return creationTimestamp;
 	}
 
 	public Long getBaseTimestamp() {
