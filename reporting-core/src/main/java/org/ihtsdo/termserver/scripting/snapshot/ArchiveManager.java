@@ -23,6 +23,7 @@ import java.io.File;
 import java.net.URI;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Here's the plan.  When ArchiveManager2 is asked to load a snapshot, the caller will pass a snapshot configuration
@@ -126,6 +127,18 @@ public class ArchiveManager {
 		}
 	}
 
+	/**
+	 * Returns the MSC metadata (including dependencies) for a published package, or empty if the MSC does not know it
+	 */
+	public Optional<ModuleMetadata> findPublishedPackageMetadata(TermServerScript ts, String packageName) {
+		try {
+			return Optional.of(getModuleStorageCoordinator(ts).findPackageOrThrow(packageName, false));
+		} catch (TermServerScriptException | ModuleStorageCoordinatorException e) {
+			LOGGER.info("No MSC metadata found for {}: {}", packageName, e.getMessage());
+			return Optional.empty();
+		}
+	}
+
 	private void loadFromPublishedArchive(TermServerScript ts, SnapshotConfiguration config) throws TermServerScriptException {
 		//In this situation, the MSC call tells us if we also need to load one or more dependencies
 		if (msc == null) {
@@ -139,9 +152,23 @@ public class ArchiveManager {
 				moduleMetadata = msc.findPackageOrThrow(config.getSource(), true);
 			}
 			constructSnapshotInMemory(ts,  moduleMetadata);
+		} catch (ModuleStorageCoordinatorException.ResourceNotFoundException e) {
+			//Not a package the MSC knows about, so rely on the user to have told us any dependencies
+			loadUnregisteredArchive(ts, config);
 		} catch (ModuleStorageCoordinatorException e) {
 			throw new TermServerScriptException("Unable to obtain published archive for " + ts.getSnapshotConfiguration(), e);
 		}
+	}
+
+	private void loadUnregisteredArchive(TermServerScript ts, SnapshotConfiguration config) throws TermServerScriptException {
+		LOGGER.warn("{} is not known to the MSC, loading user specified dependencies: {}", config.getSource(), ts.getDependencyArchives());
+		ArchiveImporter archiveImporter = new ArchiveImporter(ts.getGraphLoader(), config);
+		if (ts.getDependencyArchives() != null) {
+			for (String dependency : ts.getDependencyArchives()) {
+				archiveImporter.loadArchive(new File("releases/" + dependency), FileType.SNAPSHOT, true);
+			}
+		}
+		archiveImporter.loadArchive(fileHelper.getPublishedArchive(config), FileType.SNAPSHOT, true);
 	}
 
 	private ModuleMetadata getModuleMetadata(SnapshotConfiguration config) throws ModuleStorageCoordinatorException {
