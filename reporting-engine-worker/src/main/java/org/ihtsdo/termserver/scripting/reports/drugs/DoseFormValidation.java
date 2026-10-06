@@ -51,7 +51,7 @@ public class DoseFormValidation extends DrugsReport {
 			
 			//DRUGS-784
 			if (doseFormHelper.inScope(c)) {
-				validateAcceptableDoseForm(c);
+				validateSafely(c, this::validateAcceptableDoseForm);
 			}
 		}
 		LOGGER.info("Dose Form usage validation complete");

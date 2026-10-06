@@ -26,6 +26,7 @@ public abstract class DrugsReport extends TermServerReport implements ReportClas
 	protected static final String INFUSION = "infusion";
 
 	protected static final String SEMTAG_PRODUCT = "(product)";
+	protected static final String ISSUE_MALFORMED = "Unable to complete validation of malformed concept";
 
 	protected List<Concept> allDrugs;
 
@@ -48,6 +49,7 @@ public abstract class DrugsReport extends TermServerReport implements ReportClas
 	protected boolean isRecentlyTouchedConceptsOnly = false;
 	protected Set<Concept> recentlyTouchedConcepts;
 	protected List<Concept> bannedMpParents;
+	protected Set<Concept> reportedAsMalformed = new HashSet<>();
 
 	protected DoseFormHelper doseFormHelper;
 	protected TermGenerator termGenerator;
@@ -134,6 +136,29 @@ public abstract class DrugsReport extends TermServerReport implements ReportClas
 		this.summaryDetails = drugsReport.summaryDetails;
 		this.isRecentlyTouchedConceptsOnly = drugsReport.isRecentlyTouchedConceptsOnly;
 		this.recentlyTouchedConcepts = drugsReport.recentlyTouchedConcepts;
+		this.reportedAsMalformed = drugsReport.reportedAsMalformed;
+	}
+
+	@FunctionalInterface
+	protected interface ConceptValidation {
+		void validate(Concept c) throws TermServerScriptException;
+	}
+
+	/**
+	 * Run a validation against a concept such that malformed modelling is reported against that concept
+	 * rather than terminating the whole report.  Once reported, a concept is not validated any further.
+	 */
+	protected void validateSafely(Concept c, ConceptValidation validation) throws TermServerScriptException {
+		if (reportedAsMalformed.contains(c)) {
+			return;
+		}
+		try {
+			validation.validate(c);
+		} catch (TermServerScriptException | IllegalArgumentException e) {
+			LOGGER.warn("Validation of {} abandoned: {}", c, e.getMessage());
+			reportedAsMalformed.add(c);
+			report(c, ISSUE_MALFORMED, e.getMessage());
+		}
 	}
 
 	private void populateGrouperSubstances() throws TermServerScriptException {
