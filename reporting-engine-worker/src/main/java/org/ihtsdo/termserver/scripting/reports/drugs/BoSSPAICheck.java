@@ -53,12 +53,12 @@ public class BoSSPAICheck extends DrugsReport {
 				LOGGER.info("Percentage Complete {}", (int)percComplete);
 			}
 
-			validateSafely(c, this::validateBossPai);
+			validateSafely(c, this::validateBossPaiForConcept);
 		}
 		LOGGER.info("BoSS PAI validation complete");
 	}
 
-	private void validateBossPai(Concept c) throws TermServerScriptException {
+	private void validateBossPaiForConcept(Concept c) throws TermServerScriptException {
 		//DRUGS-267
 		validateIngredientsAgainstBoSS(c);
 		//DRUGS-1021

@@ -794,10 +794,8 @@ public class DrugsModelingAndTerming extends DrugsReport {
 		initialiseSummary(issueStr);
 		if (isMP(c) || isMPF(c)) { 
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				if (d.isPreferred()) {
-					if (!d.getTerm().contains("containing") && !d.getTerm().contains(ONLY)) {
-						report(c, issueStr, d);
-					}
+				if (d.isPreferred() && !d.getTerm().contains("containing") && !d.getTerm().contains(ONLY)) {
+					report(c, issueStr, d);
 				}
 			}
 		}
@@ -955,7 +953,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 		List<Concept> matchingSiblings = new ArrayList<>();
 		nextConcept:
 		for (Concept sibling : allDrugs) {
-			DrugUtils.setConceptType(c);
+			DrugUtils.setConceptType(sibling);
 			if (!isCD(sibling)) {
 				continue nextConcept;
 			}
@@ -980,7 +978,8 @@ public class DrugsModelingAndTerming extends DrugsReport {
 		
 		boolean hasGrouperParent = false;
 		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			if (!DrugUtils.matchesBossPAIStrength(c, parent)) {
+			//Only a CD parent could pass the BoSS/PAI/strength comparison; anything else fails it (or throws, lacking a count of base)
+			if (!isCD(parent) || !DrugUtils.matchesBossPAIStrength(c, parent)) {
 				continue;
 			}
 			
