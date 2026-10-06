@@ -52,21 +52,25 @@ public class BoSSPAICheck extends DrugsReport {
 			if (conceptsConsidered%4000==0) {
 				LOGGER.info("Percentage Complete {}", (int)percComplete);
 			}
-			
-			//DRUGS-267
-			validateIngredientsAgainstBoSS(c);
-			//DRUGS-1021
-			if (isCD(c)) {
-				checkBossPaiPdfCombinations(c);
-			}
-			
-			//DRUGS-793
-			if (!c.getConceptType().equals(ConceptType.PRODUCT)) {
-				checkForBossGroupers(c);
-				checkForPaiGroupers(c);
-			}
+
+			validateSafely(c, this::validateBossPai);
 		}
 		LOGGER.info("BoSS PAI validation complete");
+	}
+
+	private void validateBossPai(Concept c) throws TermServerScriptException {
+		//DRUGS-267
+		validateIngredientsAgainstBoSS(c);
+		//DRUGS-1021
+		if (isCD(c)) {
+			checkBossPaiPdfCombinations(c);
+		}
+
+		//DRUGS-793
+		if (!c.getConceptType().equals(ConceptType.PRODUCT)) {
+			checkForBossGroupers(c);
+			checkForPaiGroupers(c);
+		}
 	}
 
 	private void checkForBossGroupers(Concept c) throws TermServerScriptException {

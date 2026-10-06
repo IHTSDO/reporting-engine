@@ -26,6 +26,8 @@ public class DrugsModelingAndTerming extends DrugsReport {
 
 	private static final String ISSUE_MULTI_STRENGTH = "Group contains > 1 presentation/concentration strength";
 	private static final String ISSUE_INVALID_MODEL = "Invalid drugs model";
+	private static final String ONLY = "only";
+	private static final String PRECISELY = "precisely";
 
 	private final Set<Concept> doseFormWithTimedDelivery = new HashSet<>();
 	private final Set<Concept> timeUnits = new HashSet<>();
@@ -65,7 +67,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 				LOGGER.info("Percentage Complete {}", (int) percComplete);
 			}
 			if (!shouldSkipForVaccineMode(c)) {
-				validateDrug(c);
+				validateSafely(c, this::validateDrug);
 			}
 		}
 		LOGGER.info("Drugs validation complete");
@@ -793,7 +795,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 		if (isMP(c) || isMPF(c)) { 
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (d.isPreferred()) {
-					if (!d.getTerm().contains("containing") && !d.getTerm().contains("only")) {
+					if (!d.getTerm().contains("containing") && !d.getTerm().contains(ONLY)) {
 						report(c, issueStr, d);
 					}
 				}
@@ -802,7 +804,7 @@ public class DrugsModelingAndTerming extends DrugsReport {
 		
 		issueStr =  "CD must feature 'precisely' in the FSN";
 		initialiseSummary(issueStr);
-		if (isCD(c) && !c.getFsn().contains("precisely")) { 
+		if (isCD(c) && !c.getFsn().contains(PRECISELY)) { 
 			report(c, issueStr);
 		}
 		
@@ -818,14 +820,13 @@ public class DrugsModelingAndTerming extends DrugsReport {
 		issueStr = "'Only' and 'precisely' must have a count of base";
 		initialiseSummary(issueStr);
 		if (isCD(c)) {
-			if (!c.getFsn().contains("only") && !c.getFsn().contains("precisely")) {
+			if (!c.getFsn().contains(ONLY) && !c.getFsn().contains(PRECISELY)) {
 				report(c, "UNEXPECTED CONCEPT TYPE - missing 'only' or 'precisely'");
 			} else if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
-				if (true);
 				report(c, issueStr);
 			}
 		} else if ((isMP(c) || isMPF(c)) && 
-				(c.getFsn().contains("only") || c.getFsn().contains("precisely")) &&
+				(c.getFsn().contains(ONLY) || c.getFsn().contains(PRECISELY)) &&
 				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) {
 			report(c, issueStr);
 		}

@@ -70,7 +70,7 @@ public class MpMpfValidation extends DrugsReport implements ReportClass {
 
 			//DRUGS-585
 			if (isMP(c) || isMPF(c)) {
-				validateNoModifiedSubstances(c);
+				validateSafely(c, this::validateNoModifiedSubstances);
 			}
 		}
 		LOGGER.info("MP MPF validation complete");
