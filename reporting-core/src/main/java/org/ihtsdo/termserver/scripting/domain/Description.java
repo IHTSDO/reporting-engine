@@ -253,15 +253,6 @@ public class Description extends Component implements ScriptConstants, Serializa
 		if (descriptionId == null && (term == null || term.isEmpty())) {
 			return "";
 		}
-		String caseSig = "?";
-		try {
-			if (caseSignificance != null) {
-				caseSig = SnomedUtils.translateCaseSignificanceFromEnum(caseSignificance);
-			}
-		} catch (Exception e) {
-			caseSig = "CSERROR";
-		}
-		
 		sb.append(isActiveSafely()?"":"*")
 		.append(descriptionId==null?"NEW":descriptionId)
 		.append(" [")
@@ -273,13 +264,28 @@ public class Description extends Component implements ScriptConstants, Serializa
 		sb.append(" ")
 		.append(term)
 		.append(" [")
-		.append(caseSig)
+		.append(getCaseSignificanceIndicator())
 		.append("]");
 
 		if (lang != null && !lang.contentEquals("en")) {
 			sb.append(" (").append(lang).append(")");
 		}
 		return sb.toString();
+	}
+
+	/**
+	 * Acceptability and case significance as a prefix to the term, eg "P [cI] Bilateral Vogt's limbal girdle",
+	 * for reviewing content where the SCTIDs would just be noise
+	 */
+	public String toStringWithoutIds() {
+		return (isActiveSafely() ? "" : "*")
+				+ LanguageHelper.toString(acceptabilityMap)
+				+ " [" + getCaseSignificanceIndicator() + "] "
+				+ term;
+	}
+
+	private String getCaseSignificanceIndicator() {
+		return caseSignificance == null ? "?" : SnomedUtils.translateCaseSignificanceFromEnum(caseSignificance);
 	}
 
 	@Override
