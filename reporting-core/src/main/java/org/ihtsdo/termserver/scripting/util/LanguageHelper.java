@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map;
 
 import static org.ihtsdo.termserver.scripting.util.SnomedUtils.translateAcceptability;
@@ -70,6 +71,10 @@ public class LanguageHelper implements RF2Constants {
 		}
 
 		try {
+			//Where every dialect agrees, eg US: P, GB: P, a single indicator is enough.  Dialects are only named when they differ
+			if (acceptabilityMap.size() > 1 && new HashSet<>(acceptabilityMap.values()).size() == 1) {
+				return translateAcceptability(acceptabilityMap.values().iterator().next());
+			}
 			StringBuilder sb = new StringBuilder();
 			boolean isFirst = true;
 			for (Map.Entry<String, Acceptability> entry : acceptabilityMap.entrySet()) {
