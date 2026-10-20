@@ -63,7 +63,7 @@ public class ReportingServiceImpl implements ReportingService {
 	@Value("${reporting.service.terminology.server.uri}")
 	String terminologyServerUrl;
 	
-	static final JobRun metadataRequest = JobRun.create("METADATA", null);
+	static final JobRun metadataRequest = JobRun.create("METADATA");
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportingServiceImpl.class);
 
 	@PostConstruct
@@ -161,8 +161,7 @@ public class ReportingServiceImpl implements ReportingService {
 			LOGGER.warn("Failed to find Project parameter, defaulting to MAIN");
 		}
 
-		JobRun savedJobRun = jobRunRepository.save(jobRun);
-		jobRun.setId(savedJobRun.getId());
+		jobRunRepository.save(jobRun);
 		LOGGER.info("Running job: {}", jobRun);
 		transmitter.send(jobRun);
 		return jobRun;

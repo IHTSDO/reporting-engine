@@ -32,7 +32,7 @@ public class AllReportRunner {
 	@Autowired
 	private ReportingService reportingService;
 
-	public JobRunBatch runAllReports(boolean dryRun, boolean international, boolean managedService, String projectName, String userName, String authToken) {
+	public JobRunBatch runAllReports(boolean dryRun, boolean international, boolean managedService, String projectName, String userName) {
 		List<Job> listOfJobs = jobRepository.findAllNotHidden();
 		LOGGER.info("{} {} reports for user '{}' [INT={}, MS={}, Project={}]",
 				dryRun ? "Dry run of" : "Scheduling",
@@ -50,27 +50,27 @@ public class AllReportRunner {
 
 		for (Job job : listOfJobs) {
 			if ((international && job.getTags().contains("INT")) || (managedService && job.getTags().contains("MS"))) {
-				createReportJobAndRunIt(job, runBatch, projectName, userName, authToken, dryRun);
+				createReportJobAndRunIt(job, runBatch, projectName, dryRun);
 			}
 		}
 
 		return runBatch;
 	}
 
-	private void createReportJobAndRunIt(Job job, JobRunBatch runBatch, String projectName, String userName, String authToken, boolean dryRun) {
+	private void createReportJobAndRunIt(Job job, JobRunBatch runBatch, String projectName, boolean dryRun) {
 		String jobName = job.getName();
 		Optional<JobRun> jobRun = jobRunRepository.findLastRunByJobName(jobName);
 		JobRun reRunJob;
 
 		if (jobRun.isPresent()) {
+			LOGGER.info("Cloning the last successful job run of '{}'", jobName);
 			reRunJob = jobRun.get().cloneForRerun();
 		} else {
 			LOGGER.warn("Unable to find job history to run, so creating new : '{}'", jobName);
-			reRunJob = JobRun.create(jobName, userName);
+			reRunJob = JobRun.create(jobName);
 		}
 
-		checkAndUpdateEclParameterIfBlank(jobName, reRunJob, userName);
-		reRunJob.setAuthToken(authToken);
+		checkAndUpdateEclParameterIfBlank(jobName, reRunJob);
 
 		if (StringUtils.isNotEmpty(projectName)) {
 			reRunJob.setProject(projectName);
@@ -97,8 +97,7 @@ public class AllReportRunner {
 		}
 	}
 
-	private void checkAndUpdateEclParameterIfBlank(String jobName, JobRun reRunJob, String userName) {
-		reRunJob.setUser(userName);
+	private void checkAndUpdateEclParameterIfBlank(String jobName, JobRun reRunJob) {
 		JobRunParameters paramMap = reRunJob.getParameters();
 
 		for (Map.Entry<String, JobParameter> entry : paramMap.getParameterMap().entrySet()) {

@@ -205,7 +205,7 @@ public class ReportingController {
 			@RequestParam(name= "project", required=false, defaultValue="") final String project
 	) throws BusinessServiceException {
 		AuthData authData = getAuthData(request);
-		return allReportRunner.runAllReports(dryRun, international, managedService, project, authData.userName, authData.authToken);
+		return allReportRunner.runAllReports(dryRun, international, managedService, project, authData.userName);
 	}
 
 	private Set<String> getVisibleProjects(HttpServletRequest request) throws BusinessServiceException {

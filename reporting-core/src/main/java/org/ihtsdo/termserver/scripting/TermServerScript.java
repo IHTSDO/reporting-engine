@@ -809,7 +809,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			System.exit(-1);
 		}
 
-		JobRun jobRun = JobRun.create(jobName, null);
+		JobRun jobRun = JobRun.create(jobName);
 
 		int argNumber = 0;
 		while (argNumber < args.length - 1) {
