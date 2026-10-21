@@ -4,6 +4,7 @@ import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.scheduler.domain.JobStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -36,4 +37,11 @@ public interface JobRunRepository extends CrudRepository<JobRun, UUID> {
 
 	@Query(nativeQuery=true, value="SELECT * FROM job_run WHERE run_batch_id = :runBatchId")
 	List<JobRun> findByRunBatchId(@Param("runBatchId")Long runBatchId);
+
+	@Query(nativeQuery=true, value="SELECT * FROM job_run WHERE parameters_id = :parametersId ORDER BY request_time DESC")
+	List<JobRun> findJobRunsByParametersId(@Param("parametersId") Long parametersId);
+
+	@Modifying
+	@Query(nativeQuery=true, value="UPDATE job_run SET parameters_id = :parametersId WHERE id = :jobRunId")
+	int updateParameters(@Param("jobRunId") UUID jobRunId, @Param("parametersId") Long parametersId);
 }

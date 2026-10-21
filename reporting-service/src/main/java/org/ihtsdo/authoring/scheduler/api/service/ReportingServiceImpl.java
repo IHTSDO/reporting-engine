@@ -50,6 +50,9 @@ public class ReportingServiceImpl implements ReportingService {
 	
 	@Autowired
 	WhiteListRepository whiteListRepository;
+
+	@Autowired
+	JobParametersRepository jobParametersRepository;
 	
 	@Autowired
 	TaskScheduler engineScheduler;
@@ -59,10 +62,13 @@ public class ReportingServiceImpl implements ReportingService {
 	
 	@Autowired
 	AuthenticationService authenticationService;
+
+	@Autowired
+	UpdateProcessor updateProcessor;
 	
 	@Value("${reporting.service.terminology.server.uri}")
 	String terminologyServerUrl;
-	
+
 	static final JobRun metadataRequest = JobRun.create("METADATA");
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportingServiceImpl.class);
 
@@ -419,6 +425,15 @@ public class ReportingServiceImpl implements ReportingService {
 			}
 		}
 		return jobsCleared;
+	}
+
+	@Override
+	public void decoupleJobRuns() {
+		List<JobParameters> jobParametersList = jobParametersRepository.findAllCoupled();
+
+		for (JobParameters jobParameters : jobParametersList) {
+			updateProcessor.updateJobRunParameters(jobParameters);
+		}
 	}
 
 }

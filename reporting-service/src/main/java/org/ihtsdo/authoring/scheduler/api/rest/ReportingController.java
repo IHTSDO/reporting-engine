@@ -321,6 +321,14 @@ public class ReportingController {
 	public int clearStuckJobs() {
 		return reportingService.clearStuckJobs();
 	}
+
+
+	@Operation(summary="Decouple job runs")
+	@ApiResponse(responseCode = "200", description = "OK")
+	@PostMapping(value="/jobs/decoupleJobRuns")
+	public void decoupleJobRuns() {
+		reportingService.decoupleJobRuns();
+	}
 	
 	private Page<JobRun> sanitise(Page<JobRun> jobRuns) {
 		List<JobRun> sanitizedJobRuns = jobRuns.stream()

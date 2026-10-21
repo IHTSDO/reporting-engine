@@ -46,4 +46,6 @@ public interface ReportingService {
 	public Page<JobRun> listAllJobsRun(Set<JobStatus> statusFilter, Integer sinceMins, Pageable pageable);
 
     public int clearStuckJobs();
+
+	public void decoupleJobRuns();
 }
