@@ -12,11 +12,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class DialectChecker implements ScriptConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DialectChecker.class);
+	//Words are runs of letters, so punctuation either side or in between (eg brackets, slashes, hyphens) is kept
+	private static final Pattern WORD = Pattern.compile("\\p{L}+");
 
 	private List<DialectPair> dialectPairs = null;
 	private Set<String> usTerms = new HashSet<>();
@@ -82,10 +86,38 @@ public class DialectChecker implements ScriptConstants {
 		return containsDialectSpecificTerm(term, gbTerms);
 	}
 
+	/**
+	 * @return the word in the other dialect, or the word unchanged if it isn't specific to the "from" dialect
+	 */
+	private String convertWord(String word, Dialect from, Dialect to) {
+		String wordLower = word.toLowerCase();
+		for (DialectPair pair : dialectPairs) {
+			if (pair.getTerm(from).equals(wordLower)) {
+				String replacement = pair.getTerm(to);
+				//Are we adjusting for case?
+				if (!word.equals(wordLower)) {
+					replacement = StringUtils.capitalizeFirstLetter(replacement);
+				}
+				return replacement;
+			}
+		}
+		return word;
+	}
+
+	/**
+	 * The term's words in lower case, without any punctuation, eg brackets, commas or slashes
+	 */
+	private List<String> getWordsLower(String term) {
+		List<String> words = new ArrayList<>();
+		Matcher matcher = WORD.matcher(term.toLowerCase());
+		while (matcher.find()) {
+			words.add(matcher.group());
+		}
+		return words;
+	}
+
 	private boolean containsDialectSpecificTerm(String term, Set<String> dialectSpecificTerms) {
-		//Split the term up into a list of lower case words
-		String[] words = term.toLowerCase().split(" ");
-		for (String word : words) {
+		for (String word : getWordsLower(term)) {
 			if (dialectSpecificTerms.contains(word)) {
 				return true;
 			}
@@ -98,9 +130,7 @@ public class DialectChecker implements ScriptConstants {
 	}
 
 	public String findFirstUSGBSpecificTerm(String term) {
-		//Split the term up into a list of lower case words
-		String[] words = term.toLowerCase().split(" ");
-		for (String word : words) {
+		for (String word : getWordsLower(term)) {
 			for (DialectPair pair : dialectPairs) {
 				if (pair.usTerm.equals(word)) {
 					return word;
@@ -122,34 +152,13 @@ public class DialectChecker implements ScriptConstants {
 	}
 
 	private String makeDialectSpecific(String term, Dialect from, Dialect to) {
-		String[] words = term.split(" ");
-		boolean replacementMade = false;
-		for (int i = 0; i < words.length; i++) {
-			for (DialectPair pair : dialectPairs) {
-				//The word might end with some punctuation, so split that off before comparing, and
-				//add back on afterwards
-				String[] wordPunctuation = words[i].split("(?<=\\w)(?=\\W)");
-				String wordLower = wordPunctuation[0].toLowerCase();
-				String punctuation = wordPunctuation.length == 2 ? wordPunctuation[1] : "";
-
-				if (pair.getTerm(from).equals(wordLower)) {
-					String replacement = pair.getTerm(to);
-					//Are we adjusting for case?
-					if (!wordPunctuation[0].equals(wordLower)) {
-						replacement = StringUtils.capitalizeFirstLetter(replacement);
-					}
-					words[i] = replacement + punctuation;
-					replacementMade = true;
-					break;
-				}
-			}
+		Matcher matcher = WORD.matcher(term);
+		StringBuilder converted = new StringBuilder();
+		while (matcher.find()) {
+			matcher.appendReplacement(converted, Matcher.quoteReplacement(convertWord(matcher.group(), from, to)));
 		}
-		//If we didn't find a replacement, return the original term.  Otherwise, rejoin the words
-		if (replacementMade) {
-			return String.join(" ", words);
-		} else {
-			return term;
-		}
+		matcher.appendTail(converted);
+		return converted.toString();
 	}
 
 	public class DialectPair {
