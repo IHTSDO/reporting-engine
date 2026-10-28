@@ -48,13 +48,11 @@ public class RefsetMaintenanceReport extends TermServerReport implements ReportC
 	private Map<String, Concept> targetRefsetsById;
 
 	public static void main(String[] args) throws TermServerScriptException {
-		TermServerScript.run(RefsetMaintenanceReport.class, args, new HashMap<>());
+		new RefsetMaintenanceReport().standardExecution(args, ExecutionOptions.DEFAULT);
 	}
 
 	@Override
 	public void init(JobRun run) throws TermServerScriptException {
-		getArchiveManager().setEnsureSnapshotPlusDeltaLoad(true);
-		getArchiveManager().setLoadOtherReferenceSets(true);
 		userECL = run.getParamValue(ECL);
 		super.init(run);
 	}
