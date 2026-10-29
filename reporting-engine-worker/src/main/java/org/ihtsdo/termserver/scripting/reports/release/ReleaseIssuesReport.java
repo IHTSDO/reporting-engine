@@ -83,6 +83,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private static final String LOADING = "Loading {} ...";
 	private static final String ITEMS_OF_INTEREST = "Items of Interest";
 	private static final String FULL_STOP = ".";
+	private static final String WITH = "with";
 	private static final String SPACE = " ";
 	private static final String DUE = " due ";
 	private static final String CONCEPT_MODULE = "Concept module ";
@@ -149,7 +150,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		stopWords.add("left");
 		stopWords.add("right");
 		stopWords.add("and");
-		stopWords.add("with");
+		stopWords.add(WITH);
 		stopWords.add("bone");
 		stopWords.add("from");
 		stopWords.add("blood");
@@ -179,7 +180,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		wordsOftenTypedTwice.add("Or");
 		wordsOftenTypedTwice.add("or");
 		wordsOftenTypedTwice.add("With");
-		wordsOftenTypedTwice.add("with");
+		wordsOftenTypedTwice.add(WITH);
 		wordsOftenTypedTwice.add("Be");
 		wordsOftenTypedTwice.add("be");
 
@@ -1006,7 +1007,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	private void dueWithoutTo() throws TermServerScriptException {
 		String issueStr = "'Due' not followed by 'to'";
-		String[] acceptableAlternativesPost = new String[]{"date", "mostly to", "either to", "with", "next", "new"};
+		String[] acceptableAlternativesPost = new String[]{"date", "mostly to", "either to", WITH, "next", "new"};
 		String[] acceptableAlternativesPre = new String[]{"claim"};
 		initialiseSummary(issueStr);
 		for (Concept c : allActiveConceptsSorted) {
@@ -1067,7 +1068,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//Is there a 'and' or 'width' to the left of x?
 		for (int y = 0; y < x; y++) {
 			if (words[y].equalsIgnoreCase("and") ||
-					words[y].equalsIgnoreCase("with") ||
+					words[y].equalsIgnoreCase(WITH) ||
 					words[y].equalsIgnoreCase("of") ||
 					words[y].equalsIgnoreCase("to")) {
 				return true;
@@ -1486,7 +1487,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			Description fsn = c.getFSNDescription(LANG_EN);
 			if (dialectChecker.containsGBSpecificTerm(fsn.getTerm())) {
 				String legacy = getLegacyIndicator(c);
-				reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c, null), fsn);
+				String usVariants = dialectChecker.getGBSpecificWords(fsn.getTerm()).entrySet().stream()
+						.map(e -> e.getKey() + " is " + e.getValue() + " in en-US")
+						.collect(Collectors.joining(", "));
+				reportAndIncrementCategoryCount(ISSUES, c, !recentlyTouched.contains(c), issueStr, legacy, isActive(c, null), fsn, usVariants);
 			}
 		}
 	}

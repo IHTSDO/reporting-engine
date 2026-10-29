@@ -143,6 +143,20 @@ public class DialectChecker implements ScriptConstants {
 		return false;
 	}
 
+	/**
+	 * @return each GB specific word in the term, in lower case, with its US equivalent
+	 */
+	public Map<String, String> getGBSpecificWords(String term) {
+		Map<String, String> gbToUsWords = new LinkedHashMap<>();
+		for (String word : getWordsLower(term)) {
+			String usWord = convertWord(word, Dialect.GB, Dialect.US);
+			if (!usWord.equals(word)) {
+				gbToUsWords.put(word, usWord);
+			}
+		}
+		return gbToUsWords;
+	}
+
 	public String findFirstUSGBSpecificTerm(Description d) {
 		return findFirstUSGBSpecificTerm(d.getTerm());
 	}
