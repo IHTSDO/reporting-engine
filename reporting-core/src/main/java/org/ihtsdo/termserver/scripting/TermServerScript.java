@@ -78,6 +78,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public static final String MAIN_SLASH = "MAIN/";
 	private static final String MAIN = "MAIN";
 	private static final String ZIP_EXTENSION = ".zip";
+	private static final String TIME_TAKEN = "Time taken: ";
 	public static final String MODULES = "Modules";
 	public static final String NEW_CONCEPTS_ONLY = "New Concepts Only";
 	public static final String RESTART_FROM_TASK = "Restart from task";
@@ -394,6 +395,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	private void init() throws TermServerScriptException {
+		if (startTime == null) {
+			startTimer();
+		}
+
 		if (restartPosition == 0) {
 			LOGGER.info("Restart position given as 0 but line numbering starts from 1.  Starting at line 1.");
 			restartPosition = 1;
@@ -1516,11 +1521,15 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public void finish() throws TermServerScriptException {
 		LOGGER.info(BREAK);
 		Date endTime = new Date();
-		finaliseSummaryText(endTime);
+		finaliseSummaryText();
 		//If we're running in dry run mode, we won't have written any reports
 		//Allow report to have some final word before completing.  Override if required
 		recordFinalWords();
 		outputSummaryText("Finished at: " + endTime);
+		if (startTime != null) {
+			long diff = endTime.getTime() - startTime.getTime();
+			outputSummaryText(TIME_TAKEN + DurationFormatUtils.formatDuration(diff, "mm:ss"));
+		}
 		if (getReportManager() != null) {
 			outputSummaryText("Processing Report URL: " + getReportManager().getUrl());
 		}
@@ -1528,7 +1537,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		flushFiles(false);
 	}
 
-	private void finaliseSummaryText(Date endTime) {
+	private void finaliseSummaryText() {
 		List<String> reportLast = new ArrayList<>(Arrays.asList(ISSUE_COUNT, "Report lines written"));
 		List<String> criticalIssues = new ArrayList<>();
 		outputAllSummaryText(reportLast, criticalIssues);
@@ -1546,8 +1555,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		outputFinalWords(reportLast);
 
 		if (startTime != null) {
-			long diff = endTime.getTime() - startTime.getTime();
-			outputSummaryText("Completed processing in " + DurationFormatUtils.formatDuration(diff, "HH:mm:ss"));
 			outputSummaryText("Started at: " + startTime);
 		}
 	}
@@ -1586,8 +1593,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	private void outputFinalWords(List<String> reportLast) {
 		if (summaryTabIdx != NOT_SET) {
-			outputSummaryText("");
-			outputSummaryText("");
+			writeToSummaryTab("");
+			writeToSummaryTab("");
 		}
 
 		for (String key : reportLast) {
@@ -1604,6 +1611,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	private synchronized void outputSummaryText(String msg) {
 		LOGGER.info(msg);
+		writeToSummaryTab(msg);
+	}
+
+	private synchronized void writeToSummaryTab(String msg) {
 		if (getReportManager() != null) {
 			if (summaryTabIdx != NOT_SET) {
 				try {
@@ -1612,7 +1623,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 							&& !msg.contains("http")
 							&& !msg.contains("at: ")
 							&& !msg.contains("\"")
-							&& !msg.contains("Completed processing in")) {
+							&& !msg.startsWith(TIME_TAKEN)) {
 						msg = QUOTE + msg.replace(": ", QUOTE_COMMA_QUOTE).replace(":", QUOTE_COMMA_QUOTE) + QUOTE;
 					}
 					writeToReportFile(summaryTabIdx, msg);
