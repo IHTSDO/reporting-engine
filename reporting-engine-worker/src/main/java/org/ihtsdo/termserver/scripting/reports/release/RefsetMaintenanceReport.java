@@ -7,7 +7,6 @@ import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -40,6 +39,8 @@ public class RefsetMaintenanceReport extends TermServerReport implements ReportC
 	private static final long REFSET_PAUSE_MS = 200L;
 
 	private static final String DEFAULT_REFSET_ECL = "<446609009 |Simple type reference set|";
+	private static final String OUTDATED_MEMBERSHIPS = "Outdated memberships per refset";
+	private static final String NOT_APPLICABLE = "N/A";
 
 	private String userECL;
 	private Set<String> targetRefsetIds;
@@ -67,10 +68,12 @@ public class RefsetMaintenanceReport extends TermServerReport implements ReportC
 		targetRefsetIds = targetRefsetsById.keySet();
 		LOGGER.info("Found {} reference set(s) in scope", targetRefsetIds.size());
 
+		summaryTabIdx = PRIMARY_REPORT;
 		String[] columnHeadings = new String[] {
+				"Category, Item, Count, , , ",
 				"Refset Id, Refset FSN, Concept Id, Concept FSN, SemTag, Reason, Assoc Type, Replacement Id, Replacement FSN"
 		};
-		String[] tabNames = new String[] { "Outdated Memberships" };
+		String[] tabNames = new String[] { "Summary", "Outdated Memberships" };
 		super.postInit(tabNames, columnHeadings);
 	}
 
@@ -104,6 +107,8 @@ public class RefsetMaintenanceReport extends TermServerReport implements ReportC
 				.filter(c -> !c.isActiveSafely())
 				.map(Concept::getConceptId)
 				.collect(Collectors.toSet());
+		incrementSummaryCount("Concepts", "Inactive concepts checked", inactiveConceptIds.size());
+		incrementSummaryCount("Refsets", "Refsets in scope", targetRefsetIds.size());
 
 		String branchPath = project.getBranchPath();
 		LOGGER.info("Querying Snowstorm for members of {} refsets (filtering {} inactive concepts client-side)",
@@ -144,6 +149,7 @@ public class RefsetMaintenanceReport extends TermServerReport implements ReportC
 
 		LOGGER.info("Done — {} outdated memberships found across {} refsets",
 				outdatedMembershipsFound, targetRefsetIds.size());
+		reportSummaryCounts(summaryTabIdx);
 	}
 
 	private void reportMember(RefsetMember m, Concept concept) throws TermServerScriptException {
@@ -153,21 +159,22 @@ public class RefsetMaintenanceReport extends TermServerReport implements ReportC
 		if (refset == null) {
 			refset = gl.getConcept(m.getRefsetId());
 		}
+		incrementSummaryCount(OUTDATED_MEMBERSHIPS, refset.toString());
 		InactivationIndicator reason = concept.getInactivationIndicator();
 
 		List<AssociationEntry> assocs = concept.getAssociationEntries(ActiveState.ACTIVE, true);
 
 		if (assocs.isEmpty()) {
-			report(PRIMARY_REPORT,
+			report(SECONDARY_REPORT,
 					refset.getId(), refset.getFsn(),
 					concept.getId(), concept.getFsn(), concept.getSemTag(),
-					reason, "N/A", "N/A", "N/A");
+					reason, NOT_APPLICABLE, NOT_APPLICABLE, NOT_APPLICABLE);
 			countIssue(concept);
 		} else {
 			for (AssociationEntry a : assocs) {
 				String assocType = SnomedUtils.getAssociationType(a);
 				Concept target = gl.getConcept(a.getTargetComponentId());
-				report(PRIMARY_REPORT,
+				report(SECONDARY_REPORT,
 						refset.getId(), refset.getFsn(),
 						concept.getId(), concept.getFsn(), concept.getSemTag(),
 						reason, assocType,
