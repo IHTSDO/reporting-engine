@@ -21,11 +21,15 @@ public class DialectChecker implements ScriptConstants {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DialectChecker.class);
 	//Words are runs of letters, so punctuation either side or in between (eg brackets, slashes, hyphens) is kept
 	private static final Pattern WORD = Pattern.compile("\\p{L}+");
+	private static final String TERMS_MAP_FILE = "resources/us-to-gb-terms-map.txt";
+	//Pairs where the US term is preferred, with the GB term also acceptable
+	private static final String SYNONYMS_MAP_FILE = "resources/us-to-gb-synonyms-map.txt";
 
 	private List<DialectPair> dialectPairs = null;
 	private Set<String> usTerms = new HashSet<>();
 	private Set<String> gbTerms = new HashSet<>();
 	private static DialectChecker singleton = null;
+	private static DialectChecker singletonIncludingSynonyms = null;
 
 	enum Dialect {
 		US,
@@ -41,25 +45,39 @@ public class DialectChecker implements ScriptConstants {
 			return singleton;
 		}
 		singleton = new DialectChecker();
-		singleton.init();
+		singleton.init(TERMS_MAP_FILE);
 		return singleton;
 	}
 
-	public int size() throws TermServerScriptException {
-		return DialectChecker.create().dialectPairs.size();
+	/**
+	 * As create(), but also treats the synonyms map's pairs as dialect specific
+	 */
+	public static DialectChecker createIncludingSynonyms() throws TermServerScriptException {
+		if (singletonIncludingSynonyms != null) {
+			return singletonIncludingSynonyms;
+		}
+		singletonIncludingSynonyms = new DialectChecker();
+		singletonIncludingSynonyms.init(TERMS_MAP_FILE, SYNONYMS_MAP_FILE);
+		return singletonIncludingSynonyms;
 	}
 
-	public List<DialectPair> getDialectPairs() throws TermServerScriptException {
-		return DialectChecker.create().dialectPairs;
+	public int size() {
+		return dialectPairs.size();
 	}
 
-	private void init() throws TermServerScriptException {
-		List<String> lines;
-		LOGGER.debug("Loading us/gb terms");
-		try {
-			lines = Files.readLines(new File("resources/us-to-gb-terms-map.txt"), StandardCharsets.UTF_8);
-		} catch (IOException e) {
-			throw new TermServerScriptException("Unable to read resources/us-to-gb-terms-map.txt", e);
+	public List<DialectPair> getDialectPairs() {
+		return dialectPairs;
+	}
+
+	private void init(String... mapFiles) throws TermServerScriptException {
+		List<String> lines = new ArrayList<>();
+		for (String mapFile : mapFiles) {
+			LOGGER.debug("Loading us/gb terms from {}", mapFile);
+			try {
+				lines.addAll(Files.readLines(new File(mapFile), StandardCharsets.UTF_8));
+			} catch (IOException e) {
+				throw new TermServerScriptException("Unable to read " + mapFile, e);
+			}
 		}
 		dialectPairs = lines.stream()
 				.map(DialectPair::new)
