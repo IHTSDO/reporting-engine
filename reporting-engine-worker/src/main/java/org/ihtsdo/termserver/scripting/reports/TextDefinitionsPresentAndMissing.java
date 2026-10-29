@@ -60,7 +60,7 @@ public class TextDefinitionsPresentAndMissing extends TermServerReport implement
 		
 		for (Concept c : conceptsOfInterest) {
 			if (c.isActiveSafely()) {
-				if (whiteListedConceptIds.contains(c.getId())) {
+				if (whitelistHelper.isWhiteListed(c)) {
 					incrementSummaryInformation(WHITE_LISTED_COUNT);
 					continue;
 				}

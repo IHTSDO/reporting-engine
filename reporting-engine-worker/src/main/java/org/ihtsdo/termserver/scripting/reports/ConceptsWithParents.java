@@ -150,7 +150,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	}
 
 	private void report(Concept c, String[] indent, boolean includeGrandParents) throws TermServerScriptException {
-		if (whiteListedConceptIds.contains(c.getId())) {
+		if (whitelistHelper.isWhiteListed(c)) {
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
 			return;
 		}

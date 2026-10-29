@@ -226,7 +226,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 
 
 	private boolean checkForIPSkip(Concept c) {
-		if (whiteListedConceptIds.contains(c.getId())) {
+		if (whitelistHelper.isWhiteListed(c)) {
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
 			return true;
 		}

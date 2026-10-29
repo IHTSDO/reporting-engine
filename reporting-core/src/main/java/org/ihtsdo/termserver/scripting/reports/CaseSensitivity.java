@@ -262,7 +262,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	}
 
 	private boolean inScopeForCsChecking(Concept c) {
-		if (whiteListedConceptIds.contains(c.getId())) {
+		if (whitelistHelper.isWhiteListed(c)) {
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
 			return false;
 		}

@@ -27,6 +27,7 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate.Mode;
 import org.ihtsdo.termserver.scripting.snapshot.ArchiveManager;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotConfiguration;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.WhitelistHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
@@ -152,7 +153,6 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	protected boolean expectNullConcepts = false;
 	protected boolean expectStatedRelationshipInactivations = false;
 	protected boolean reportChangesWithoutTask = true;
-	protected boolean ignoreWhiteList = false;
 
 	protected int maxFailures = 5;
 	protected int restartPosition = NOT_SET;
@@ -193,7 +193,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	/* ======================================================
 	 * Tracking / State Collections
 	 * ====================================================== */
-	protected Set<String> whiteListedConceptIds = new HashSet<>();
+	protected WhitelistHelper whitelistHelper = new WhitelistHelper();
 	protected Set<String> archiveEclWarningGiven = new HashSet<>();
 
 	/* ======================================================
@@ -626,11 +626,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 			setInputFile(0,new File(inputFileName));
 		}
 
-		if (jobRun.getWhiteList() != null) {
-			whiteListedConceptIds = jobRun.getWhiteList().stream()
-					.map( w -> SnomedUtils.makeMachineReadable(w.getSctId()))
-					.collect(Collectors.toSet());
-		}
+		whitelistHelper.populateFromJobRun(jobRun);
 	}
 
 	private String getEnv(String terminologyServerUrl) throws TermServerScriptException {
@@ -1851,7 +1847,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	private boolean isWhiteListed(Concept c, Object[] details) {
 		//Have we whiteListed this concept?
-		if (!ignoreWhiteList && c != null && whiteListedConceptIds.contains(c.getId())) {
+		if (whitelistHelper.isWhiteListed(c)) {
 			String detailsStr = writeToString(details);
 			LOGGER.warn("Ignoring whiteListed concept: {} : {}", c, detailsStr);
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
@@ -1865,7 +1861,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 	
 	protected void countIssue(Concept c, int increment) {
-		if (c==null || !whiteListedConceptIds.contains(c.getId())) {
+		if (!whitelistHelper.isWhiteListed(c)) {
 			incrementSummaryInformation(ISSUE_COUNT, increment);
 		}
 	}

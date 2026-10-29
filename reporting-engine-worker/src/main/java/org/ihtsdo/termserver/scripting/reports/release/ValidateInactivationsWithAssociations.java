@@ -109,7 +109,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				continue;
 			}
 			
-			if (whiteListedConceptIds.contains(c.getId())) {
+			if (whitelistHelper.isWhiteListed(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
 			}

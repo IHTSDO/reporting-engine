@@ -21,6 +21,7 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.AcceptableCharacterValidator;
 import org.ihtsdo.termserver.scripting.util.DialectChecker;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.WhitelistHelper;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 import org.snomed.otf.scheduler.domain.*;
@@ -123,6 +124,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		ReportSheetManager.setTargetFolderId("15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"); //Release Validation
 		this.setIgnoreInputFileForReportName(true);
 		super.init(run);
+		if (getApplicationContext() == null) {
+			//Running locally, so the whitelist won't have come with the JobRun
+			whitelistHelper.populateViaAPI(url, getAuthenticatedCookie(), getJob().getName(), askWhitelistCodeSystem());
+		}
 		additionalReportColumns = "FSN, Semtag, Issue, Legacy, C/D/R Active, Detail";
 		cache = gl.getDescendantsCache();
 		includeSecondaryCounts = true;
@@ -211,6 +216,18 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		} catch (IOException e) {
 			throw new TermServerScriptException(FAILURE_WHILE_READING + getInputFile(1), e);
 		}
+	}
+
+	private String askWhitelistCodeSystem() {
+		String codeSystem = WhitelistHelper.deriveCodeSystem(project.getBranchPath());
+		if (headlessEnvironment == null) {
+			print("Whitelist code system [" + codeSystem + "]: ");
+			String response = STDIN.nextLine().trim();
+			if (!response.isEmpty()) {
+				codeSystem = response;
+			}
+		}
+		return codeSystem;
 	}
 
 	private void loadRepeatedWordExceptions() throws TermServerScriptException {

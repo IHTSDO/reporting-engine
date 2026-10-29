@@ -94,7 +94,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		Collection<Concept> concepts = subHierarchy == null ? gl.getAllConcepts() : subHierarchy.getDescendants(NOT_SET);
 		for (Concept c : SnomedUtils.sort(concepts)) {
 			//Have we white listed this concept?
-			if (whiteListedConceptIds.contains(c.getId())) {
+			if (whitelistHelper.isWhiteListed(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
 			}
