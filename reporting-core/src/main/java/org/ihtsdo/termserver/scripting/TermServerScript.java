@@ -75,6 +75,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	public static final String ISSUE_COUNT = "Issue count";
 	public static final String ISSUES = "Issues";
 	public static final String MAIN_SLASH = "MAIN/";
+	private static final String MAIN = "MAIN";
+	private static final String ZIP_EXTENSION = ".zip";
 	public static final String MODULES = "Modules";
 	public static final String NEW_CONCEPTS_ONLY = "New Concepts Only";
 	public static final String RESTART_FROM_TASK = "Restart from task";
@@ -381,7 +383,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	private int parseUnknownArg(String thisArg, boolean[] unknownParameterExpected) {
 		//Some parameters are defined in base classes like deltaGenerator so we can ignore those
-		if (List.of("-iC", "-iD", "-iR").contains(thisArg)) {
+		if (List.of("-nS", "-m", "-iC", "-iD", "-iR", "-e", "--patchET", "--baseStorageDir").contains(thisArg)) {
 			unknownParameterExpected[0] = true;
 		} else if (unknownParameterExpected[0]) {
 			unknownParameterExpected[0] = false;
@@ -432,14 +434,14 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	public void recoverProjectFromProjectName(String projectName) throws TermServerScriptException {
 		project = new Project();
-		if (projectName.startsWith("MAIN")) {
+		if (projectName.startsWith(MAIN)) {
 			project.setBranchPath(projectName);
-			if (projectName.equals("MAIN")) {
+			if (projectName.equals(MAIN)) {
 				project.setKey(projectName);
 			} else {
 				project.setKey(projectName.substring(projectName.lastIndexOf("/")));
 			}
-		} else if (StringUtils.isNumeric(projectName) || projectName.endsWith(".zip")) {
+		} else if (StringUtils.isNumeric(projectName) || projectName.endsWith(ZIP_EXTENSION)) {
 			LOGGER.info("Script configured to use release: {}", projectName);
 			loadingRelease = true;
 			project.setKey(projectName);
@@ -538,10 +540,10 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	}
 
 	private void recoverProjectDetails() throws TermServerScriptException {
-		if (projectName.equals("MAIN") || projectName.startsWith(MAIN_SLASH)) {
+		if (projectName.equals(MAIN) || projectName.startsWith(MAIN_SLASH)) {
 			//MAIN is not a project.  Recover Main metadata from branch
 			project.setMetadata(tsClient.getBranch(projectName).getMetadata());
-		} else if (!StringUtils.isNumeric(projectName) && !projectName.endsWith(".zip")) {
+		} else if (!StringUtils.isNumeric(projectName) && !projectName.endsWith(ZIP_EXTENSION)) {
 			//Not if we're loading a release or extension
 			try {
 				int retry = 0;
@@ -588,7 +590,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		} else if ((jobRun == null && projectName == null) ||
 				(jobRun != null && StringUtils.isEmpty(jobRun.getProject()))) {
 			LOGGER.warn("No project specified, running against MAIN");
-			projectName = "MAIN";
+			projectName = MAIN;
 		}
 
 		if (authenticatedCookie == null || authenticatedCookie.trim().isEmpty()) {
@@ -722,7 +724,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 			if (scriptRequiresSnomedData) {
 				//Are we already specified as using an archive?
-				if (project.getKey().endsWith(".zip")) {
+				if (project.getKey().endsWith(ZIP_EXTENSION)) {
 					getSnapshotConfiguration().setSource(project.getKey());
 				} else {
 					getSnapshotConfiguration().setSource(project.getBranchPath());
@@ -877,7 +879,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 
 	protected void loadProjectSnapshot() throws TermServerScriptException {
 		//Watch that this call duplicates what happens in instantiate.  Can we pull these together?
-		if (project.getKey().endsWith(".zip")) {
+		if (project.getKey().endsWith(ZIP_EXTENSION)) {
 			getSnapshotConfiguration().setSource(project.getKey());
 		} else {
 			getSnapshotConfiguration().setSource(project.getBranchPath());
@@ -1400,8 +1402,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		
 		//If we're working from a zip file, then use MAIN instead
 		//unless the ECL is simple, in which case we can use that directly from memory
-		if (!EclCache.isSimple(ecl) && (branch == null || branch.endsWith(".zip"))) {
-			String historicECLBranch = "MAIN";
+		if (!EclCache.isSimple(ecl) && (branch == null || branch.endsWith(ZIP_EXTENSION))) {
+			String historicECLBranch = MAIN;
 			if (branch != null) {
 				//TODO Better regex to work out the correct branch for historic ECL
 				if (branch.contains("20200731")) {
@@ -1983,7 +1985,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		//RP-349 Allow MS customers to run reports against MAIN.
 		//In this case all concepts are "in scope" to allow MS customers to see
 		//what changes to international concepts might affect them
-		if (project.getKey().equals("MAIN")) {
+		if (project.getKey().equals(MAIN)) {
 			return true;
 		}
 
