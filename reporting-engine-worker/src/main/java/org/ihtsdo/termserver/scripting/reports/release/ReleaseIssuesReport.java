@@ -68,6 +68,7 @@ import static org.ihtsdo.termserver.scripting.util.UnacceptableCharacters.*;
  RP-553 Add check for zero sized space
  RP-609 Check LangRefsetEntries point to descriptions with appropriate langCode
  RP-878 Check Interprets/Has Interpretation attributes not grouped with any other attribute
+ RP-126 Check for leading, trailing and double spaces in terms
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 
@@ -81,6 +82,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private static final String LOADING = "Loading {} ...";
 	private static final String ITEMS_OF_INTEREST = "Items of Interest";
 	private static final String FULL_STOP = ".";
+	private static final String SPACE = " ";
+	private static final String DUE = " due ";
+	private static final String CONCEPT_MODULE = "Concept module ";
+	private static final String REFSET_FIELD = " refset field ";
 
 	Set<String> stopWords = new HashSet<>();
 	List<String> wordsOftenTypedInReverse = new ArrayList<>();
@@ -309,6 +314,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		missingFSN_PT();
 		unexpectedCharacters();
 		spaceBracket();
+		extraneousSpaces();
 		missingSemanticTag();
 		semTagInCorrectHierarchy();
 		repeatedWordGroups();
@@ -537,7 +543,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept c : allConceptsSorted) {
 			for (Description d : c.getDescriptions()) {
 				if (!d.getModuleId().equals(c.getModuleId())) {
-					String msg = "Concept module " + c.getModuleId() + " vs Desc module " + d.getModuleId();
+					String msg = CONCEPT_MODULE + c.getModuleId() + " vs Desc module " + d.getModuleId();
 					reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), msg, d);
 				}
 			}
@@ -568,7 +574,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept c : allConceptsSorted) {
 			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				if (!r.getModuleId().equals(c.getModuleId())) {
-					String msg = "Concept module " + c.getModuleId() + " vs Rel module " + r.getModuleId();
+					String msg = CONCEPT_MODULE + c.getModuleId() + " vs Rel module " + r.getModuleId();
 					reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(r), issueStr, getLegacyIndicator(r), isActive(c, r), msg, r);
 				}
 			}
@@ -581,7 +587,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept c : allConceptsSorted) {
 			for (AxiomEntry a : c.getAxiomEntries()) {
 				if (!a.getModuleId().equals(c.getModuleId())) {
-					String msg = "Concept module " + c.getModuleId() + " vs Axiom module " + a.getModuleId();
+					String msg = CONCEPT_MODULE + c.getModuleId() + " vs Axiom module " + a.getModuleId();
 					reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(a), issueStr, getLegacyIndicator(a), isActive(c, a), msg, a);
 				}
 			}
@@ -995,16 +1001,16 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						term = " " + SnomedUtilsBase.deconstructFSN(d.getTerm())[0].toLowerCase() + " ";
 					}
 					//Might have more than one Due to find
-					int idx = term.indexOf(" due ");
+					int idx = term.indexOf(DUE);
 					while (idx != NOT_FOUND) {
 						boolean acceptableAltFound = false;
 						//Due at the end of the term if fine
-						if (term.endsWith(" due ")) {
+						if (term.endsWith(DUE)) {
 							continue nextDescription;
 						}
 						//Is this one of our acceptable alternatives
 						for (String acceptableAlt : acceptableAlternativesPost) {
-							if (term.indexOf(" due " + acceptableAlt, idx) == idx) {
+							if (term.indexOf(DUE + acceptableAlt, idx) == idx) {
 								acceptableAltFound = true;
 								break;
 							}
@@ -1020,7 +1026,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 							reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), d);
 							continue nextDescription;
 						}
-						idx = term.indexOf(" due ", idx + 1);
+						idx = term.indexOf(DUE, idx + 1);
 					}
 				}
 			}
@@ -1248,6 +1254,38 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 			}
 		}
+	}
+
+	//RP-126
+	private void extraneousSpaces() throws TermServerScriptException {
+		String leadingIssueStr = "Leading space in term";
+		String trailingIssueStr = "Trailing space in term";
+		String doubleIssueStr = "Double space in term";
+		initialiseSummary(leadingIssueStr);
+		initialiseSummary(trailingIssueStr);
+		initialiseSummary(doubleIssueStr);
+		for (Concept c : allActiveConceptsSorted) {
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				if (!inScope(d)) {
+					continue;
+				}
+				String term = d.getTerm();
+				if (term.startsWith(SPACE)) {
+					reportSpaceIssue(c, d, leadingIssueStr, 0);
+				}
+				if (term.endsWith(SPACE)) {
+					reportSpaceIssue(c, d, trailingIssueStr, term.length() - 1);
+				}
+				int pos = term.indexOf(SPACE + SPACE);
+				if (pos != NOT_SET) {
+					reportSpaceIssue(c, d, doubleIssueStr, pos);
+				}
+			}
+		}
+	}
+
+	private void reportSpaceIssue(Concept c, Description d, String issueStr, int pos) throws TermServerScriptException {
+		reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), "At position: " + pos, d);
 	}
 
 	//Active concept parents should not belong to more than one top-level hierarchy – please check NEW and LEGACY content for issues
@@ -1743,10 +1781,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	private void validateTermsInField(String partName, Concept c, RefsetMember rm, String fieldName) throws TermServerScriptException {
-		String issueStr = partName + " refset field " + fieldName + " contains inactive or unknown concept";
-		String issueStr2 = partName + " refset field " + fieldName + " contains out of date FSN";
-		String issueStr3 = partName + " refset field " + fieldName + " is malformed";
-		String issueStr4 = partName + " refset field " + fieldName + " concept missing preferred term";
+		String issueStr = partName + REFSET_FIELD + fieldName + " contains inactive or unknown concept";
+		String issueStr2 = partName + REFSET_FIELD + fieldName + " contains out of date FSN";
+		String issueStr3 = partName + REFSET_FIELD + fieldName + " is malformed";
+		String issueStr4 = partName + REFSET_FIELD + fieldName + " concept missing preferred term";
 
 		initialiseSummary(issueStr);
 		initialiseSummary(issueStr2);
