@@ -41,6 +41,9 @@ public class RefsetMaintenanceReport extends TermServerReport implements ReportC
 	private static final String DEFAULT_REFSET_ECL = "<446609009 |Simple type reference set|";
 	private static final String OUTDATED_MEMBERSHIPS = "Outdated memberships per refset";
 	private static final String NOT_APPLICABLE = "N/A";
+	private static final String INCLUDE_INT_REFSETS = "Include International Refsets";
+
+	private boolean includeIntRefsets;
 
 	private String userECL;
 	private Set<String> targetRefsetIds;
@@ -55,6 +58,7 @@ public class RefsetMaintenanceReport extends TermServerReport implements ReportC
 	@Override
 	public void init(JobRun run) throws TermServerScriptException {
 		userECL = run.getParamValue(ECL);
+		includeIntRefsets = run.getMandatoryParamBoolean(INCLUDE_INT_REFSETS);
 		super.init(run);
 	}
 
@@ -66,6 +70,11 @@ public class RefsetMaintenanceReport extends TermServerReport implements ReportC
 		targetRefsetsById = refsets.stream()
 				.collect(Collectors.toMap(Concept::getId, c -> c, (a, b) -> a));
 		targetRefsetIds = targetRefsetsById.keySet();
+		if (!includeIntRefsets) {
+			int refsetCount = targetRefsetsById.size();
+			targetRefsetsById.values().removeIf(r -> !SnomedUtils.hasExtensionSCTID(r));
+			incrementSummaryCount("Refsets", "International refsets excluded", refsetCount - targetRefsetsById.size());
+		}
 		LOGGER.info("Found {} reference set(s) in scope", targetRefsetIds.size());
 
 		summaryTabIdx = PRIMARY_REPORT;
@@ -81,6 +90,7 @@ public class RefsetMaintenanceReport extends TermServerReport implements ReportC
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(Type.ECL)
+				.add(INCLUDE_INT_REFSETS).withType(Type.BOOLEAN).withMandatory().withDefaultValue(false)
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
