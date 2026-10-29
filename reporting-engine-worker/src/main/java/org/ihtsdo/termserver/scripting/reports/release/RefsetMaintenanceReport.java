@@ -7,7 +7,6 @@ import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.RefsetMember;
 import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -28,49 +27,45 @@ import org.slf4j.LoggerFactory;
  * An optional {@code ECL} parameter overrides the default, allowing a narrower scope
  * (e.g. a single refset ID, or a curated OR-list).</p>
  *
- * <p>Refset memberships are read directly from Snowstorm via per-refset GET queries,
- * not from {@code Concept.getOtherRefsetMembers()} — the locally-loaded refset graph
- * frequently misses members for refsets whose files weren't bundled in the loaded
- * archive. Snowstorm gives us the authoritative branch state.</p>
+ * <p>Refset memberships come from the in-memory snapshot, which loads all reference sets
+ * for this report, so the terminology server is only asked to resolve the refset ECL.</p>
  */
 public class RefsetMaintenanceReport extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RefsetMaintenanceReport.class);
 
-	private static final long REFSET_PAUSE_MS = 200L;
-
 	private static final String DEFAULT_REFSET_ECL = "<446609009 |Simple type reference set|";
+	private static final String OUTDATED_MEMBERSHIPS = "Outdated memberships per refset";
+	private static final String NOT_APPLICABLE = "N/A";
 
 	private String userECL;
-	private Set<String> targetRefsetIds;
-	// Cache of refset-id → Concept resolved from Snowstorm, used to fill the Refset FSN
-	// column when the locally-loaded refset concept is a stub.
 	private Map<String, Concept> targetRefsetsById;
 
 	public static void main(String[] args) throws TermServerScriptException {
-		new RefsetMaintenanceReport().standardExecution(args, ExecutionOptions.DEFAULT);
+		new RefsetMaintenanceReport().standardExecution(args, new ExecutionOptions().withImportAllRefsets());
 	}
 
 	@Override
 	public void init(JobRun run) throws TermServerScriptException {
 		userECL = run.getParamValue(ECL);
 		super.init(run);
+		getSnapshotConfiguration().setLoadOtherReferenceSets(true);
 	}
 
 	@Override
 	public void postInit() throws TermServerScriptException {
 		String ecl = StringUtils.isEmpty(userECL) ? DEFAULT_REFSET_ECL : userECL;
 		LOGGER.info("Resolving refsets from ECL: {}", ecl);
-		Collection<Concept> refsets = findConcepts(ecl);
-		targetRefsetsById = refsets.stream()
+		targetRefsetsById = findConcepts(ecl).stream()
 				.collect(Collectors.toMap(Concept::getId, c -> c, (a, b) -> a));
-		targetRefsetIds = targetRefsetsById.keySet();
-		LOGGER.info("Found {} reference set(s) in scope", targetRefsetIds.size());
+		LOGGER.info("Found {} reference set(s) in scope", targetRefsetsById.size());
 
+		summaryTabIdx = PRIMARY_REPORT;
 		String[] columnHeadings = new String[] {
+				"Category, Item, Count, , , ",
 				"Refset Id, Refset FSN, Concept Id, Concept FSN, SemTag, Reason, Assoc Type, Replacement Id, Replacement FSN"
 		};
-		String[] tabNames = new String[] { "Outdated Memberships" };
+		String[] tabNames = new String[] { "Summary", "Outdated Memberships" };
 		super.postInit(tabNames, columnHeadings);
 	}
 
@@ -96,84 +91,53 @@ public class RefsetMaintenanceReport extends TermServerReport implements ReportC
 
 	@Override
 	public void runJob() throws TermServerScriptException {
-		// Set of inactive concept IDs for fast membership checks. isActiveSafely() treats
-		// null-active as false, so "stub" concepts (referenced by indicator/association
-		// files but not by any concept-file row) are included — they're genuinely
-		// inactive from prior release cycles.
-		Set<String> inactiveConceptIds = gl.getAllConcepts().stream()
+		List<Concept> inactiveConcepts = gl.getAllConcepts().stream()
 				.filter(c -> !c.isActiveSafely())
-				.map(Concept::getConceptId)
-				.collect(Collectors.toSet());
+				.toList();
+		incrementSummaryCount("Concepts", "Inactive concepts checked", inactiveConcepts.size());
+		incrementSummaryCount("Refsets", "Refsets in scope", targetRefsetsById.size());
 
-		String branchPath = project.getBranchPath();
-		LOGGER.info("Querying Snowstorm for members of {} refsets (filtering {} inactive concepts client-side)",
-				targetRefsetIds.size(), inactiveConceptIds.size());
-
-		// Iterate refsets one at a time using GET /members?referenceSet=<id>. This avoids
-		// POST /members/search (unsupported by the authoring-proxy URL) and keeps each
-		// request short. tsClient.findRefsetMembers handles pagination internally.
-		int outdatedMembershipsFound = 0;
-		int refsetNum = 0;
-		for (String refsetId : targetRefsetIds) {
-			refsetNum++;
-			Collection<RefsetMember> members = tsClient.findRefsetMembers(branchPath, refsetId, null);
-			int matchesThisRefset = 0;
-			for (RefsetMember m : members) {
-				if (!m.isActiveSafely()) {
-					continue;
+		List<RefsetMember> outdatedMembers = new ArrayList<>();
+		for (Concept c : inactiveConcepts) {
+			for (RefsetMember m : c.getOtherRefsetMembers()) {
+				if (m.isActiveSafely() && targetRefsetsById.containsKey(m.getRefsetId())) {
+					outdatedMembers.add(m);
 				}
-				if (!inactiveConceptIds.contains(m.getReferencedComponentId())) {
-					continue;
-				}
-				Concept concept = gl.getConcept(m.getReferencedComponentId(), true, false);
-				reportMember(m, concept);
-				outdatedMembershipsFound++;
-				matchesThisRefset++;
-			}
-			if (matchesThisRefset > 0 || refsetNum % 20 == 0) {
-				LOGGER.info("[{}/{}] Refset {}: {} members, {} on inactive concepts (running total: {})",
-						refsetNum, targetRefsetIds.size(), refsetId, members.size(),
-						matchesThisRefset, outdatedMembershipsFound);
-			}
-			try {
-				Thread.sleep(REFSET_PAUSE_MS);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
 			}
 		}
+		LOGGER.info("{} active memberships of {} inactive concepts found in {} refsets",
+				outdatedMembers.size(), inactiveConcepts.size(), targetRefsetsById.size());
 
-		LOGGER.info("Done — {} outdated memberships found across {} refsets",
-				outdatedMembershipsFound, targetRefsetIds.size());
+		outdatedMembers.sort(Comparator.comparing(RefsetMember::getRefsetId)
+				.thenComparing(RefsetMember::getReferencedComponentId));
+		for (RefsetMember m : outdatedMembers) {
+			reportMember(m, gl.getConcept(m.getReferencedComponentId()));
+		}
+		reportSummaryCounts(summaryTabIdx);
 	}
 
 	private void reportMember(RefsetMember m, Concept concept) throws TermServerScriptException {
-		// Prefer the Snowstorm-resolved refset concept (has FSN populated as a string)
-		// over the locally-loaded one, which may be a stub for some extension refsets.
 		Concept refset = targetRefsetsById.get(m.getRefsetId());
-		if (refset == null) {
-			refset = gl.getConcept(m.getRefsetId());
-		}
+		incrementSummaryCount(OUTDATED_MEMBERSHIPS, refset.toString());
+		countIssue(concept);
 		InactivationIndicator reason = concept.getInactivationIndicator();
-
 		List<AssociationEntry> assocs = concept.getAssociationEntries(ActiveState.ACTIVE, true);
 
 		if (assocs.isEmpty()) {
-			report(PRIMARY_REPORT,
+			report(SECONDARY_REPORT,
 					refset.getId(), refset.getFsn(),
 					concept.getId(), concept.getFsn(), concept.getSemTag(),
-					reason, "N/A", "N/A", "N/A");
-			countIssue(concept);
+					reason, NOT_APPLICABLE, NOT_APPLICABLE, NOT_APPLICABLE);
 		} else {
 			for (AssociationEntry a : assocs) {
 				String assocType = SnomedUtils.getAssociationType(a);
 				Concept target = gl.getConcept(a.getTargetComponentId());
-				report(PRIMARY_REPORT,
+				report(SECONDARY_REPORT,
 						refset.getId(), refset.getFsn(),
 						concept.getId(), concept.getFsn(), concept.getSemTag(),
 						reason, assocType,
 						target == null ? "" : target.getId(),
 						target == null ? "" : target.getFsn());
-				countIssue(concept);
 			}
 		}
 	}
