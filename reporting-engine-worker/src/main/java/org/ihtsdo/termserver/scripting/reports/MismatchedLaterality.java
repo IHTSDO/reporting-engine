@@ -19,16 +19,19 @@ import org.snomed.otf.script.dao.ReportSheetManager;
  * RP-403 Report concepts that have laterality in their attributes but not in their
  * FSN or visa versa
  * CDI-52 Update report to successfully run against projects with concrete values.
+ * RP-439 Only expect a left/right counterpart where a body structure is lateralizable
  */
 public class MismatchedLaterality extends TermServerReport implements ReportClass {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MismatchedLaterality.class);
 	private static final String COMMON_HEADERS = "Concept, FSN, SemTag, Expression";
 	private static final String SEMTAG_BODY_STRUCTURE = "(body structure)";
+	private static final String SCTID_LATERALIZABLE_REFSET = "723264001";
 
 	Set<String> hierarchies = new HashSet<>();
 	Set<Concept> reportedSuspect = new HashSet<>();
 	Map<String, Concept> fsnMap = new HashMap<>();
+	Set<Concept> lateralizableStructures = new HashSet<>();
 	
 	public static final String STR_LEFT = "left";
 	public static final String STR_RIGHT = "right";
@@ -42,6 +45,7 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.setTargetFolderId("1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"); //Ad-hoc
 		super.init(run);
+		getSnapshotConfiguration().setLoadOtherReferenceSets(true);
 	}
 	
 	@Override
@@ -81,21 +85,25 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 		hierarchies.add("< 404684003 |Clinical finding (finding)| ");
 		hierarchies.add("< 123037004 |Body structure (body structure)|");
 		
-		LOGGER.info("Populating FSN map for all concepts");
+		LOGGER.info("Populating FSN map and lateralizable body structures for all concepts");
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActiveSafely()) {
 				fsnMap.put(c.getFsn().toLowerCase(), c);
+				if (isInLateralizableRefset(c)) {
+					lateralizableStructures.add(c);
+				}
 			}
 		}
+		if (lateralizableStructures.isEmpty()) {
+			throw new TermServerScriptException("No active members of the Lateralizable body structure reference set " + SCTID_LATERALIZABLE_REFSET + " found");
+		}
+		LOGGER.info("{} active members of the Lateralizable body structure reference set found", lateralizableStructures.size());
 	}
 
 	@Override
 	public void runJob() throws TermServerScriptException {
 		for (String hierarchy : hierarchies) {
 			for (Concept c : findConcepts(hierarchy)) {
-				if (c.getId().equals("449537006")) {
-					LOGGER.debug("Here");
-				}
 				if (!inScope(c)) {
 					continue;
 				}
@@ -136,10 +144,10 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 		String targetFSN = origFSN.replace(" " + current + " ", " " + siblingLaterality + " ").trim();
 		Concept sibling = fsnMap.get(targetFSN);
 		if (sibling == null) {
-			if (hasUnlaterizedLeftOrRightBodyStructure(c)) {
-				report(SEPTENARY_REPORT, c, "Suggests need for counterpart \"" + targetFSN + "\" but relates to an unlateralized body structure");
-			} else {
+			if (hasLateralizableBodyStructure(c)) {
 				report(PRIMARY_REPORT, c, targetFSN);
+			} else {
+				report(SEPTENARY_REPORT, c, "Suggests need for counterpart \"" + targetFSN + "\" but has no lateralizable body structure");
 			}
 		}
 	}
@@ -158,21 +166,33 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 		return fsn.contains(" bilateral ") || fsn.contains(" left and right");
 	}
 
-	private boolean hasUnlaterizedLeftOrRightBodyStructure(Concept c) {
-		//Return true if this concept has been modelled with a left or right body structure which is
-		//not actually lateralizable
+	private boolean hasLateralizableBodyStructure(Concept c) {
+		if (isBodyStructure(c)) {
+			return isLateralizable(c);
+		}
 		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			String semTag = SnomedUtilsBase.deconstructFSN(r.getTarget().getFsn())[1];
-			if (semTag.equals(SEMTAG_BODY_STRUCTURE )) {
-				Concept bodyStructure = r.getTarget();
-				//Does the body structure feature 'left' or 'right' in its FSN, but isn't actually lateralized in the sense
-				//of being symmetrical around the midsagittal plane?
-				if (!isLateralized(bodyStructure)) {
-					return true;
-				}
+			if (r.isNotConcrete() && !r.getType().equals(IS_A)
+					&& isBodyStructure(r.getTarget()) && isLateralizable(r.getTarget())) {
+				return true;
 			}
 		}
 		return false;
+	}
+
+	private boolean isBodyStructure(Concept c) {
+		return SEMTAG_BODY_STRUCTURE.equals(c.getSemTag());
+	}
+
+	private boolean isLateralizable(Concept bodyStructure) {
+		//The refset only holds the highest lateralizable concept in each subhierarchy,
+		//so all descendants of a member are also lateralizable
+		return gl.getAncestorsCache().getAncestorsOrSelfSafely(bodyStructure).stream()
+				.anyMatch(lateralizableStructures::contains);
+	}
+
+	private boolean isInLateralizableRefset(Concept c) {
+		return c.getOtherRefsetMembers().stream()
+				.anyMatch(m -> m.isActiveSafely() && m.getRefsetId().equals(SCTID_LATERALIZABLE_REFSET));
 	}
 
 	private boolean hasLateralizedModel(Concept c, int level) throws TermServerScriptException {
@@ -234,9 +254,5 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 			}
 		}
 		return false;
-	}
-
-	private boolean isLateralized(Concept c) {
-		return hasLaterality(c, LEFT) || hasLaterality(c, RIGHT);
 	}
 }
