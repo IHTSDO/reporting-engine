@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -200,12 +199,7 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 		//lateralized - but we're only expecting that in a body structure
 		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if ((r.isNotConcrete()) && (r.getTarget().equals(LEFT) || r.getTarget().equals(RIGHT))) {
-				String semTag = SnomedUtilsBase.deconstructFSN(
-						c.getFsn())[1];
-				if (!semTag.equals(SEMTAG_BODY_STRUCTURE) && !reportedSuspect.contains(c)) {
-					report(QUATERNARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-					reportedSuspect.add(c);
-				}
+				reportIfSuspect(c);
 				return true;
 			} else if (level == 0 && r.isNotConcrete() && hasLateralizedModel(r.getTarget(), 1)) {
 				return true;
@@ -225,18 +219,10 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 				continue;
 			}
 			if (r.getTarget().equals(LEFT)) {
-				String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
-				if (!semTag.equals(SEMTAG_BODY_STRUCTURE) && !reportedSuspect.contains(c)) {
-					report(TERTIARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-					reportedSuspect.add(c);
-				}
+				reportIfSuspect(c);
 				leftPresent = true;
-			} if (r.getTarget().equals(RIGHT)) {
-				String semTag = SnomedUtilsBase.deconstructFSN(c.getFsn())[1];
-				if (!semTag.equals(SEMTAG_BODY_STRUCTURE) && !reportedSuspect.contains(c)) {
-					report(TERTIARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-					reportedSuspect.add(c);
-				}
+			} else if (r.getTarget().equals(RIGHT)) {
+				reportIfSuspect(c);
 				rightPresent = true;
 			} else if (level == 0 && hasLaterality(r.getTarget(), LEFT)) {
 				leftPresent = true;
@@ -245,6 +231,13 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 			}
 		}
 		return leftPresent && rightPresent;
+	}
+
+	private void reportIfSuspect(Concept c) throws TermServerScriptException {
+		//Laterality is only expected directly on a body structure
+		if (!isBodyStructure(c) && reportedSuspect.add(c)) {
+			report(QUATERNARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+		}
 	}
 
 	private boolean hasLaterality(Concept c, Concept laterality) {
