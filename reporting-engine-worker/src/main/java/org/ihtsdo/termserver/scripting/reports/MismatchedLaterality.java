@@ -111,15 +111,15 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 				boolean hasLateralizedModel = hasLateralizedModel(c, 0);  //Only check 1 level downs
 				boolean hasBilaterlizedModel = hasBilateralizedModel(c, 0);
 				if (hasBilateralFSN && !hasBilaterlizedModel) {
-					report(QUINARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					reportIssue(QUINARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 				} else if (!hasBilateralFSN && hasBilaterlizedModel) {
-					report(SENARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					reportIssue(SENARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 				} else if (hasBilateralFSN && hasBilaterlizedModel) {
 					//All good here
 				} else if (hasLateralizedFSN && !hasLateralizedModel) {
-					report(SECONDARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					reportIssue(SECONDARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 				} else if (!hasLateralizedFSN && hasLateralizedModel) {
-					report(TERTIARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					reportIssue(TERTIARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 				}
 				
 				if (hasLateralizedFSN && !hasBilateralFSN) {
@@ -148,7 +148,7 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 				//eg "left atrium" is the name of a structure, not a laterality
 				report(SEPTENARY_REPORT, c, counterpartSuggested + " but the model is not lateralized");
 			} else if (hasLateralizableBodyStructure(c)) {
-				report(PRIMARY_REPORT, c, targetFSN);
+				reportIssue(PRIMARY_REPORT, c, targetFSN);
 			} else {
 				report(SEPTENARY_REPORT, c, counterpartSuggested + " but has no lateralizable body structure");
 			}
@@ -240,8 +240,13 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 	private void reportIfSuspect(Concept c) throws TermServerScriptException {
 		//Laterality is only expected directly on a body structure
 		if (!isBodyStructure(c) && reportedSuspect.add(c)) {
-			report(QUATERNARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+			reportIssue(QUATERNARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 		}
+	}
+
+	private void reportIssue(int reportIdx, Concept c, Object... details) throws TermServerScriptException {
+		countIssue(c);
+		report(reportIdx, c, details);
 	}
 
 	private boolean hasLaterality(Concept c, Concept laterality) {
