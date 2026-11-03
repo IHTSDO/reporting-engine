@@ -123,30 +123,34 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 				}
 				
 				if (hasLateralizedFSN && !hasBilateralFSN) {
-					checkForCounterpartLaterality(c);
+					checkForCounterpartLaterality(c, hasLateralizedModel);
 				}
 			}
 		}
 	}
 
-	private void checkForCounterpartLaterality(Concept c) throws TermServerScriptException {
+	private void checkForCounterpartLaterality(Concept c, boolean hasLateralizedModel) throws TermServerScriptException {
 		if (hasLateralizedFSN(c, STR_LEFT)) {
-			checkForCounterpartLaterality(c, STR_LEFT, STR_RIGHT);
+			checkForCounterpartLaterality(c, hasLateralizedModel, STR_LEFT, STR_RIGHT);
 		} else {
-			checkForCounterpartLaterality(c, STR_RIGHT, STR_LEFT);
+			checkForCounterpartLaterality(c, hasLateralizedModel, STR_RIGHT, STR_LEFT);
 		}
 	}
 
-	private void checkForCounterpartLaterality(Concept c, String current, String siblingLaterality) throws TermServerScriptException {
+	private void checkForCounterpartLaterality(Concept c, boolean hasLateralizedModel, String current, String siblingLaterality) throws TermServerScriptException {
 		//What would the name of the sibling concept be?
 		String origFSN = " " + c.getFsn().toLowerCase();
 		String targetFSN = origFSN.replace(" " + current + " ", " " + siblingLaterality + " ").trim();
 		Concept sibling = fsnMap.get(targetFSN);
 		if (sibling == null) {
-			if (hasLateralizableBodyStructure(c)) {
+			String counterpartSuggested = "Suggests need for counterpart \"" + targetFSN + "\"";
+			if (!hasLateralizedModel) {
+				//eg "left atrium" is the name of a structure, not a laterality
+				report(SEPTENARY_REPORT, c, counterpartSuggested + " but the model is not lateralized");
+			} else if (hasLateralizableBodyStructure(c)) {
 				report(PRIMARY_REPORT, c, targetFSN);
 			} else {
-				report(SEPTENARY_REPORT, c, "Suggests need for counterpart \"" + targetFSN + "\" but has no lateralizable body structure");
+				report(SEPTENARY_REPORT, c, counterpartSuggested + " but has no lateralizable body structure");
 			}
 		}
 	}
