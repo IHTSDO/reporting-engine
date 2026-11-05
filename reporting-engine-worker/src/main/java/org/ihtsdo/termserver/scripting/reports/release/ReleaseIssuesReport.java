@@ -70,6 +70,7 @@ import static org.ihtsdo.termserver.scripting.util.UnacceptableCharacters.*;
  RP-609 Check LangRefsetEntries point to descriptions with appropriate langCode
  RP-878 Check Interprets/Has Interpretation attributes not grouped with any other attribute
  RP-126 Check for leading, trailing and double spaces in terms
+ RP-1176 Don't treat a term ending in "spp." as a possible text definition
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 
@@ -83,6 +84,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private static final String LOADING = "Loading {} ...";
 	private static final String ITEMS_OF_INTEREST = "Items of Interest";
 	private static final String FULL_STOP = ".";
+	private static final String SPECIES_ABBREVIATION = " spp.";
 	private static final String WITH = "with";
 	private static final String SPACE = " ";
 	private static final String DUE = " due ";
@@ -623,7 +625,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			//Unless we're interested in legacy issues
 			if (c.isActiveSafely() && (includeLegacyIssues || SnomedUtils.hasNewChanges(c))) {
 				for (Description d : c.getDescriptions(Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
-					if (inScope(d) && d.getTerm().endsWith(FULL_STOP) && d.getTerm().length() > MIN_TEXT_DEFN_LENGTH) {
+					if (inScope(d) && looksLikeTextDefinition(d.getTerm())) {
 						reportAndIncrementCategoryCount(ISSUES, c, isLegacySimple(d), issueStr, getLegacyIndicator(d), isActive(c, d), d);
 					}
 				}
@@ -637,6 +639,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 			}
 		}
+	}
+
+	private boolean looksLikeTextDefinition(String term) {
+		//An abbreviation such as "spp." ends with a full stop without being a sentence
+		return term.endsWith(FULL_STOP)
+				&& !term.endsWith(SPECIES_ABBREVIATION)
+				&& term.length() > MIN_TEXT_DEFN_LENGTH;
 	}
 
 	//INFRA-2580, MAINT-342 Inactivated concepts without active PT or synonym – new instances only
