@@ -50,4 +50,16 @@ public class ReportingServerClient {
 		Set<WhiteListedConcept> whiteList = response.getBody();
 		return whiteList == null ? Collections.emptySet() : whiteList;
 	}
+
+	/**
+	 * Note this replaces the report's whole whitelist for that code system, so include any existing entries to keep
+	 */
+	public void setWhiteListForReport(String reportName, String codeSystemShortname, Set<WhiteListedConcept> whiteList) {
+		restTemplate.exchange(
+				WHITELIST,
+				HttpMethod.POST,
+				new HttpEntity<>(whiteList),
+				Void.class,
+				JobType.REPORT, reportName, codeSystemShortname);
+	}
 }
