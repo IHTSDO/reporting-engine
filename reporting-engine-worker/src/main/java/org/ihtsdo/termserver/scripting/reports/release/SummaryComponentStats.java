@@ -862,9 +862,9 @@ public class SummaryComponentStats extends HistoricDataUser implements ReportCla
 		data[13] = minusPlus(TAB_AXIOMS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE);
 		data[14] = sum(TAB_AXIOMS, IDX_TOTAL);
 		// Stated relationships
-		data[15] = "0";
-		data[16] = "0";
-		data[17] = "1024719";
+		data[15] = "-";
+		data[16] = "-";
+		data[17] = "-";
 		// Inferred relationships
 		data[18] = sum(TAB_RELS, IDX_NEW_NEW);
 		data[19] = minusPlus(TAB_RELS, IDX_NEW, IDX_NEW_NEW, IDX_CHANGED, IDX_CHANGED_INACTIVE, IDX_INACTIVATED, IDX_REACTIVATED, IDX_NEW_INACTIVE);
