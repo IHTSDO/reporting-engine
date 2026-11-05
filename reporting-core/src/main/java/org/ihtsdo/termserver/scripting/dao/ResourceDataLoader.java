@@ -24,7 +24,8 @@ public class ResourceDataLoader extends AbstractS3Component {
 																"preposition-exceptions.txt",
 																"prepositions.txt",
 																"repeated-word-exceptions.txt",
-																"us-to-gb-terms-map.txt"
+																"us-to-gb-acceptable-terms-map.txt",
+																"us-to-gb-preferred-terms-map.txt"
 														};
 
 	private boolean initialised = false;

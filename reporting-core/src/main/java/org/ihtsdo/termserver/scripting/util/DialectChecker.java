@@ -21,15 +21,15 @@ public class DialectChecker implements ScriptConstants {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DialectChecker.class);
 	//Words are runs of letters, so punctuation either side or in between (eg brackets, slashes, hyphens) is kept
 	private static final Pattern WORD = Pattern.compile("\\p{L}+");
-	private static final String TERMS_MAP_FILE = "resources/us-to-gb-terms-map.txt";
+	private static final String PREFERRED_TERMS_MAP_FILE = "resources/us-to-gb-preferred-terms-map.txt";
 	//Pairs where the US term is preferred, with the GB term also acceptable
-	private static final String SYNONYMS_MAP_FILE = "resources/us-to-gb-synonyms-map.txt";
+	private static final String ACCEPTABLE_TERMS_MAP_FILE = "resources/us-to-gb-acceptable-terms-map.txt";
 
 	private List<DialectPair> dialectPairs = null;
 	private Set<String> usTerms = new HashSet<>();
 	private Set<String> gbTerms = new HashSet<>();
 	private static DialectChecker singleton = null;
-	private static DialectChecker singletonIncludingSynonyms = null;
+	private static DialectChecker singletonIncludingAcceptableTerms = null;
 
 	enum Dialect {
 		US,
@@ -45,20 +45,20 @@ public class DialectChecker implements ScriptConstants {
 			return singleton;
 		}
 		singleton = new DialectChecker();
-		singleton.init(TERMS_MAP_FILE);
+		singleton.init(PREFERRED_TERMS_MAP_FILE);
 		return singleton;
 	}
 
 	/**
-	 * As create(), but also treats the synonyms map's pairs as dialect specific
+	 * As create(), but also treats the acceptable terms map's pairs as dialect specific
 	 */
-	public static DialectChecker createIncludingSynonyms() throws TermServerScriptException {
-		if (singletonIncludingSynonyms != null) {
-			return singletonIncludingSynonyms;
+	public static DialectChecker createIncludingAcceptableTerms() throws TermServerScriptException {
+		if (singletonIncludingAcceptableTerms != null) {
+			return singletonIncludingAcceptableTerms;
 		}
-		singletonIncludingSynonyms = new DialectChecker();
-		singletonIncludingSynonyms.init(TERMS_MAP_FILE, SYNONYMS_MAP_FILE);
-		return singletonIncludingSynonyms;
+		singletonIncludingAcceptableTerms = new DialectChecker();
+		singletonIncludingAcceptableTerms.init(PREFERRED_TERMS_MAP_FILE, ACCEPTABLE_TERMS_MAP_FILE);
+		return singletonIncludingAcceptableTerms;
 	}
 
 	public int size() {
