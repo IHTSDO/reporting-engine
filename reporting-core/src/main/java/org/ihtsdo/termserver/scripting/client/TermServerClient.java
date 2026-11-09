@@ -84,6 +84,7 @@ public class TermServerClient {
 	}
 	
 	private final RestTemplate restTemplate;
+	private final RestTemplate exportRestTemplate;
 	private final HttpHeaders headers;
 	private final String serverUrl;
 	private static final Logger LOGGER = LoggerFactory.getLogger(TermServerClient.class);
@@ -96,9 +97,15 @@ public class TermServerClient {
 		headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
 		headers.add(HttpHeaders.USER_AGENT, userAgent);
 
+		restTemplate = buildRestTemplate(Timeout.ofMinutes(15));
+		//Snowstorm builds the archive while we wait for the response, and a full snapshot can take half an hour
+		exportRestTemplate = buildRestTemplate(Timeout.ofMinutes(60));
+	}
+
+	private RestTemplate buildRestTemplate(Timeout responseTimeout) {
 		RequestConfig requestConfig = RequestConfig.custom()
 				.setConnectionRequestTimeout(Timeout.ofSeconds(10))
-				.setResponseTimeout(Timeout.ofMinutes(15))
+				.setResponseTimeout(responseTimeout)
 				.build();
 
 		CloseableHttpClient httpClient = HttpClients.custom()
@@ -107,7 +114,7 @@ public class TermServerClient {
 
 		HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
 
-		restTemplate = new RestTemplateBuilder()
+		RestTemplate template = new RestTemplateBuilder()
 				.uriTemplateHandler(ClientUriFactory.forRootUri(this.serverUrl))
 				.additionalMessageConverters(new GsonHttpMessageConverter(gson))
 				.additionalMessageConverters(new FormHttpMessageConverter())
@@ -115,12 +122,12 @@ public class TermServerClient {
 				.requestFactory(() -> factory)
 				.build();
 
-
 		//Add a ClientHttpRequestInterceptor to the RestTemplate
-		restTemplate.getInterceptors().add((request, body, execution) -> {
+		template.getInterceptors().add((request, body, execution) -> {
 			request.getHeaders().addAll(headers);
 			return execution.execute(request, body);
 		});
+		return template;
 	}
 	
 	public Branch getBranch(String branchPath) throws TermServerScriptException {
@@ -502,7 +509,7 @@ public class TermServerClient {
 						MediaType.APPLICATION_OCTET_STREAM,
 						MediaType.ALL));
 
-		restTemplate.execute(
+		exportRestTemplate.execute(
 				exportLocationURL + "/archive",
 				HttpMethod.GET,
 				requestCallback,
