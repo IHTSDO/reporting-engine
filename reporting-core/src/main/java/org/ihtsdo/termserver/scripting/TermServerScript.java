@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.script.Script;
+import org.snomed.otf.script.dao.Highlight;
 import org.snomed.otf.script.dao.ReportConfiguration;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.springframework.context.ApplicationContext;
@@ -130,6 +131,8 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 	//Secondary counts might be whitelisted items for same items as the main count
 	private Map<String, Map<String, Integer>> secondaryCountsByCategory = new HashMap<>();
 	protected boolean includeSecondaryCounts = false;
+	//Decided when a count is added, applied when the summary is written at the end
+	private final Map<String, Map<String, Highlight>> summaryRowsToHighlight = new HashMap<>();
 
 	/* ======================================================
 	 * Job / Execution Context
@@ -2603,6 +2606,11 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 		summaryCounts.merge(summaryItem, increment, Integer::sum);
 	}
 
+	public void incrementSummaryCount(String category, String summaryItem, Highlight highlight) {
+		incrementSummaryCount(category, summaryItem, 1);
+		summaryRowsToHighlight.computeIfAbsent(category, k -> new HashMap<>()).put(summaryItem, highlight);
+	}
+
 	public void incrementSecondaryCount(String category, String summaryItem, int increment) {
 		//Increment the count for this summary item, in the appropriate category
 		Map<String, Integer> secondaryCounts = secondaryCountsByCategory.computeIfAbsent(category, k -> new HashMap<>());
@@ -2658,14 +2666,16 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 					}
 
 					Map<String, Integer> secondaryCounts = secondaryCountsByCategory.get(cat);
+					Map<String, Highlight> highlights = summaryRowsToHighlight.getOrDefault(cat, Collections.emptyMap());
 					stream.forEach(entry -> {
 						Integer secondaryCount = (includeSecondaryCounts && secondaryCounts != null)
 								? secondaryCounts.get(entry.getKey())
 								: null;
+						Highlight highlight = highlights.get(entry.getKey());
 						if (secondaryCount != null && secondaryCount > 0) {
-							reportSafely(summaryTabIdx, "", entry.getKey(), entry.getValue(), secondaryCount);
+							reportSafely(summaryTabIdx, highlight, "", entry.getKey(), entry.getValue(), secondaryCount);
 						} else {
-							reportSafely(summaryTabIdx, "", entry.getKey(), entry.getValue());
+							reportSafely(summaryTabIdx, highlight, "", entry.getKey(), entry.getValue());
 						}
 					});
 				});
