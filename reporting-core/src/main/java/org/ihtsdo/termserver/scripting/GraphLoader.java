@@ -1505,6 +1505,11 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 			allComponents.put(altId.getId(), altId);
 			componentOwnerMap.put(altId, c);
 		}
+
+		for (RefsetMember rm : c.getOtherRefsetMembers()) {
+			allComponents.put(rm.getId(), rm);
+			componentOwnerMap.put(rm, c);
+		}
 	}
 
 	private void populateComponentMapForRelationship(Concept c, Relationship r) {
@@ -1550,6 +1555,11 @@ public class GraphLoader implements ScriptConstants, ComponentStore {
 		for (AssociationEntry a : d.getAssociationEntries()) {
 			allComponents.put(a.getId(), a);
 			componentOwnerMap.put(a, c);
+		}
+
+		for (RefsetMember rm : d.getOtherRefsetMembers()) {
+			allComponents.put(rm.getId(), rm);
+			componentOwnerMap.put(rm, c);
 		}
 	}
 
