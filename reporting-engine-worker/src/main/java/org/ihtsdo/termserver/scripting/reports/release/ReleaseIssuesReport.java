@@ -1165,7 +1165,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	//ISRS-414 Descriptions which contain a non-breaking space
 	private void unexpectedCharacters() throws TermServerScriptException {
-		AcceptableCharacterValidator acv = AcceptableCharacterValidator.getInstance();
+		AcceptableCharacterValidator acv = AcceptableCharacterValidator.getInstance(WhitelistHelper.deriveCodeSystem(project.getBranchPath()));
 		String validatorIssueStr = "Acceptable character violation";
 		initialiseSummary(validatorIssueStr);
 		List<UnwantedChar> unwantedCharChecks = initialiseUnwantedCharChecks();

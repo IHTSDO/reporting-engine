@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -14,7 +15,15 @@ import java.util.List;
  */
 public final class AcceptableCharacterValidator {
 
-	private final List<UnicodeRangeRule> rules = new ArrayList<>();
+	private static final String ALL_EXTENSIONS = "ALL";
+	private static final String INTERNATIONAL = "INT";
+	private static final String EXTENSION_PREFIX = WhitelistHelper.DEFAULT_CODE_SYSTEM + "-";
+
+	private final String extensionCode;
+
+	//Rules specific to this extension are checked first, so they take precedence over rules for ALL
+	private final List<UnicodeRangeRule> extensionRules = new ArrayList<>();
+	private final List<UnicodeRangeRule> generalRules = new ArrayList<>();
 
 	public enum Action {
 		ALLOW,
@@ -22,12 +31,16 @@ public final class AcceptableCharacterValidator {
 		DISALLOW
 	}
 
-	private AcceptableCharacterValidator() {
+	private AcceptableCharacterValidator(String extensionCode) {
 		//Don't instantiate directly, call getInstance()
+		this.extensionCode = extensionCode;
 	}
 
-	public static AcceptableCharacterValidator getInstance() throws TermServerScriptException {
-		AcceptableCharacterValidator acv = new AcceptableCharacterValidator();
+	/**
+	 * @param codeSystem eg SNOMEDCT for the International Edition, or SNOMEDCT-CH for the Swiss Extension
+	 */
+	public static AcceptableCharacterValidator getInstance(String codeSystem) throws TermServerScriptException {
+		AcceptableCharacterValidator acv = new AcceptableCharacterValidator(deriveExtensionCode(codeSystem));
 		try {
 			File acceptableCharsFile = new File("resources/acceptable_characters.tsv");
 			acv.loadPolicy(acceptableCharsFile.toPath());
@@ -35,6 +48,16 @@ public final class AcceptableCharacterValidator {
 			throw new TermServerScriptException("Failed to load acceptable character policy", e);
 		}
 		return acv;
+	}
+
+	/**
+	 * @return the 'super-short' identifier used in the policy file, eg SNOMEDCT gives INT, SNOMEDCT-CH gives CH
+	 */
+	static String deriveExtensionCode(String codeSystem) {
+		if (codeSystem == null || codeSystem.equals(WhitelistHelper.DEFAULT_CODE_SYSTEM)) {
+			return INTERNATIONAL;
+		}
+		return codeSystem.startsWith(EXTENSION_PREFIX) ? codeSystem.substring(EXTENSION_PREFIX.length()) : codeSystem;
 	}
 
 	//Load the Unicode character policy from a tab-delimited file.
@@ -46,37 +69,67 @@ public final class AcceptableCharacterValidator {
 			while ((line = reader.readLine()) != null) {
 				lineNumber++;
 				line = line.trim();
-
-				if (line.isEmpty() || line.startsWith("#")) {
-					continue;
+				if (!line.isEmpty() && !line.startsWith("#")) {
+					loadRule(line, lineNumber);
 				}
-
-				String[] columns = line.split("\t", -1);
-				if (columns.length < 2) {
-					throw new IllegalArgumentException(
-							"Invalid policy line " + lineNumber + ": " + line
-					);
-				}
-
-				String rangeSpec = columns[0].trim();
-				Action action = Action.valueOf(columns[1].trim());
-				String comment = columns.length >= 3 ? columns[2].trim() : null;
-
-				int start;
-				int end;
-
-				if (rangeSpec.contains("–")) { // EN DASH as range separator
-					String[] parts = rangeSpec.split("–");
-					start = parseCodePoint(parts[0]);
-					end = parseCodePoint(parts[1]);
-				} else {
-					start = parseCodePoint(rangeSpec);
-					end = start;
-				}
-
-				rules.add(new UnicodeRangeRule(start, end, action, comment));
 			}
 		}
+	}
+
+	//Columns are: code point or range, action, extensions, comment.
+	//The older format has no extensions column, so its rules apply to all extensions.
+	private void loadRule(String line, int lineNumber) {
+		String[] columns = line.split("\t", -1);
+		if (columns.length < 2) {
+			throw new IllegalArgumentException(
+					"Invalid policy line " + lineNumber + ": " + line
+			);
+		}
+
+		String rangeSpec = columns[0].trim();
+		Action action = Action.valueOf(columns[1].trim());
+		String extensions = ALL_EXTENSIONS;
+		String comment = null;
+		if (columns.length >= 3 && columns[2].trim().startsWith("#")) {
+			comment = columns[2].trim();
+		} else if (columns.length >= 3) {
+			extensions = columns[2].trim();
+			comment = columns.length >= 4 ? columns[3].trim() : null;
+		}
+
+		int start;
+		int end;
+
+		if (rangeSpec.contains("–")) { // EN DASH as range separator
+			String[] parts = rangeSpec.split("–");
+			start = parseCodePoint(parts[0]);
+			end = parseCodePoint(parts[1]);
+		} else {
+			start = parseCodePoint(rangeSpec);
+			end = start;
+		}
+
+		UnicodeRangeRule rule = new UnicodeRangeRule(start, end, action, comment);
+		List<String> appliesTo = Arrays.stream(extensions.split(",")).map(String::trim).toList();
+		if (appliesTo.contains(ALL_EXTENSIONS)) {
+			generalRules.add(rule);
+		} else if (appliesTo.contains(extensionCode)) {
+			extensionRules.add(rule);
+		}
+	}
+
+	private UnicodeRangeRule findRule(int codePoint) {
+		for (UnicodeRangeRule rule : extensionRules) {
+			if (rule.matches(codePoint)) {
+				return rule;
+			}
+		}
+		for (UnicodeRangeRule rule : generalRules) {
+			if (rule.matches(codePoint)) {
+				return rule;
+			}
+		}
+		return null;
 	}
 
 	private int parseCodePoint(String s) {
@@ -98,13 +151,7 @@ public final class AcceptableCharacterValidator {
 		while (charIndex < input.length()) {
 			int codePoint = input.codePointAt(charIndex);
 
-			UnicodeRangeRule matchedRule = null;
-			for (UnicodeRangeRule rule : rules) {
-				if (rule.matches(codePoint)) {
-					matchedRule = rule;
-					break;
-				}
-			}
+			UnicodeRangeRule matchedRule = findRule(codePoint);
 
 			if (matchedRule == null) {
 				issues.add(new ValidationIssue(
