@@ -1821,7 +1821,7 @@ public abstract class TermServerScript extends Script implements ScriptConstants
 				sb.append(COMMA_QUOTE + detail + QUOTE);
 			}
 		}
-		writeToReportFile(sb.toString());
+		writeToReportFile(PRIMARY_REPORT, sb.toString(), Highlight.forSeverity(severity));
 		incrementSummaryInformation("Report lines written");
 	}
 
