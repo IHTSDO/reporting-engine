@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DialectChecker implements ScriptConstants {
 
@@ -22,12 +23,13 @@ public class DialectChecker implements ScriptConstants {
 	//Words are runs of letters, so punctuation either side or in between (eg brackets, slashes, hyphens) is kept
 	private static final Pattern WORD = Pattern.compile("\\p{L}+");
 	private static final String PREFERRED_TERMS_MAP_FILE = "resources/us-to-gb-preferred-terms-map.txt";
-	//Pairs where the US term is preferred, with the GB term also acceptable
+	//Pairs where the US term is preferred in GB too, with the GB term only acceptable, eg fetal/foetal
 	private static final String ACCEPTABLE_TERMS_MAP_FILE = "resources/us-to-gb-acceptable-terms-map.txt";
 
 	private List<DialectPair> dialectPairs = null;
 	private Set<String> usTerms = new HashSet<>();
 	private Set<String> gbTerms = new HashSet<>();
+	private Set<String> acceptableMapTerms = new HashSet<>();
 	private static DialectChecker singleton = null;
 	private static DialectChecker singletonIncludingAcceptableTerms = null;
 
@@ -45,19 +47,20 @@ public class DialectChecker implements ScriptConstants {
 			return singleton;
 		}
 		singleton = new DialectChecker();
-		singleton.init(PREFERRED_TERMS_MAP_FILE);
+		singleton.init(false);
 		return singleton;
 	}
 
 	/**
-	 * As create(), but also treats the acceptable terms map's pairs as dialect specific
+	 * As create(), but also loads the acceptable terms map.  Its US terms are preferred in GB too, so aren't US
+	 * specific, while its GB terms are GB specific, but only ever acceptable.
 	 */
 	public static DialectChecker createIncludingAcceptableTerms() throws TermServerScriptException {
 		if (singletonIncludingAcceptableTerms != null) {
 			return singletonIncludingAcceptableTerms;
 		}
 		singletonIncludingAcceptableTerms = new DialectChecker();
-		singletonIncludingAcceptableTerms.init(PREFERRED_TERMS_MAP_FILE, ACCEPTABLE_TERMS_MAP_FILE);
+		singletonIncludingAcceptableTerms.init(true);
 		return singletonIncludingAcceptableTerms;
 	}
 
@@ -69,27 +72,52 @@ public class DialectChecker implements ScriptConstants {
 		return dialectPairs;
 	}
 
-	private void init(String... mapFiles) throws TermServerScriptException {
-		List<String> lines = new ArrayList<>();
-		for (String mapFile : mapFiles) {
-			LOGGER.debug("Loading us/gb terms from {}", mapFile);
-			try {
-				lines.addAll(Files.readLines(new File(mapFile), StandardCharsets.UTF_8));
-			} catch (IOException e) {
-				throw new TermServerScriptException("Unable to read " + mapFile, e);
-			}
+	private void init(boolean includeAcceptableTerms) throws TermServerScriptException {
+		List<DialectPair> pairs = new ArrayList<>(loadPairs(PREFERRED_TERMS_MAP_FILE, false));
+		if (includeAcceptableTerms) {
+			pairs.addAll(loadPairs(ACCEPTABLE_TERMS_MAP_FILE, true));
 		}
-		dialectPairs = lines.stream()
-				.map(DialectPair::new)
-				.toList();
+		dialectPairs = List.copyOf(pairs);
 
 		usTerms = dialectPairs.stream()
+				.filter(pair -> !pair.usPreferredInGb)
 				.map(pair -> pair.usTerm)
 				.collect(Collectors.toSet());
 
 		gbTerms = dialectPairs.stream()
 				.map(pair -> pair.gbTerm)
 				.collect(Collectors.toSet());
+
+		acceptableMapTerms = dialectPairs.stream()
+				.filter(pair -> pair.usPreferredInGb)
+				.flatMap(pair -> Stream.of(pair.usTerm, pair.gbTerm))
+				.collect(Collectors.toSet());
+	}
+
+	private List<DialectPair> loadPairs(String mapFile, boolean usPreferredInGb) throws TermServerScriptException {
+		LOGGER.debug("Loading us/gb terms from {}", mapFile);
+		try {
+			return Files.readLines(new File(mapFile), StandardCharsets.UTF_8).stream()
+					.map(line -> new DialectPair(line, usPreferredInGb))
+					.toList();
+		} catch (IOException e) {
+			throw new TermServerScriptException("Unable to read " + mapFile, e);
+		}
+	}
+
+	/**
+	 * @return true if the word (either spelling) comes from the acceptable terms map, eg fetal or foetal
+	 */
+	public boolean isAcceptableMapWord(String word) {
+		return acceptableMapTerms.contains(word.toLowerCase());
+	}
+
+	/**
+	 * @return true if the term features a GB word that would normally only be acceptable, eg foetal
+	 */
+	public boolean containsAcceptableOnlyGBTerm(String term) {
+		return getWordsLower(term).stream()
+				.anyMatch(word -> dialectPairs.stream().anyMatch(pair -> pair.usPreferredInGb && pair.gbTerm.equals(word)));
 	}
 
 	public boolean containsUSGBSpecificTerm(String term) {
@@ -105,11 +133,15 @@ public class DialectChecker implements ScriptConstants {
 	}
 
 	/**
+	 * @param includeUsPreferredInGb whether to convert US words that are preferred in GB too, eg fetal to foetal
 	 * @return the word in the other dialect, or the word unchanged if it isn't specific to the "from" dialect
 	 */
-	private String convertWord(String word, Dialect from, Dialect to) {
+	private String convertWord(String word, Dialect from, Dialect to, boolean includeUsPreferredInGb) {
 		String wordLower = word.toLowerCase();
 		for (DialectPair pair : dialectPairs) {
+			if (pair.usPreferredInGb && from == Dialect.US && !includeUsPreferredInGb) {
+				continue;
+			}
 			if (pair.getTerm(from).equals(wordLower)) {
 				String replacement = pair.getTerm(to);
 				//Are we adjusting for case?
@@ -149,7 +181,7 @@ public class DialectChecker implements ScriptConstants {
 	public Map<String, String> getGBSpecificWords(String term) {
 		Map<String, String> gbToUsWords = new LinkedHashMap<>();
 		for (String word : getWordsLower(term)) {
-			String usWord = convertWord(word, Dialect.GB, Dialect.US);
+			String usWord = convertWord(word, Dialect.GB, Dialect.US, false);
 			if (!usWord.equals(word)) {
 				gbToUsWords.put(word, usWord);
 			}
@@ -164,7 +196,7 @@ public class DialectChecker implements ScriptConstants {
 	public String findFirstUSGBSpecificTerm(String term) {
 		for (String word : getWordsLower(term)) {
 			for (DialectPair pair : dialectPairs) {
-				if (pair.usTerm.equals(word)) {
+				if (pair.usTerm.equals(word) && !pair.usPreferredInGb) {
 					return word;
 				}
 				if (pair.gbTerm.equals(word)) {
@@ -176,18 +208,29 @@ public class DialectChecker implements ScriptConstants {
 	}
 
 	public String makeUSSpecific(String term) {
-		return makeDialectSpecific(term, Dialect.GB, Dialect.US);
+		return makeDialectSpecific(term, Dialect.GB, Dialect.US, false);
 	}
 
+	/**
+	 * The GB preferred form: US words that are preferred in GB too (eg fetal) are left as they are
+	 */
 	public String makeGBSpecific(String term) {
-		return makeDialectSpecific(term, Dialect.US, Dialect.GB);
+		return makeDialectSpecific(term, Dialect.US, Dialect.GB, false);
 	}
 
-	private String makeDialectSpecific(String term, Dialect from, Dialect to) {
+	/**
+	 * As makeGBSpecific, but also converting US words that are preferred in GB too, eg fetal to foetal, to give
+	 * the form that is only acceptable in GB
+	 */
+	public String makeGBAcceptableForm(String term) {
+		return makeDialectSpecific(term, Dialect.US, Dialect.GB, true);
+	}
+
+	private String makeDialectSpecific(String term, Dialect from, Dialect to, boolean includeUsPreferredInGb) {
 		Matcher matcher = WORD.matcher(term);
 		StringBuilder converted = new StringBuilder();
 		while (matcher.find()) {
-			matcher.appendReplacement(converted, Matcher.quoteReplacement(convertWord(matcher.group(), from, to)));
+			matcher.appendReplacement(converted, Matcher.quoteReplacement(convertWord(matcher.group(), from, to, includeUsPreferredInGb)));
 		}
 		matcher.appendTail(converted);
 		return converted.toString();
@@ -198,7 +241,10 @@ public class DialectChecker implements ScriptConstants {
 		public final String gbTerm;
 		public final String usTermPadded;
 		public final String gbTermPadded;
-		DialectPair (String line) {
+		//From the acceptable terms map: the US term is preferred in GB too, the GB term only acceptable
+		public final boolean usPreferredInGb;
+		DialectPair (String line, boolean usPreferredInGb) {
+			this.usPreferredInGb = usPreferredInGb;
 			String[] pair = line.split(TAB);
 			usTerm = pair[0];
 			gbTerm = pair[1];
